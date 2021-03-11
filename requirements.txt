@@ -1,3 +1,4 @@
-matplotlib
+matplotlib  ; только для отладки
+graphviz    ; только для отладки
 
 pylint
