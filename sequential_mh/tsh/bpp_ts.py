@@ -65,7 +65,7 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
                 for_packing = dict_to_list(rectangles)
             variant, _, best = get_best_fig(
                 for_packing, region, main_region.rectangle,
-                hem, *region.start
+                hem, allowance, *region.start
             )
             if best is None:
                 continue
@@ -74,30 +74,55 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
                 layout_options.append(state)
                 continue
 
-            dummy = None
+            dummy_hem = dummy_alw = None
             new_start = region.start
             # FIXME: переписать следующий кусок
-            if region.start.x == 0 and region.right_hem > 0:
-                # кромка справа и слева
-                dummy = Rectangle.create_by_size(region.start, best.length, region.right_hem)
-                new_start = Point(region.right_hem, region.start.y)
-                tailings.append(dummy)
-            elif region.start.y == 0 and region.bottom_hem > 0:
-                # кромка сверху и снизу
-                dummy = Rectangle.create_by_size(region.start, region.bottom_hem, best.width)
-                new_start = Point(region.start.x, region.bottom_hem)
-                tailings.append(dummy)
+            # создание фиктивных прямоугольников под кромки и припуски
+            if region.start.x == 0:
+                if region.right_hem > 0:
+                    # кромка справа и слева
+                    dummy_hem = Rectangle.create_by_size(
+                        region.start, best.length + allowance, region.right_hem
+                    )
+                    new_start = Point(region.right_hem, region.start.y)
+                    tailings.append(dummy_hem)
+                if allowance:
+                    # горизонтальный припуск
+                    dummy_alw = Rectangle.create_by_size(
+                        new_start, allowance, best.width
+                    )
+                    new_start = Point(region.right_hem, new_start.y + allowance)
+                    tailings.append(dummy_alw)
+            elif region.start.y == 0:
+                if region.bottom_hem > 0:
+                    # кромка сверху и снизу
+                    dummy_hem = Rectangle.create_by_size(
+                        region.start, region.bottom_hem, best.width + allowance
+                    )
+                    new_start = Point(region.start.x, region.bottom_hem)
+                    tailings.append(dummy_hem)
+                if allowance:
+                    # вертикальный припуск
+                    dummy_alw = Rectangle.create_by_size(
+                        new_start, best.length, allowance
+                    )
+                    new_start = Point(new_start.x + allowance, new_start.y)
+                    tailings.append(dummy_alw)
             blanks = [PackedRectangle(deepcopy(best), *new_start)]
             rect = Rectangle.create_by_size(new_start, best.length, best.width)
-            if dummy:
-                rect = min_enclosing_rect((dummy, rect))
+            if dummy_alw:
+                rect = min_enclosing_rect((dummy_alw, rect))
+            if dummy_hem:
+                rect = min_enclosing_rect((dummy_hem, rect))
             new_min_rect = min_enclosing_rect((min_rect, rect))
             empty_rect = difference_rect(new_min_rect, [min_rect, rect])
             square, usable_square = rect.square, best.area
-            if dummy:
-                usable_square += dummy.square
+            if dummy_hem:
+                usable_square += dummy_hem.square
+            if dummy_alw:
+                usable_square += dummy_alw.square
             intersection_square = rect.intersection_square(src_rect)
-            
+
             if empty_rect:
                 empty_rect = empty_rect[0]
                 square += empty_rect.square
@@ -176,7 +201,8 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
     return src_rect, main_region, result, unplaced, all_tailings
 
 
-def get_best_fig(rectangles, estimator, src_rect, hem, x0=0, y0=0):
+def get_best_fig(rectangles, estimator, src_rect,
+                 hem, allowance=0, x0=0, y0=0):
     priority, orientation, best = 16, None, None
     # w_0 = estimator.min_width
     # l_0 = estimator.min_length
@@ -190,6 +216,11 @@ def get_best_fig(rectangles, estimator, src_rect, hem, x0=0, y0=0):
     elif y0 == 0 and hem[0] > 0:
         # кромка сверху и снизу
         y0 += hem[0]
+    # для припуска
+    if x0 in (0, hem[1]):
+        y0 += allowance
+    elif y0 in (0, hem[0]):
+        x0 += allowance
     for rect in rectangles:
         size = rect.size[:-1]
         for j in range(1 + rect.is_rotatable):
