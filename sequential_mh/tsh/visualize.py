@@ -50,7 +50,8 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
     axes.set_ylim([0, ylim])
     for rect in rectangles:
         patch_rect(
-            axes, (rect.x, rect.y), rect.rectangle.width, rect.rectangle.length,
+            axes, (rect.x, rect.y), rect.rectangle.width,
+            rect.rectangle.length,
             color=(random(), random(), random()), ec='k', lw=0.5
         )
     y = []

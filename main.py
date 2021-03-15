@@ -28,11 +28,14 @@ def example_1():
     for item in data['kit']:
         kit.append(Blank(*item, material=material))
     kit = Kit(kit)
+    kit.sort()
     L_0 = data['L0']
     W_0 = data['W0']
     H_0 = data['H0']
     H_1 = data['H1']
-    _, main_region, result, _, tailings = bpp_ts(L_0, W_0, H_0, H_1, kit[3])
+    _, main_region, result, _, tailings = bpp_ts(
+        L_0, W_0, H_0, H_1, kit[3], hem=(0, 5), is_visualize=False
+    )
 
     print(
         f'Количество размещенных заготовок: {len(result)}/{len(data["kit"])}'
