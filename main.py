@@ -1,3 +1,8 @@
+"""Модуль с примерами использования пакета sequential_mh.tsh
+
+Пакет sequential_mh.tsh реализует алгоритм раскроя в две стороны.
+"""
+
 # import os
 
 from sequential_mh.tsh.bpp_ts import bpp_ts
@@ -22,6 +27,8 @@ def example_1():
         'W0': 180,
         'H0': 23,
         'H1': 3,
+        'hem': (0, 5),
+        'allowance': 5,
     }
     return data
 
@@ -42,13 +49,34 @@ def example_2():
         'W0': 180,
         'H0': 28,
         'H1': 3,
+        'hem': (0, 5),
+        'allowance': 5,
+    }
+    return data
+
+
+def example_3():
+    data = {
+        'name': 'Синтетический пример 2',
+        'kit': [
+            (5, 6, 1, 1), (3, 2, 1, 1), (1, 3, 1, 1), (3, 1, 1, 1),
+            (1, 8, 1, 1), (1, 2, 1, 1), (2, 1, 1, 1), (1, 1, 1, 1),
+            (1, 1, 1, 1)
+        ],
+        'L0': 7,
+        'W0': 8,
+        'H0': 2,
+        'H1': 1,
+        'hem': (0, 1),
+        'allowance': 0.5,
     }
     return data
 
 
 EXAMPLES = [
     example_1,
-    example_2
+    example_2,
+    example_3,
 ]
 
 
@@ -56,7 +84,7 @@ def main(example):
     material = Material('Сплав 1', 2.2, 1.)
 
     if 0 <= example - 1 < len(EXAMPLES):
-        data = EXAMPLES[example]()
+        data = EXAMPLES[example - 1]()
     else:
         raise ValueError(
             'Некорректный номер примера. '
@@ -67,13 +95,16 @@ def main(example):
     for item in data['kit']:
         kit.append(Blank(*item, material=material))
     kit = Kit(kit)
-    kit.sort()
+    kit.sort(sorting='length')
     L_0 = data['L0']
     W_0 = data['W0']
     H_0 = data['H0']
     H_1 = data['H1']
+    hem = data['hem']
+    allowance = data['allowance']
     _, main_region, result, _, tailings = bpp_ts(
-        L_0, W_0, H_0, H_1, kit[3], hem=(0, 5), allowance=5, is_visualize=True
+        L_0, W_0, H_0, H_1, kit[H_1], hem=hem, allowance=allowance,
+        is_visualize=False
     )
 
     print(
@@ -88,5 +119,5 @@ def main(example):
 
 
 if __name__ == '__main__':
-    example = 1
-    main(example)
+    NUMBER = 1
+    main(NUMBER)
