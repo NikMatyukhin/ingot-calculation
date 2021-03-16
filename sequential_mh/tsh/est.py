@@ -140,13 +140,15 @@ class Estimator:
             return None
         if with_lim:
             if self.w_lim > 0:
-                x_lim = self.start.x + self.w_lim + sum(self._x_hem)
+                # x_lim = self.start.x + self.w_lim + sum(self._x_hem)
+                x_lim = self.start.x + self.w_lim - self.right_hem
                 if x > x_lim:
                     width = None
                 elif x + width > x_lim:
                     width = x_lim - x
             if self.l_lim > 0:
-                y_lim = self.start.y + self.l_lim + sum(self._y_hem)
+                # y_lim = self.start.y + self.l_lim + sum(self._y_hem)
+                y_lim = self.start.y + self.l_lim - self.top_hem
                 if y > y_lim:
                     length = None
                 elif y + length > y_lim:
@@ -171,14 +173,14 @@ class Estimator:
     @property
     def w_lim(self) -> Number:
         """Ширина области с учетом ограничений"""
-        if self._limits and self._limits[1] < self.trp.x - self.start.x:
+        if self._limits and 0 < self._limits[1] < self.trp.x - self.start.x:
             return self._limits[1]
         return self.max_width
 
     @property
     def l_lim(self) -> Number:
         """Длина области с учетом ограничений"""
-        if self._limits and self._limits[0] < self.tlp.y - self.start.y:
+        if self._limits and 0 < self._limits[0] < self.tlp.y - self.start.y:
             return self._limits[0]
         return self.max_length
 
@@ -220,18 +222,7 @@ class Estimator:
     @property
     def limits(self):
         """Ограничения"""
-        # if self._limits:
-        #     return (
-        #         self.max_length - self.hem[0], self.max_width - self.hem[1]
-        #     )
-        # if self.hem:
-        #     if self._limits:
-        #         self._limits = (self.l_lim - self.hem[0], self.w_lim - self.hem[1])
-        #     else:
-        #         self._limits = (
-        #             self.max_length - self.hem[0], self.max_width - self.hem[1]
-        #         )
-        return self._limits  # self.l_lim, self.w_lim
+        return self._limits
 
     @property
     def max_width(self) -> Number:
@@ -281,17 +272,19 @@ class Estimator:
     @property
     def tlp(self) -> Point:
         """Верхняя левая вершина"""
-        x, y = self.rectangle.blp
+        x, _ = self.rectangle.blp
         return Point(
-            self.rectangle.width + x, self.max_length + y + self.start.y
+            # self.rectangle.width + x, self.max_length + y + self.start.y
+            self.rectangle.width + x, self.max_length + self.start.y
         )
 
     @property
     def trp(self) -> Point:
         """Верхняя правая вершина"""
-        x, y = self.rectangle.blp
+        _, y = self.rectangle.blp
         return Point(
-            self.max_width + x + self.start.x, self.rectangle.length + y
+            # self.max_width + x + self.start.x, self.rectangle.length + y
+            self.max_width + self.start.x, self.rectangle.length + y
         )
 
     def __call__(self, x, y, with_lim=True):
