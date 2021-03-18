@@ -8,6 +8,7 @@
 
 from random import random
 from itertools import accumulate
+from sequential_mh.tsh.rect import RectangleType
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -60,7 +61,7 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
         x[-1] = main_region.max_width
     for i in x:
         # print(i)
-        dist = main_region(i, 0)
+        dist = main_region(i, 0, False)
         if dist is None:
             y.append(0)
         else:
@@ -74,9 +75,19 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
 
     for rect in tailings:
         if hasattr(rect, 'blp'):
+            if rect.rtype == RectangleType.ALLOWANCE:
+                edgecolor = "b"
+                hatch = "X"
+            elif rect.rtype == RectangleType.RESIDUAL:
+                edgecolor = "k"
+                hatch = r"\\"
+            else:
+                print(f'---> {rect, rect.rtype}')
+                edgecolor = "r"
+                hatch = "//"
             patch_rect(
                 axes, (rect.blp.x, rect.blp.y), rect.width, rect.length,
-                facecolor='none', hatch="//", lw=0.5
+                facecolor='none', hatch=hatch, edgecolor=edgecolor, lw=0.5
             )
         else:
             patch_rect(
