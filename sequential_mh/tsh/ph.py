@@ -16,7 +16,7 @@ https://www.sciencedirect.com/science/article/pii/S0020019015001519?via%3Dihub
 from operator import attrgetter
 import sys
 
-from .rect import Rectangle, PackedRectangle
+from .rect import Rectangle, PackedRectangle, RectangleType
 
 
 def rotate_all(rectangles):
@@ -55,8 +55,35 @@ def sort(rectangles, sorting: str='width'):
         group.sort(key=attrgetter(sorting), reverse=True)
 
 
-def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False,
-           sorting='width'):
+def create_rectangle(x, y, length, width, rtype) -> Rectangle:
+    dummy = Rectangle.create_by_size((x, y), length, width)
+    dummy.rtype = rtype
+    return dummy
+
+
+def create_allowance(x, y, length, width) -> Rectangle:
+    """Создание припуска
+
+    :param x: координата нижнео левого угла прямоугольника по оси X
+    :type x: int or float
+    :param y: координата нижнего левого угла прямоугольника по оси Y
+    :type y: int or float
+    :param length: длина припуска
+    :type length: int or float
+    :param width: ширина припуска
+    :type width: int or float
+    :return: припуск в виде прямоугольника заданных размеров
+    :rtype: Rectangle
+    """
+    return create_rectangle(x, y, length, width, RectangleType.ALLOWANCE)
+
+
+def create_residual(x, y, length, width) -> Rectangle:
+    return create_rectangle(x, y, length, width, RectangleType.RESIDUAL)
+
+
+def ph_bpp(length, width, rectangles, x0=0., y0=0., allowance=0,
+           first_priority=False, sorting='width'):
     """Алгоритм приоритетной эвристики
 
     :param length: длина контейнера
@@ -69,6 +96,9 @@ def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False,
     :type x0: int или float, optional
     :param y0: начальная координата по оси Y, defaults to 0.
     :type y0: int или float, optional
+    :param allowance: припуск на разрез, расстояние между соседними
+                      прямоугольниками
+    :type allowance: int или float, optional
     :param first_priority: флаг учета приоритетности, defaults to False
     :type first_priority: bool, optional
     :param sorting: параметр, задающий вариант сортировки, возможны два
@@ -94,7 +124,7 @@ def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False,
 
     recursive_packing(
         x0, y0, length, width, rectangles, result, tailings,
-        first_priority=max_priority
+        allowance, first_priority=max_priority
     )
 
     if result:
@@ -121,7 +151,7 @@ def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False,
 
 
 def recursive_packing(x, y, length, width, rectangles, result, tailings,
-                      first_priority=False):
+                      allowance, first_priority=False):
     """Рекурсивная процедура упаковки
 
     :param x: стартовая координата по оси X
@@ -138,6 +168,9 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
     :type result: dict[int, Iterable[PackedRectangle]]
     :param tailings: список неиспользуемых частей
     :type tailings: list[Rectangle]
+    :param allowance: припуск на разрез, расстояние между соседними
+                      прямоугольниками
+    :type allowance: int или float
     :param first_priority: флаг учета приоритетов, defaults to False
     :type first_priority: bool, optional
     """
@@ -154,23 +187,40 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
 
     for best, p, variant in best_rect:
         if variant >= 5:
-            tailings.append(Rectangle.create_by_size((x, y), length, width))
+            dummy = create_residual(x, y, length, width)
+            tailings.append(dummy)
         else:  # if variant < 5
             # omega, d = best.size[:-1]
             d, omega = best.size[:-1]
+            new_length, new_width = length - d, width - omega
+            new_x, new_y = x + omega, y + d
             if p not in result:
                 result[p] = []
             result[p].append(PackedRectangle(best, x, y))
             rectangles[p].remove(best)
             if variant == 2:
+                # new_y = y + d
+                # new_length = length - d
+                if new_length > allowance:
+                    dummy = create_allowance(x, new_y, allowance, width)
+                    new_y += allowance
+                    new_length -= allowance
+                    tailings.append(dummy)
                 recursive_packing(
-                    x, y + d, length - d, width, rectangles, result,
-                    tailings, first_priority=first_priority
+                    x, new_y, new_length, width, rectangles, result,
+                    tailings, allowance, first_priority=first_priority
                 )
             elif variant == 3:
+                # new_x = x + omega
+                # new_width = width - omega
+                if new_width > allowance:
+                    dummy = create_allowance(new_x, y, length, allowance)
+                    new_x += allowance
+                    new_width -= allowance
+                    tailings.append(dummy)
                 recursive_packing(
-                    x + omega, y, length, width - omega, rectangles, result,
-                    tailings, first_priority=first_priority
+                    new_x, y, length, new_width, rectangles, result,
+                    tailings, allowance, first_priority=first_priority
                 )
             elif variant == 4:
                 min_w = min_l = sys.maxsize
@@ -180,41 +230,104 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
                         min_w = min(min_w, blank.width)
                 min_w = min(min_w, min_l)
                 min_l = min_w
-                if width - omega < min_w:
-                    tailings.append(Rectangle.create_by_size(
-                        (x + omega, y), d, width - omega
-                    ))
+                # new_x, new_y = x + omega, y + d
+                # new_length, new_width = length - d, width - omega
+
+                if new_width < min_w:
+                    if new_length > allowance:
+                        dummy = create_allowance(x, new_y, allowance, width)
+                        new_y += allowance
+                        new_length -= allowance
+                        tailings.append(dummy)
+                    if new_width > allowance:
+                        dummy = create_allowance(new_x, y, d, allowance)
+                        new_x += allowance
+                        new_width -= allowance
+                        tailings.append(dummy)
+                    dummy = create_residual(new_x, y, d, new_width)
+                    tailings.append(dummy)
                     recursive_packing(
-                        x, y + d, length - d, width, rectangles, result,
-                        tailings, first_priority=first_priority
+                        x, new_y, new_length, width, rectangles, result,
+                        tailings, allowance, first_priority=first_priority
                     )
-                elif length - d < min_l:
-                    tailings.append(Rectangle.create_by_size(
-                        (x, y + d), length - d, omega
-                    ))
+                elif new_length < min_l:
+                    if new_length > allowance:
+                        dummy = create_allowance(x, new_y, allowance, omega)
+                        new_y += allowance
+                        new_length -= allowance
+                        tailings.append(dummy)
+                    if new_width > allowance:
+                        dummy = create_allowance(new_x, y, length, allowance)
+                        new_x += allowance
+                        new_width -= allowance
+                        tailings.append(dummy)
+                    dummy = create_residual(x, new_y, new_length, omega)
+                    tailings.append(dummy)
                     recursive_packing(
-                        x + omega, y, length, width - omega, rectangles, 
-                        result, tailings, first_priority=first_priority
+                        new_x, y, length, new_width, rectangles,
+                        result, tailings, allowance, first_priority=first_priority
                     )
                 elif omega < min_w:
+                    if new_length > allowance:
+                        dummy = create_allowance(x, new_y, allowance, width)
+                        new_y += allowance
+                        new_length -= allowance
+                        tailings.append(dummy)
+                    if new_width > allowance:
+                        dummy = create_allowance(new_x, y, d, allowance)
+                        new_x += allowance
+                        new_width -= allowance
+                        tailings.append(dummy)
                     recursive_packing(
-                        x + omega, y, d, width - omega, rectangles, result,
-                        tailings
+                        new_x, y, d, new_width, rectangles, result,
+                        tailings, allowance
                     )
                     recursive_packing(
-                        x, y + d, length - d, width, rectangles, result,
-                        tailings, first_priority=first_priority
+                        x, new_y, new_length, width, rectangles, result,
+                        tailings, allowance, first_priority=first_priority
                     )
                 else:
+                    # x, new_y, new_length, _ = create_tailing(x, new_y, allowance, new_length, omega, tailings)
+                    # new_x, y, _, new_width = create_tailing(new_x, y, allowance, length, new_width, tailings, False)
+                    if new_length > allowance:
+                        dummy = create_allowance(x, new_y, allowance, omega)
+                        new_y += allowance
+                        new_length -= allowance
+                        tailings.append(dummy)
+                    if new_width > allowance:
+                        dummy = create_allowance(new_x, y, length, allowance)
+                        new_x += allowance
+                        new_width -= allowance
+                        tailings.append(dummy)
                     recursive_packing(
-                        x, y + d, length - d, omega, rectangles, result,
-                        tailings
+                        x, new_y, new_length, omega, rectangles, result,
+                        tailings, allowance
                     )
                     recursive_packing(
-                        x + omega, y, length, width - omega, rectangles,
-                        result, tailings, first_priority=first_priority
+                        new_x, y, length, new_width, rectangles,
+                        result, tailings, allowance,
+                        first_priority=first_priority
                     )
             break
+
+
+def create_tailing(x, y, allowance, length, width, tailings, is_horizontal=True):
+    if not is_horizontal:
+        is_horizontal = not is_horizontal
+        length, width = width, length
+    if length > allowance:
+        dummy = create_allowance(x, y, allowance, width)
+        if is_horizontal:
+            y += allowance
+        else:
+            x += allowance
+        # new_y += allowance
+        length -= allowance
+        tailings.append(dummy)
+    if not is_horizontal:
+        # is_horizontal = not is_horizontal
+        length, width = width, length
+    return x, y, length, width
 
 
 def get_best_fig(length, width, rectangles):

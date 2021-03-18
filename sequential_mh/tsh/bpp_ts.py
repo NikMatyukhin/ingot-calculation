@@ -16,7 +16,8 @@ from .support import (
     delete_from_dict, dict_to_list, exclude_from_dict, is_empty_dict
 )
 from .rect import (
-    Point, Rectangle, PackedRectangle, difference_rect, min_enclosing_rect
+    Point, Rectangle, RectangleType, PackedRectangle,
+    difference_rect, min_enclosing_rect
 )
 from .ph import ph_bpp, rotate_all
 from .visualize import visualize
@@ -50,7 +51,7 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
     )
     all_regions = [main_region]
     result, unplaced, all_tailings = [], [], []
-    rotate_all(rectangles)
+    # rotate_all(rectangles)
     while not is_empty_dict(rectangles):  # проходиться по индексам
         layout_options = []
         if not all_regions:
@@ -77,20 +78,27 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
             dummy_hem = dummy_alw = None
             new_start = region.start
             # FIXME: переписать следующий кусок
+            # FIXME: написать функции создания вертикального и оризонтального припусков
             # создание фиктивных прямоугольников под кромки и припуски
             if region.start.x == 0:
                 if region.right_hem > 0:
                     # кромка справа и слева
+                    if region.start.y == 0:
+                        delta = 0
+                    else:
+                        delta = allowance
                     dummy_hem = Rectangle.create_by_size(
-                        region.start, best.length + allowance, region.right_hem
+                        region.start, best.length + delta, region.right_hem
                     )
+                    dummy_hem.rtype=RectangleType.EDGE
                     new_start = Point(region.right_hem, region.start.y)
                     tailings.append(dummy_hem)
-                if allowance:
+                if allowance and region.start.y > 0:
                     # горизонтальный припуск
                     dummy_alw = Rectangle.create_by_size(
                         new_start, allowance, best.width
                     )
+                    dummy_alw.rtype=RectangleType.ALLOWANCE
                     new_start = Point(region.right_hem, new_start.y + allowance)
                     tailings.append(dummy_alw)
             elif region.start.y == 0:
@@ -99,13 +107,15 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
                     dummy_hem = Rectangle.create_by_size(
                         region.start, region.bottom_hem, best.width + allowance
                     )
+                    dummy_hem.rtype=RectangleType.EDGE
                     new_start = Point(region.start.x, region.bottom_hem)
                     tailings.append(dummy_hem)
-                if allowance:
+                if allowance and region.start.x > 0:
                     # вертикальный припуск
                     dummy_alw = Rectangle.create_by_size(
                         new_start, best.length, allowance
                     )
+                    dummy_alw.rtype=RectangleType.ALLOWANCE
                     new_start = Point(new_start.x + allowance, new_start.y)
                     tailings.append(dummy_alw)
             blanks = [PackedRectangle(deepcopy(best), *new_start)]
@@ -126,10 +136,46 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
             if empty_rect:
                 empty_rect = empty_rect[0]
                 square += empty_rect.square
+                x, y = empty_rect.blp
+                if x == 0:
+                    if region.right_hem > 0:
+                        # добавление правой кромки
+                        dummy_hem = Rectangle.create_by_size(
+                            empty_rect.blp, empty_rect.length + allowance, region.right_hem
+                        )
+                        dummy_hem.rtype=RectangleType.EDGE
+                        empty_rect.blp = Point(region.right_hem, y)
+                        tailings.append(dummy_hem)
+                elif y == 0:
+                    if region.right_hem > 0:
+                        # добавление нижней кромки
+                        dummy_hem = Rectangle.create_by_size(
+                            empty_rect.blp, region.bottom_hem, empty_rect.width
+                        )
+                        dummy_hem.rtype=RectangleType.EDGE
+                        empty_rect.blp = Point(empty_rect.blp.x, empty_rect.blp.y + region.bottom_hem)
+                        tailings.append(dummy_hem)
+                if allowance and x > 0:
+                    # добавление вертикального припуска
+                    dummy_alw = Rectangle.create_by_size(
+                        empty_rect.blp, empty_rect.length, allowance
+                    )
+                    dummy_alw.rtype=RectangleType.ALLOWANCE
+                    empty_rect.blp = Point(empty_rect.blp.x + allowance, empty_rect.blp.y)
+                    tailings.append(dummy_alw)
+                if allowance and y > 0:
+                    # сразу добавляется горизонтальный припуск
+                    dummy_alw = Rectangle.create_by_size(
+                        empty_rect.blp, allowance, empty_rect.width
+                    )
+                    dummy_alw.rtype=RectangleType.ALLOWANCE
+                    empty_rect.blp = Point(empty_rect.blp.x, empty_rect.blp.y + allowance)
+                    tailings.append(dummy_alw)
+
                 res, *_, _tailings = ph_bpp(
                     empty_rect.length, empty_rect.width,
                     deepcopy(exclude_from_dict(best, rectangles)),
-                    *empty_rect.blp, first_priority=False,
+                    *empty_rect.blp, allowance, first_priority=False,
                     sorting='width'
                 )
                 tailings.extend(_tailings)
@@ -137,9 +183,12 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
                 if placed_blanks:
                     # usable_square += sum(b.blank.area for b in placed_blanks)
                     usable_square += sum(b.rectangle.area for b in placed_blanks)
+                    usable_square += sum(r.square for r in tailings if r.rtype != RectangleType.RESIDUAL)
                     blanks.extend(placed_blanks)
-                else:
-                    tailings.append(Rectangle.create_by_size(empty_rect.blp, empty_rect.length, empty_rect.width))
+                # else:
+                #     tailings.append(Rectangle.create_by_size(
+                #         empty_rect.blp, empty_rect.length, empty_rect.width
+                #     ))
             status = StateLayout(
                 blanks, [], tailings, new_min_rect,
                 usable_square / square,  intersection_square,
