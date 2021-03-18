@@ -7,6 +7,7 @@
 """
 
 from dataclasses import dataclass
+from enum import Enum
 from operator import attrgetter
 from typing import Iterable, Optional, Union, NamedTuple
 
@@ -16,9 +17,23 @@ Point = NamedTuple('Point', [('x', Number), ('y', Number)])
 PointType = Union[tuple[Number, Number], Point]
 
 
+class RectangleType(Enum):
+    """Типы прямоугольников"""
+    # основной прямоугольник
+    RECTANGLE = 'Rectangle'
+    # кромка
+    EDGE = 'Edge'
+    # припуск
+    ALLOWANCE = 'Allowance'
+    # остаток
+    RESIDUAL = 'Residual'
+    # не определен
+    NOT_DETERMINED = 'NotDetermined'
+
+
 class Rectangle:
     """Прямоугольник на плоскости"""
-    def __init__(self, blp: PointType, trp: PointType):
+    def __init__(self, blp: PointType, trp: PointType, rtype=None):
         if isinstance(blp, tuple):
             blp = Point(*blp)
         if isinstance(trp, tuple):
@@ -27,6 +42,9 @@ class Rectangle:
         self._blp: Point = min(blp, trp)
         # верхняя правая точка
         self._trp: Point = trp if self._blp is blp else blp
+        if rtype is None:
+            rtype = RectangleType.NOT_DETERMINED
+        self.rtype = rtype
 
     def intersection(self, other: 'Rectangle') -> Optional['Rectangle']:
         """Пересечение двух прямоугольников
@@ -191,6 +209,10 @@ class Rectangle:
     def blp(self) -> Point:
         """Нижняя левая вершина"""
         return self._blp
+
+    @blp.setter
+    def blp(self, value):
+        self._blp = value
 
     @property
     def x(self) -> Number:
