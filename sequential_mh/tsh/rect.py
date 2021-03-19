@@ -25,6 +25,8 @@ class RectangleType(Enum):
     EDGE = 'Edge'
     # припуск
     ALLOWANCE = 'Allowance'
+    # торец
+    END = 'End'
     # остаток
     RESIDUAL = 'Residual'
     # не определен
