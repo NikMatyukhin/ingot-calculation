@@ -101,10 +101,21 @@ def main(example):
     H_0 = data['H0']
     H_1 = data['H1']
     hem = data['hem']
+    end = 0.02
+    if hem[0] > 0:
+        y_hem = (hem[0], hem[0])
+    else:
+        y_hem = (end*L_0*H_0 / H_1, end*L_0*H_0 / H_1)
+        print(f'Нижняя кромка: {y_hem[0]}')
+        print(f'Верхняя кромка: {y_hem[1]}')
+    if hem[1] > 0:
+        x_hem = (hem[1], hem[1])
+    else:
+        x_hem = (end * W_0*H_0 / H_1, end * W_0*H_0 / H_1)
     allowance = data['allowance']
     _, main_region, result, _, tailings = bpp_ts(
-        L_0, W_0, H_0, H_1, kit[H_1], hem=hem, allowance=allowance,
-        is_visualize=False
+        L_0, W_0, H_0, H_1, kit[H_1], x_hem=x_hem, y_hem=y_hem,
+        allowance=allowance, is_visualize=True
     )
 
     print(
