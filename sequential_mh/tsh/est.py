@@ -46,7 +46,7 @@ class Estimator:
         self.height = new_height
 
     def cut(self, point=None):
-        x_0, y_0 = self.rectangle.blp
+        x_0, _ = self.rectangle.blp
         if point is None:
             x, y = self.rectangle.trp
         else:
@@ -87,7 +87,7 @@ class Estimator:
         est1 = self.__class__(
             *args, start=Point(self.start.x, y),
             limits=(l_lim, w_lim),
-            x_hem=(self.left_hem, 0), y_hem=(0, self.top_hem)
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         if 0 < self.w_lim < x - self.start.x:
             new_x = min(self.w_lim, x)
@@ -96,7 +96,7 @@ class Estimator:
         est2 = self.__class__(
             *args, start=Point(new_x, self.start.y),
             limits=self.get_new_limits(x, self.start.y),
-            x_hem=(0, self.right_hem), y_hem=self._y_hem
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         # горизонтальный разрез
         if self.w_lim == 0:
@@ -110,12 +110,12 @@ class Estimator:
         est3 = self.__class__(
             *args, start=Point(self.start.x, y),
             limits=self.get_new_limits(self.start.x, y),
-            x_hem=self._x_hem, y_hem=(0, self.top_hem)
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         est4 = self.__class__(
             *args, start=Point(new_x, self.start.y),
             limits=(l_lim, w_lim),
-            x_hem=(0, self.right_hem), y_hem=(self.bottom_hem, 0)
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         return [est1, est2, est3, est4]
 
@@ -139,28 +139,21 @@ class Estimator:
         if width is None or length is None:
             return None
         if with_lim:
+            right_hem, top_hem = self.estimate_hem_end(x, y)
+            if right_hem is None or top_hem is None:
+                return None
             if self.w_lim > 0:
-                # x_lim = self.start.x + self.w_lim + sum(self._x_hem)
-                x_lim = self.start.x + self.w_lim - self.right_hem
-                if x > x_lim:  #  or width - self.right_hem < 0
+                x_lim = self.start.x + self.w_lim
+                if x > x_lim:
                     width = None
-                # else:
-                #     width = min(width - self.right_hem, x_lim - x)
-                elif x + width > x_lim:
-                    width = x_lim - x
-                # else:
-                #     width -= self.right_hem
+                else:
+                    width = min(x_lim - x, width - right_hem)
             if self.l_lim > 0:
-                # y_lim = self.start.y + self.l_lim + sum(self._y_hem)
-                y_lim = self.start.y + self.l_lim - self.top_hem
-                if y > y_lim:  #  or length - self.top_hem < 0
+                y_lim = self.start.y + self.l_lim
+                if y > y_lim:
                     length = None
-                # else:
-                #     length = min(length - self.top_hem, y_lim - y)
-                elif y + length > y_lim:
-                    length = y_lim - y
-                # else:
-                #     length -= self.top_hem
+                else:
+                    length = min(y_lim - y, length - top_hem)
         if width is None or length is None:
             return None
         return width, length
@@ -176,7 +169,8 @@ class Estimator:
         y_est = curve_value(x, y)
         x_est = curve_value(y, x)
         if y_est < 0 or x_est < 0:
-            raise ValueError(f'Точка {x, y} лежит вне области')
+            return None, None
+            # raise ValueError(f'Точка {x, y} лежит вне области')
         x_est_right_hem = x_est - self.right_hem
         x_est_top_hem = curve_value(y + self.top_hem, x)
         y_est_right_hem = curve_value(x + self.right_hem, y)
@@ -184,7 +178,8 @@ class Estimator:
         min_x_est = min(x_est_right_hem, x_est_top_hem)
         min_y_est = min(y_est_right_hem, y_est_top_hem)
         if min_x_est < 0 or min_y_est < 0:
-            raise ValueError(f'Точка {x, y} в области кромки/торца')
+            return None, None
+            # raise ValueError(f'Точка {x, y} в области кромки/торца')
         top_hem = y_est - min_y_est
         right_hem = x_est - min_x_est
         return right_hem, top_hem
@@ -219,12 +214,12 @@ class Estimator:
     @property
     def right_hem(self) -> Number:
         """Правая кромка"""
-        return self._x_hem[0]
+        return self._x_hem[1]
 
     @property
     def left_hem(self) -> Number:
         """Левая кромка"""
-        return self._x_hem[1]
+        return self._x_hem[0]
 
     @property
     def bottom_hem(self) -> Number:
