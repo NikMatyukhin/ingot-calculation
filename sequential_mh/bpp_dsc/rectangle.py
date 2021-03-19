@@ -854,6 +854,7 @@ class Result(ABCKit):
             total_w.append(max([r.x + r.width for r in tailings]))
         self.length = max(total_l)  # + hem[1]
         self.width = max(total_w)   # + hem[0]
+        self.tailings.extend(tailings)
         # self.hem = hem
 
     def qty(self):  # кол-во
