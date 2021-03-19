@@ -81,6 +81,9 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
             elif rect.rtype == RectangleType.RESIDUAL:
                 edgecolor = "k"
                 hatch = r"\\"
+            elif rect.rtype == RectangleType.END:
+                edgecolor = "g"
+                hatch = r"\\"
             else:
                 print(f'---> {rect, rect.rtype}')
                 edgecolor = "r"
