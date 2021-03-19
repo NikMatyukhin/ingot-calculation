@@ -268,7 +268,7 @@ def get_best_fig(rectangles, estimator, src_rect,
     if x0 == 0 and hem[1] > 0:
         # кромка справа и слева
         x0 += hem[1]
-    elif y0 == 0 and hem[0] > 0:
+    if y0 == 0 and hem[0] > 0:
         # кромка сверху и снизу
         y0 += hem[0]
     # для припуска
