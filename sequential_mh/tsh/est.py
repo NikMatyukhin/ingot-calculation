@@ -142,20 +142,52 @@ class Estimator:
             if self.w_lim > 0:
                 # x_lim = self.start.x + self.w_lim + sum(self._x_hem)
                 x_lim = self.start.x + self.w_lim - self.right_hem
-                if x > x_lim:
+                if x > x_lim:  #  or width - self.right_hem < 0
                     width = None
+                # else:
+                #     width = min(width - self.right_hem, x_lim - x)
                 elif x + width > x_lim:
                     width = x_lim - x
+                # else:
+                #     width -= self.right_hem
             if self.l_lim > 0:
                 # y_lim = self.start.y + self.l_lim + sum(self._y_hem)
                 y_lim = self.start.y + self.l_lim - self.top_hem
-                if y > y_lim:
+                if y > y_lim:  #  or length - self.top_hem < 0
                     length = None
+                # else:
+                #     length = min(length - self.top_hem, y_lim - y)
                 elif y + length > y_lim:
                     length = y_lim - y
+                # else:
+                #     length -= self.top_hem
         if width is None or length is None:
             return None
         return width, length
+
+    def estimate_hem_end(self, x, y):
+        def curve_value(x_, y_):
+            return y_1 * x_1 * self.height / (self.g_height * x_) - y_
+        x_1, y_1 = self.tlp.x, self.trp.y
+        if less_or_equal(x, x_1):
+            x = x_1
+        if less_or_equal(y, y_1):
+            y = y_1
+        y_est = curve_value(x, y)
+        x_est = curve_value(y, x)
+        if y_est < 0 or x_est < 0:
+            raise ValueError(f'Точка {x, y} лежит вне области')
+        x_est_right_hem = x_est - self.right_hem
+        x_est_top_hem = curve_value(y + self.top_hem, x)
+        y_est_right_hem = curve_value(x + self.right_hem, y)
+        y_est_top_hem = y_est - self.top_hem
+        min_x_est = min(x_est_right_hem, x_est_top_hem)
+        min_y_est = min(y_est_right_hem, y_est_top_hem)
+        if min_x_est < 0 or min_y_est < 0:
+            raise ValueError(f'Точка {x, y} в области кромки/торца')
+        top_hem = y_est - min_y_est
+        right_hem = x_est - min_x_est
+        return right_hem, top_hem
 
     def get_new_limits(self, x, y):
         if self.l_lim > 0:
