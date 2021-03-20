@@ -1052,8 +1052,9 @@ class CuttingChartNode(Node):
             else:
                 hem = restrictions.get('hem_until_3')
             end = restrictions.get('end', 0)
+            allowance = restrictions.get('allowance', 0)
         else:
-            hem = end = 0
+            hem = end = allowance = 0
         if self.bin.rolldir == Direction.H:
             # ширина, длина
             self.hem = (hem, 0)
@@ -1077,7 +1078,8 @@ class CuttingChartNode(Node):
             group = bin_node.kit[self.bin.d_height]
             src_rect, main_region, result, unplaced, tailings = bpp_ts(
                 bin_node.bin.length, bin_node.bin.width, bin_node.bin.height,
-                bin_node.bin.d_height, group, x_hem=self.x_hem, y_hem=self.y_hem, max_size=None,  # max_size
+                bin_node.bin.d_height, group, x_hem=self.x_hem, y_hem=self.y_hem,
+                allowance=allowance, max_size=None,
                 is_visualize=False
             )
             width, length = main_region.rectangle.trp
