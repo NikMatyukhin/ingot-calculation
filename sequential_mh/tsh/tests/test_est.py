@@ -288,12 +288,12 @@ def test_estimation_with_lim_fail(rect, limit, start, point):
 @pytest.mark.parametrize(
     'rect, limit, start, hem, point, res',
     [
-        [Rectangle((0, 0), (7, 5)), None, None, (1, 0), (1, 1), (9.5, 5.5)],
-        [Rectangle((0, 0), (7, 5)), (7, 9), None, (1, 0), (1, 1), (8, 5)],
-        [Rectangle((0, 0), (7, 5)), (7, 9), (1, 1), (1, 0), (2, 2), (8, 4.5)],
-        [Rectangle((0, 0), (7, 5)), None, (1, 1), (1, 0), (2, 2), (8.5, 4.5)],
-        [Rectangle((0, 0), (7, 5)), None, (1, 1), (1, 1), (2, 2), (7.5, 4.5)],
-        [Rectangle((0, 0), (7, 5)), None, (1, 1), (0, 1), (2, 2), (7.5, 5.5)],
+        [Rectangle((0, 0), (7, 5)), None, None, (1, 0), (1, 1), (7.75, 5.5)],
+        [Rectangle((0, 0), (7, 5)), (7, 9), None, (1, 0), (1, 1), (7.75, 5.5)],
+        [Rectangle((0, 0), (7, 5)), (7, 9), (1, 1), (1, 0), (2, 2), (6.75, 4.5)],
+        [Rectangle((0, 0), (7, 5)), None, (1, 1), (1, 0), (2, 2), (6.75, 4.5)],
+        [Rectangle((0, 0), (7, 5)), None, (1, 1), (1, 1), (2, 2), (5.75, 3.5625)],
+        [Rectangle((0, 0), (7, 5)), None, (1, 1), (0, 1), (2, 2), (7.5, 4.5625)],
     ]
 )
 def test_estimation_with_hem(rect, limit, start, hem, point, res):
@@ -437,3 +437,94 @@ def test_cut_lim_4(limit, expected):
         assert result[i].g_height == exp.g_height
         assert result[i].start == exp.start
         assert result[i].limits == exp.limits
+
+
+@pytest.mark.parametrize(
+    'point',
+    [(7, 5), (0, 0), (8, 6)]
+)
+def test_estimate_hem_end_without(point):
+    """Тестирование кромок/торцов без ограничений"""
+    rect = Rectangle((0, 0), (7, 5))
+    est = Estimator(rect, 3, 1)
+    result = est.estimate_hem_end(*point)
+    assert result == (0, 0)
+
+
+@pytest.mark.parametrize(
+    'x_hem, point, expected',
+    [
+        [(0, 1), (7, 5), (1, 1.875)],
+        [(0, 1), (5, 5), (1, 1.875)],
+        [(0, 1), (7, 3), (1, 1.875)],
+        [(0, 1), (3, 3), (1, 1.875)],
+        [(0, 1), (0, 0), (1, 1.875)],
+        [(0, 1), (7, 7), (1, 1.875)],
+        [(0, 1), (7.3, 5), (1, 1.7329592341970628)],
+        [(0, 1), (8, 6), (1, 1.458333333333334)],
+    ]
+)
+def test_estimate_right_hem(x_hem, point, expected):
+    """Тестирование правой кромки"""
+    rect = Rectangle((0, 0), (7, 5))
+    est = Estimator(rect, 3, 1, x_hem=x_hem)
+    result = est.estimate_hem_end(*point)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    'y_hem, point, expected',
+    [
+        [(0, 1), (7, 5), (3.5, 1)],
+        [(0, 1), (5, 5), (3.5, 1)],
+        [(0, 1), (7, 3), (3.5, 1)],
+        [(0, 1), (3, 3), (3.5, 1)],
+        [(0, 1), (0, 0), (3.5, 1)],
+        [(0, 1), (7, 6), (2.5, 1)],
+        [(0, 1), (7.3, 5), (3.5, 1)],
+        [(0, 1), (8, 6), (2.5, 1)],
+    ]
+)
+def test_estimate_top_hem(y_hem, point, expected):
+    """Тестирование верхней кромки"""
+    rect = Rectangle((0, 0), (7, 5))
+    est = Estimator(rect, 3, 1, y_hem=y_hem)
+    result = est.estimate_hem_end(*point)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    'x_hem, y_hem, point, expected',
+    [
+        [(0, 1), (0, 1), (7, 5), (4.5, 2.875)],
+        [(0, 1), (0, 1), (5, 5), (4.5, 2.875)],
+        [(0, 1), (0, 1), (7, 3), (4.5, 2.875)],
+        [(0, 1), (0, 1), (3, 3), (4.5, 2.875)],
+        [(0, 1), (0, 1), (0, 0), (4.5, 2.875)],
+        [(0, 1), (0, 1), (7, 6), (3.5, 2.875)],
+        [(0, 1), (0, 1), (7.5, 5), (4.5, 2.6470588235294112)],
+        [(0, 1), (0, 1), (14, 5), (4.5, 1.5)],
+        [(0, 1), (0, 1), (8, 6), (3.5, 2.458333333333334)],
+    ]
+)
+def test_estimate_hem_end(x_hem, y_hem, point, expected):
+    """Тестирование верхней и правой кромок"""
+    rect = Rectangle((0, 0), (7, 5))
+    est = Estimator(rect, 3, 1, x_hem=x_hem, y_hem=y_hem)
+    result = est.estimate_hem_end(*point)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    'x_hem, y_hem, point',
+    [
+        [(0, 1), (0, 1), (11, 11)],
+        [(0, 1), (0, 1), (15, 6.5)],
+        [(0, 1), (0, 1), (7.5, 12.5)],
+    ]
+)
+def test_estimate_hem_end_none(x_hem, y_hem, point):
+    """Тестирование верхней и правой кромок"""
+    rect = Rectangle((0, 0), (7, 5))
+    est = Estimator(rect, 3, 1, x_hem=x_hem, y_hem=y_hem)
+    assert est.estimate_hem_end(*point) == (None, None)

@@ -46,7 +46,7 @@ class Estimator:
         self.height = new_height
 
     def cut(self, point=None):
-        x_0, y_0 = self.rectangle.blp
+        x_0, _ = self.rectangle.blp
         if point is None:
             x, y = self.rectangle.trp
         else:
@@ -87,7 +87,7 @@ class Estimator:
         est1 = self.__class__(
             *args, start=Point(self.start.x, y),
             limits=(l_lim, w_lim),
-            x_hem=(self.left_hem, 0), y_hem=(0, self.top_hem)
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         if 0 < self.w_lim < x - self.start.x:
             new_x = min(self.w_lim, x)
@@ -96,7 +96,7 @@ class Estimator:
         est2 = self.__class__(
             *args, start=Point(new_x, self.start.y),
             limits=self.get_new_limits(x, self.start.y),
-            x_hem=(0, self.right_hem), y_hem=self._y_hem
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         # горизонтальный разрез
         if self.w_lim == 0:
@@ -110,12 +110,12 @@ class Estimator:
         est3 = self.__class__(
             *args, start=Point(self.start.x, y),
             limits=self.get_new_limits(self.start.x, y),
-            x_hem=self._x_hem, y_hem=(0, self.top_hem)
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         est4 = self.__class__(
             *args, start=Point(new_x, self.start.y),
             limits=(l_lim, w_lim),
-            x_hem=(0, self.right_hem), y_hem=(self.bottom_hem, 0)
+            x_hem=self._x_hem, y_hem=self._y_hem
         )
         return [est1, est2, est3, est4]
 
@@ -139,23 +139,44 @@ class Estimator:
         if width is None or length is None:
             return None
         if with_lim:
+            right_hem, top_hem = self.estimate_hem_end(x, y)
+            if right_hem is None or top_hem is None:
+                return None
             if self.w_lim > 0:
-                # x_lim = self.start.x + self.w_lim + sum(self._x_hem)
-                x_lim = self.start.x + self.w_lim - self.right_hem
+                x_lim = self.start.x + self.w_lim
                 if x > x_lim:
                     width = None
-                elif x + width > x_lim:
-                    width = x_lim - x
+                else:
+                    width = min(x_lim - x, width - right_hem)
             if self.l_lim > 0:
-                # y_lim = self.start.y + self.l_lim + sum(self._y_hem)
-                y_lim = self.start.y + self.l_lim - self.top_hem
+                y_lim = self.start.y + self.l_lim
                 if y > y_lim:
                     length = None
-                elif y + length > y_lim:
-                    length = y_lim - y
+                else:
+                    length = min(y_lim - y, length - top_hem)
         if width is None or length is None:
             return None
         return width, length
+
+    def estimate_hem_end(self, x, y):
+        def curve_value(x_, y_):
+            return y_1 * x_1 * self.height / (self.g_height * x_) - y_
+        x_1, y_1 = self.tlp.x, self.trp.y
+        if less_or_equal(x, x_1):
+            x = x_1
+        if less_or_equal(y, y_1):
+            y = y_1
+        y_est = curve_value(x, y)
+        x_est = curve_value(y, x)
+        if y_est < 0 or x_est < 0:
+            return None, None
+        min_y_est = curve_value(x + self.right_hem, y + self.top_hem)
+        min_x_est = curve_value(y + self.top_hem, x + self.right_hem)
+        if min_y_est < 0 or min_x_est < 0:
+            return None, None
+        top_hem = y_est - min_y_est
+        right_hem = x_est - min_x_est
+        return right_hem, top_hem
 
     def get_new_limits(self, x, y):
         if self.l_lim > 0:
@@ -187,12 +208,12 @@ class Estimator:
     @property
     def right_hem(self) -> Number:
         """Правая кромка"""
-        return self._x_hem[0]
+        return self._x_hem[1]
 
     @property
     def left_hem(self) -> Number:
         """Левая кромка"""
-        return self._x_hem[1]
+        return self._x_hem[0]
 
     @property
     def bottom_hem(self) -> Number:
