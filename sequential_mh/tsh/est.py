@@ -170,16 +170,10 @@ class Estimator:
         x_est = curve_value(y, x)
         if y_est < 0 or x_est < 0:
             return None, None
-            # raise ValueError(f'Точка {x, y} лежит вне области')
-        x_est_right_hem = x_est - self.right_hem
-        x_est_top_hem = curve_value(y + self.top_hem, x)
-        y_est_right_hem = curve_value(x + self.right_hem, y)
-        y_est_top_hem = y_est - self.top_hem
-        min_x_est = min(x_est_right_hem, x_est_top_hem)
-        min_y_est = min(y_est_right_hem, y_est_top_hem)
-        if min_x_est < 0 or min_y_est < 0:
+        min_y_est = curve_value(x + self.right_hem, y + self.top_hem)
+        min_x_est = curve_value(y + self.top_hem, x + self.right_hem)
+        if min_y_est < 0 or min_x_est < 0:
             return None, None
-            # raise ValueError(f'Точка {x, y} в области кромки/торца')
         top_hem = y_est - min_y_est
         right_hem = x_est - min_x_est
         return right_hem, top_hem
