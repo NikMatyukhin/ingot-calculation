@@ -2,10 +2,9 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum
 from dataclasses import dataclass
-# from locale import currency
 from operator import attrgetter, itemgetter
 from itertools import groupby, product, chain
-from typing import Optional, Protocol, Union, Type
+from typing import Optional, Union, Type
 
 from .support import is_subrectangle, deformation
 from .exception import DirectionError, SizeError, MaterialError
@@ -480,8 +479,8 @@ class UnsizedBin(Bin):
         # if len(self.deformations) == 2:
         #     msg = 'Превышено количество деформаций. Допустимо 2 деформации'
         #     raise ValueError(msg)
-        if self.last_rolldir is None:
-            self.last_rolldir = def_dir[1]
+        # if self.last_rolldir is None:
+        self.last_rolldir = def_dir[1]
         self.deformations.append(def_dir)
 
     def last_deformations(self):

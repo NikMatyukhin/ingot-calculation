@@ -7,6 +7,7 @@
 """
 
 from collections import deque
+from logging import root
 
 from .tree import Operations, is_cc_node, is_op_node, is_adj_node, is_ubin_node
 
@@ -72,7 +73,10 @@ def _stmh_idrd(tree, local=False, restrictions=None):
         # 1) Фильтрация узлов (пустой набор для бинов и карт; проверка
         #       размеров для бинов и карт (если у карт не хватает места
         #       - удаление группы толщины))
-        level = [node for node in level if not is_empty_node(node)]
+        level = [
+            node for node in level 
+            if not is_empty_node(node) and node in tree.root.leaves()
+        ]
         if not level:
             break
         # 2) Сортировка по приоритету, толщине и типу (узлы карт должны
@@ -103,7 +107,7 @@ def _pack(node, level, restrictions):
         else:
             height = node.bin.height
         if max_size:
-            max_size = max_size[height > 3]
+            max_size = max_size[height >= 3]
     else:
         max_len = None
         max_size = None
@@ -122,44 +126,54 @@ def _pack(node, level, restrictions):
         # 4.4.1) получить узел карты из соседне ветки
         adj_cc_node = adj_branch.cc_leaves[0]
         cur_branch = node.current_branch()
+        rolling_node = cur_branch.parent
         # 4.4.2) упаковать (проверка набора на пустоту внутри
         # метода pack)
         node.pack(max_size=max_size, restrictions=restrictions)
         adj_cc_node.pack(max_size=max_size, restrictions=restrictions)
+        # if cur_branch.parent:
+        #     rolling_node = cur_branch.parent
+        # else:
+        #     rolling_node = adj_cc_node.parent
+        # rolling_node = cur_branch.parent
 
-        rolling_node = cur_branch.parent
+        if len(rolling_node.list_of_children()) != 2:
+            if adj_branch is rolling_node.children:
+                adj_cc_node.update_size(max_len=max_len)
+            if cur_branch is rolling_node.children:
+                node.update_size(max_len=max_len)
+        else:
+            rolling_node.delete(adj_branch)
+            rolling_node.parent.parent.update_size(max_len=max_len)
+            print(node.result.total_efficiency(*node.bin.size[:2]))
+            rolling_node.direction = None
 
-        rolling_node.delete(adj_branch)
-        rolling_node.parent.parent.update_size(max_len=max_len)
-        print(node.result.total_efficiency(*node.bin.size[:2]))
-        rolling_node.direction = None
+            rolling_node.delete(cur_branch)
+            rolling_node.add(adj_branch)
+            # adj_branch.update_size(max_len=max_len)
+            rolling_node.parent.parent.update_size(max_len=max_len)
+            print(adj_cc_node.result.total_efficiency(*adj_cc_node.bin.size[:2]))
+            rolling_node.direction = None
+            rolling_node.add(cur_branch)
 
-        rolling_node.delete(cur_branch)
-        rolling_node.add(adj_branch)
-        # adj_branch.update_size(max_len=max_len)
-        rolling_node.parent.parent.update_size(max_len=max_len)
-        print(adj_cc_node.result.total_efficiency(*adj_cc_node.bin.size[:2]))
-        rolling_node.direction = None
-        rolling_node.add(cur_branch)
-
-        # 4.4.3) выбрать ветку с минимальной эффективностью
-        # (приоритет отдавать веткам с горизонтальным прокатом)
-        branches = [(cur_branch, node), (adj_branch, adj_cc_node)]
-        min_branch = min(
-            reversed(branches),
-            key=lambda item: potential_efficiency(item[1])
-        )
-        # 4.4.4) выбрать ветку с максимальной эффективностью
-        max_branch = max(
-            branches,
-            key=lambda item: potential_efficiency(item[1])
-        )
-        # 4.4.5) удалить ветку с минимальной эффективностью из
-        # дерева и ее узел из уровня
-        if min_branch[1] in level:
-            level.remove(min_branch[1])
-        min_branch[0].parent.delete(min_branch[0])
-        max_branch[1].update_size(max_len=max_len)
+            # 4.4.3) выбрать ветку с минимальной эффективностью
+            # (приоритет отдавать веткам с горизонтальным прокатом)
+            branches = [(cur_branch, node), (adj_branch, adj_cc_node)]
+            min_branch = min(
+                reversed(branches),
+                key=lambda item: potential_efficiency(item[1])
+            )
+            # 4.4.4) выбрать ветку с максимальной эффективностью
+            max_branch = max(
+                branches,
+                key=lambda item: potential_efficiency(item[1])
+            )
+            # 4.4.5) удалить ветку с минимальной эффективностью из
+            # дерева и ее узел из уровня
+            if min_branch[1] in level:
+                level.remove(min_branch[1])
+            min_branch[0].parent.delete(min_branch[0])
+            max_branch[1].update_size(max_len=max_len)
 
 
 def _create_insert_template(node, level, tree, local, restrictions):

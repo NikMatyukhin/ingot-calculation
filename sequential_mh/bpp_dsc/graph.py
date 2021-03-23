@@ -36,7 +36,9 @@ def plot(root, filename):
             new_level.extend(node.list_of_children())
             name = create_name(node)
             color = 'lightblue'
-            if isinstance(node, BinNode):
+            if node.locked:
+                color = 'gray'
+            elif isinstance(node, BinNode):
                 if node.bin.bin_type in (BinType.ingot, BinType.adjacent):
                     color = 'orange'
                 else:
