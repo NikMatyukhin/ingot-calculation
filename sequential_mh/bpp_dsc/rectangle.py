@@ -26,6 +26,7 @@ class BinType(Enum):
     waste = 'Отходы'
     residue = 'Остаток'
     # unsizedbin = 'Лист с неопр. размерами'
+    INTERMEDIATE = 'Промежуточный'
 
 
 class Rectangle3d:
@@ -717,6 +718,7 @@ class Kit(ABCKit):
     def separate(self, height: Number):
         blanks = deepcopy(self.blanks)
         new_kit = self.__class__({height: blanks.pop(height)})
+        # new_kit = self.__class__({h: blanks.pop(h) for h in self.keys() if h <= height})
         residual_kit = self.__class__(blanks)
         return new_kit, residual_kit
 
@@ -780,7 +782,9 @@ class Kit(ABCKit):
 
     def qty_blank(self, blank):
         if blank.height in self.blanks and blank.priority in self.blanks[blank.height]:
-            return sum(item.eq_rot(blank) for item in self.blanks[blank.height][blank.priority])
+            return sum(
+                item.eq_rot(blank) for item in self.blanks[blank.height][blank.priority]
+            )
         return 0
 
     def delete_height(self, height):
@@ -798,9 +802,12 @@ class Kit(ABCKit):
     @property
     def total_mass(self) -> Number:
         return sum(o.mass for o in self)
-    
+
     def items(self):
         return self.blanks.items()
+
+    def keys(self):
+        return self.blanks.keys()
 
     def __getitem__(self, key):
         return self.blanks[key]
