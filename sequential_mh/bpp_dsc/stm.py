@@ -7,9 +7,12 @@
 """
 
 from collections import deque
-from logging import root
+from operator import itemgetter
 
-from .tree import Operations, is_cc_node, is_op_node, is_adj_node, is_ubin_node
+from .tree import (
+    Operations, is_cc_node, is_ingot_node, is_op_node, is_adj_node,
+    is_ubin_node, is_imt_node
+)
 
 
 def is_zero_size(length, width, height):
@@ -53,8 +56,8 @@ def get_unpacked_item(parent, node):
     return add_detail
 
 
-def stmh_idrd(tree, sorting='width', rf=None):
-    pass
+# def stmh_idrd(tree, sorting='width', rf=None):
+#     pass
 
 
 def _stmh_idrd(tree, local=False, restrictions=None):
@@ -74,7 +77,7 @@ def _stmh_idrd(tree, local=False, restrictions=None):
         #       размеров для бинов и карт (если у карт не хватает места
         #       - удаление группы толщины))
         level = [
-            node for node in level 
+            node for node in level
             if not is_empty_node(node) and node in tree.root.leaves()
         ]
         if not level:
@@ -145,14 +148,14 @@ def _pack(node, level, restrictions):
         else:
             rolling_node.delete(adj_branch)
             rolling_node.parent.parent.update_size(max_len=max_len)
-            print(node.result.total_efficiency(*node.bin.size[:2]))
+            # print(node.result.total_efficiency(*node.bin.size[:2]))
             rolling_node.direction = None
 
             rolling_node.delete(cur_branch)
             rolling_node.add(adj_branch)
             # adj_branch.update_size(max_len=max_len)
             rolling_node.parent.parent.update_size(max_len=max_len)
-            print(adj_cc_node.result.total_efficiency(*adj_cc_node.bin.size[:2]))
+            # print(adj_cc_node.result.total_efficiency(*adj_cc_node.bin.size[:2]))
             rolling_node.direction = None
             rolling_node.add(cur_branch)
 
@@ -177,12 +180,16 @@ def _pack(node, level, restrictions):
 
 
 def _create_insert_template(node, level, tree, local, restrictions):
+    # print('*' * 50)
     if restrictions:
         max_len = restrictions.get('cutting_length')
+        cut_thickness = restrictions.get('cutting_thickness')
     else:
         max_len = None
+        cut_thickness = None
     # 5.2) получить неупакованную толщину (уже получена из сортировки)
     height, _ = node.kit.hp_sequence()[0]
+    max_heigh = max(node.kit.hp_sequence(), key=itemgetter(0))[0]
     # 5.3) получить место вставки
     #    (а) получить корень шаблона;
     #    (б) получить толщину шаблона;
@@ -190,11 +197,17 @@ def _create_insert_template(node, level, tree, local, restrictions):
     #    с использованием корня шаблона как текущего узла
     #    (г) вернуть узел для вставки
     new_parent = node.insertion_point(height)
-    if new_parent is not tree.root:
+    if new_parent is not tree.root and not is_imt_node(new_parent):
         new_parent.parent.transfer_size(to_right=False)
     if new_parent.size_check(height):
         # 5.4) создание шаблона с корнем в месте вставки
-        children = tree.create_template(new_parent, height)
+        if new_parent is tree.root and is_ingot_node(new_parent) and cut_thickness > max_heigh:
+            height = cut_thickness
+        else:
+            cut_thickness = None
+        children = tree.create_template(
+            new_parent, height, cut_thickness=cut_thickness
+        )
         if local:
             if new_parent.children.operation == Operations.cutting:
                 # доупаковка при дочернем разреза
