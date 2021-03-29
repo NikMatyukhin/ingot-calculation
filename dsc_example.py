@@ -36,13 +36,13 @@ def main(use_graphviz=False):
         (420, 170, 1., 1),
     ]
     restrictions = {
-        # 'max_size': ((380, 1200), (400, 1200)),  # <= 3, > 3
-        # 'end': 0.02,  # обработка торцов листа, в долях
+        'max_size': ((1200, 380), (1200, 400)),  # < 3, >= 3
         'cutting_length': 1200,  # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
         'hem_until_3': 10,  # кромка > 3 мм
         'hem_after_3': 5,  # кромка <= 3 мм
-        'allowance': 5,  # припуски на разрез
-        'end': 0.02,  # торцы в процентах от длины
+        'allowance': 2,  # припуски на разрез
+        'end': 0.02,  # обработка торцов листа, в долях от длины
     }
     kit = []
     for item in data:
@@ -55,11 +55,12 @@ def main(use_graphviz=False):
     tree = _stmh_idrd(tree, restrictions=restrictions)
     print(f'{root.estimate_size() = }')
 
-    # graph1, all_nodes1 = plot(tree.root, 'graph1.gv')
-    # create_edges(tree.root, graph1, all_nodes1)
-    # graph1.view()
+    if use_graphviz:
+        graph1, all_nodes1 = plot(tree.root, 'pdf/graph1.gv')
+        create_edges(graph1, all_nodes1)
+        graph1.view()
 
-    efficiency, res, nodes = optimal_configuration(tree, nd=False)
+    efficiency, res, nodes = optimal_configuration(tree, nd=True)
     res.update_size()
 
     for node in res.cc_leaves:
@@ -69,6 +70,11 @@ def main(use_graphviz=False):
         )
         main_region = Estimator(main_rect, node.bin.height, node.bin.height)
         rectangles = chain.from_iterable(node.result.blanks.values())
+        print(f'Карта толщины: {node.bin.height}')
+        print(f'Прокат: {node.bin.last_rolldir}')
+        print(f'Bin ID: {node._id}')
+        if hasattr(node, 'x_hem'):
+            print(f'{node.x_hem = }')
         visualize(
             main_region, rectangles, node.result.tailings,
             xlim=node.bin.width + 50, ylim=node.bin.length + 50
@@ -86,5 +92,5 @@ def main(use_graphviz=False):
 
 
 if __name__ == '__main__':
-    USE_GRAPHVIZ = False
+    USE_GRAPHVIZ = True
     main(USE_GRAPHVIZ)
