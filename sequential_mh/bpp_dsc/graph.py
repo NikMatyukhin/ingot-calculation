@@ -85,6 +85,8 @@ def create_name(node, kit=False) -> str:
             f'{node.bin.length:.1f}x{node.bin.width:.1f}x{node.bin.height:.1f}'
             f'\n{node.bin.bin_type.value}\n'
         )
+        if isinstance(node.bin, UnsizedBin):
+            name += f'{node.bin.deformations}\n{node.bin.d_height}'
         if kit:
             name += f'{node.kit}'
     elif isinstance(node, CuttingChartNode):
