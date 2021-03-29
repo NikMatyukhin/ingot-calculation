@@ -177,37 +177,17 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
     """
     best_rect = []
     if first_priority:
-        v, b = get_best_fig(length, width, rectangles[first_priority])
-        if v < 5:
-            best_rect.append((b, first_priority, v))
+        variant, best = get_best_fig(length, width, rectangles[first_priority])
+        if variant < 5:
+            best_rect.append((best, first_priority, variant))
     else:
-        for p, group in rectangles.items():
-            v, b = get_best_fig(length, width, group)
-            if v < 5:
-                best_rect.append((b, p, v))
+        for priority, group in rectangles.items():
+            variant, best = get_best_fig(length, width, group)
+            if variant < 5:
+                best_rect.append((best, priority, variant))
 
     best_rect.sort(key=lambda x: (x[2], x[1]))
 
-    # for best, p, variant in best_rect:
-    #     if variant >= 5:
-    #         if not soft_type:
-    #             dummy = create_residual(x, y, length, width)
-    #             tailings.append(dummy)
-    #         else:
-    #             max_length, max_width = length, width
-    #             if soft_type in (1, 3) and k > 0:
-    #                 max_length = length * (1 + k)
-    #             if soft_type in (2, 3) and k > 0:
-    #                 max_width = width * (1 + k)
-    #             res = get_best_fig_with_soft_sizes(
-    #                 length, width, max_length, max_width,
-    #                 list(chain.from_iterable(rectangles.values()))
-    #             )
-    #             print(f'Выбор через мягкие размеры {res}')
-    #             dummy = create_residual(x, y, length, width)
-    #             tailings.append(dummy)
-    #     else:  # if variant < 5
-    #         # omega, d = best.size[:-1]
     if not best_rect:
         if not soft_type:
             dummy = create_residual(x, y, length, width)
@@ -218,16 +198,16 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
                 max_length = length * (1 + k)
             if soft_type in (2, 3) and k > 0:
                 max_width = width * (1 + k)
-            p, best = get_best_fig_with_soft_sizes(
-                length, width, max_length, max_width,
-                list(chain.from_iterable([zip_longest([k], v, fillvalue=k) for k, v in rectangles.items()]))
-                # list(chain.from_iterable(rectangles.values()))
+            rectangles_list = list(chain.from_iterable(
+                [zip_longest([k], v, fillvalue=k) for k, v in rectangles.items() if v]
+            ))
+            priority, best = get_best_fig_with_soft_sizes(
+                length, width, max_length, max_width, rectangles_list
             )
             if best:
-                if p not in result:
-                    result[p] = []
-                result[p].append(PackedRectangle(best, x, y))
-                print(f'Выбор через мягкие размеры {best}')
+                if priority not in result:
+                    result[priority] = []
+                result[priority].append(PackedRectangle(best, x, y))
             else:
                 dummy = create_residual(x, y, length, width)
                 tailings.append(dummy)
@@ -329,8 +309,6 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
                     tailings, allowance, first_priority=first_priority
                 )
             else:
-                # x, new_y, new_length, _ = create_tailing(x, new_y, allowance, new_length, omega, tailings)
-                # new_x, y, _, new_width = create_tailing(new_x, y, allowance, length, new_width, tailings, False)
                 if new_length > allowance:
                     dummy = create_allowance(x, new_y, allowance, omega)
                     new_y += allowance
@@ -350,11 +328,11 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
                     result, tailings, allowance,
                     first_priority=first_priority
                 )
-            # break
 
 
-def get_best_fig_with_soft_sizes(length, width, max_length, max_width, rectangles):
-    orientation, best = None, None
+def get_best_fig_with_soft_sizes(length, width, max_length, max_width,
+                                 rectangles):
+    priority, orientation, best = None, None, None
     min_square = -1
     for p, rect in rectangles:
         size = rect.size[:-1]
@@ -366,13 +344,15 @@ def get_best_fig_with_soft_sizes(length, width, max_length, max_width, rectangle
             inter = intersection((length, width), (rect_l, rect_w))
             current = rect_w * rect_l - inter[0] * inter[1]
             if min_square == -1:
+                priority = p
                 min_square, orientation, best = current, j, rect
             else:
                 if min_square > current:
+                    priority = p
                     min_square, orientation, best = current, j, rect
     if best and orientation != 0 and best.is_rotatable:
         best.rotate()
-    return p, best
+    return priority, best
 
 
 def create_tailing(x, y, allowance, length, width, tailings, is_horizontal=True):
@@ -436,13 +416,8 @@ def get_best_fig(length, width, rectangles):
 
 
 def intersection(rect_a, rect_b):
-    # a, b = self, other
     length_a, width_a = rect_a
     length_b, width_b = rect_b
-    # x1 = max(min(0, width_a), min(0, width_b))
-    # y1 = max(min(0, length_a), min(0, length_b))
     width = min(max(0, width_a), max(0, width_b))
     length = min(max(0, length_a), max(0, length_b))
-    # if x1<x2 and y1<y2:
-    #     return type(self)(x1, y1, x2, y2)
     return length, width
