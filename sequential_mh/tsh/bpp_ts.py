@@ -270,14 +270,19 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
             # правая кромка/торец
             dummy = Rectangle.create_by_size(min_rect.brp, min_rect.length, x_hem[1])
             all_tailings.append(dummy)
-            new_min_rect = min_enclosing_rect((min_rect, dummy))
-            main_region.update(new_min_rect, with_lim=False)
+            # new_min_rect = min_enclosing_rect((min_rect, dummy))
+            # main_region.update(new_min_rect, with_lim=False)
+            min_rect = min_enclosing_rect((min_rect, dummy))
+            main_region.update(min_rect, with_lim=False)
         if y_hem[1] > 0:
             # верхняя кромка/торец
-            dummy = Rectangle.create_by_size(min_rect.tlp, y_hem[1], min_rect.width + x_hem[1])
+            # dummy = Rectangle.create_by_size(min_rect.tlp, y_hem[1], min_rect.width + x_hem[1])
+            dummy = Rectangle.create_by_size(min_rect.tlp, y_hem[1], min_rect.width)
             all_tailings.append(dummy)
-            new_min_rect = min_enclosing_rect((min_rect, dummy))
-            main_region.update(new_min_rect, with_lim=False)
+            # new_min_rect = min_enclosing_rect((min_rect, dummy))
+            # main_region.update(new_min_rect, with_lim=False)
+            min_rect = min_enclosing_rect((min_rect, dummy))
+            main_region.update(min_rect, with_lim=False)
 
     if main_region.rectangle != src_rect:
         rect = min_enclosing_rect((main_region.rectangle, src_rect))
@@ -285,7 +290,7 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
             main_region.update(rect, with_lim=False)
 
     print(f'Остатки: {all_tailings}')
-    return src_rect, main_region, result, unplaced, all_tailings
+    return src_rect, main_region, min_rect, result, unplaced, all_tailings
 
 
 def get_best_fig(rectangles, estimator, src_rect,

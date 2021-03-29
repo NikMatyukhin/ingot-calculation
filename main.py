@@ -113,11 +113,12 @@ def main(example):
     else:
         x_hem = (end * W_0*H_0 / H_1, end * W_0*H_0 / H_1)
     allowance = data['allowance']
-    _, main_region, result, _, tailings = bpp_ts(
+    _, main_region, min_rect, result, _, tailings = bpp_ts(
         L_0, W_0, H_0, H_1, kit[H_1], x_hem=x_hem, y_hem=y_hem,
         allowance=allowance, is_visualize=False
     )
 
+    print(f'Используемый прямоугольник: {min_rect.length, min_rect.width}')
     print(
         f'Количество размещенных заготовок: {len(result)}/{len(data["kit"])}'
     )

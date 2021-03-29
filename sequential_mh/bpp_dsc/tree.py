@@ -602,7 +602,6 @@ class BinNode(Node):
                 height = self.bin.d_height
                 if last_rolldir == Direction.H:
                     width += dist[0]
-                    # FIXME: доделать удаление текущей ветки
                     if max_size and (length > max_size[WIDTH] or width > max_size[LENGTH]):
                         self.locked = True
                         node = self.delete_branch()
@@ -619,7 +618,6 @@ class BinNode(Node):
                         return
                 else:
                     length += dist[1]
-                    # FIXME: доделать удаление текущей ветки
                     if max_size and (width > max_size[WIDTH] or length > max_size[LENGTH]):
                         self.locked = True
                         node = self.delete_branch()
@@ -1322,13 +1320,14 @@ class CuttingChartNode(Node):
 
         if isinstance(self.bin, UnsizedBin):
             group = bin_node.kit[self.bin.d_height]
-            src_rect, main_region, result, unplaced, tailings = bpp_ts(
+            _, main_region, min_rect, result, unplaced, tailings = bpp_ts(
                 bin_node.bin.length, bin_node.bin.width, bin_node.bin.height,
                 bin_node.bin.d_height, group, x_hem=self.x_hem, y_hem=self.y_hem,
                 allowance=allowance, max_size=max_size,
                 is_visualize=False
             )
-            width, length = main_region.rectangle.trp
+            # width, length = main_region.rectangle.trp
+            width, length = min_rect.width, min_rect.length
             # width += self.hem[Direction.V.value[0]]
             # length += self.hem[Direction.H.value[0]]
             self.bin = Bin(
@@ -1379,6 +1378,8 @@ class CuttingChartNode(Node):
             if cutting_node is None:
                 return
             cutting_node.update_size(start=self, max_len=max_len)
+        if self.parent_bnode is None:
+            return
         parent_size = self.parent_bnode.bin.size
         self.bin.length = parent_size[LENGTH]
         self.bin.width = parent_size[WIDTH]
