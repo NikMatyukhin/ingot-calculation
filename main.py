@@ -28,7 +28,7 @@ def example_1():
         'H0': 23,
         'H1': 3,
         'hem': (0, 5),
-        'allowance': 5,
+        'allowance': 2,
     }
     return data
 
@@ -95,7 +95,7 @@ def main(example):
     for item in data['kit']:
         kit.append(Blank(*item, material=material))
     kit = Kit(kit)
-    kit.sort(sorting='length')
+    kit.sort(sorting='width')
     L_0 = data['L0']
     W_0 = data['W0']
     H_0 = data['H0']
@@ -115,13 +115,20 @@ def main(example):
     allowance = data['allowance']
     _, main_region, result, _, tailings = bpp_ts(
         L_0, W_0, H_0, H_1, kit[H_1], x_hem=x_hem, y_hem=y_hem,
-        allowance=allowance, is_visualize=True
+        allowance=allowance, is_visualize=False
     )
 
     print(
         f'Количество размещенных заготовок: {len(result)}/{len(data["kit"])}'
     )
     print(f'Количество остатков: {len(tailings)}')
+
+    volume_ingot = L_0 * W_0 * H_0
+    volume_blanks = sum(r.rectangle.volume for r in result)
+    volume_tailings = sum(r.square * H_1 for r in tailings)
+    print(f'Эффективность: {volume_blanks / volume_ingot}')
+    print(f'Объем отходов: {volume_tailings / volume_ingot}')
+    print(f'Неиспользуемые части: {(volume_ingot - volume_blanks - volume_tailings) / volume_blanks}')
 
     visualize(
         main_region, result, tailings,
