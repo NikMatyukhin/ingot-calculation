@@ -165,6 +165,18 @@ class Direction(Enum):
     V = 0, 'вертикальное'
     H = 1, 'горизонтальное'
 
+    def __new__(cls, *args, **kwargs):
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    def __init__(self, code, name=None):
+        self.code = code
+        if code == 0:
+            self._name_ = 'вертикальное'
+        else:
+            self._name_ = 'горизонтальное'
+
 
 class Bin(BaseBin):
     """Класс листа-контейнера
