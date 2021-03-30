@@ -58,9 +58,8 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
         if not all_regions:
             unplaced.extend(dict_to_list(rectangles))
             break
-        for i, region in enumerate(all_regions):
+        for _, region in enumerate(all_regions):
             sort(rectangles, sorting='width')
-            print(f'стартовая точка региона {i}: {region.start}')
             tailings = []
             if first_priority:
                 for_packing = rectangles[first_priority]
@@ -205,41 +204,29 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
                     else:
                         _mrect = new_min_rect
                     if main_region(*_mrect.trp):
-                        # placed_blanks = list(chain.from_iterable(res.values()))
                         if placed_blanks:
-                            # usable_square += sum(b.blank.area for b in placed_blanks)
                             _usable_square += sum(b.rectangle.area for b in placed_blanks)
-                            # usable_square += sum(r.square for r in tailings if r.rtype != RectangleType.RESIDUAL)
                             _usable_square += sum(r.square for r in _tailings if r.rtype != RectangleType.RESIDUAL)
                         ef = (usable_square + _usable_square) / _mrect.square
                         if main_region(*_mrect.trp):
                             _results.append((ef, placed_blanks, _mrect, _tailings, _usable_square))
-                        print(f'Эффективность: {ef}')
                 _, res, _mrect, _tailings, _usable_square = max(_results, key=itemgetter(0))
                 usable_square += _usable_square
                 new_min_rect = _mrect
                 tailings.extend(_tailings)
                 blanks.extend(res)
-                # else:
-                #     tailings.append(Rectangle.create_by_size(
-                #         empty_rect.blp, empty_rect.length, empty_rect.width
-                #     ))
             status = StateLayout(
                 blanks, [], tailings, new_min_rect,
                 usable_square / square,  intersection_square,
                 new_min_rect.min_side / new_min_rect.max_side
             )
             layout_options.append(status)
-            print(f'Остатки региона {i}: {tailings}')
-            print(f'Кол-во заготовок региона {i}: {len(blanks)}')
-            print('-' * 25)
         # выбрать вариант размещения
         layout = max(
             enumerate(layout_options), key=lambda item: (item[1].efficiency,
                                               item[1].inters_square,
                                               item[1].aspect_ratio)
         )
-        print('Выбор:', layout[0])
         layout = layout[1]
         # добавляю размещенные заготовки в результат
         result.extend(layout.blanks)
@@ -255,7 +242,6 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
         if min_rect.length > 0 and min_rect.width > 0:
             main_region.update(min_rect)
         # обновить регионы
-        print(f'Точка реза: {min_rect.trp}')
         all_regions = main_region.cut(point=min_rect.trp)
 
         if is_visualize:
@@ -263,24 +249,18 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
             w_max = width * height / g_height
             visualize(main_region, result, all_tailings,
                       xlim=w_max, ylim=l_max)
-        print('-' * 78)
 
     if min_rect.length > 0 and min_rect.width > 0:
         if x_hem[1] > 0:
             # правая кромка/торец
             dummy = Rectangle.create_by_size(min_rect.brp, min_rect.length, x_hem[1])
             all_tailings.append(dummy)
-            # new_min_rect = min_enclosing_rect((min_rect, dummy))
-            # main_region.update(new_min_rect, with_lim=False)
             min_rect = min_enclosing_rect((min_rect, dummy))
             main_region.update(min_rect, with_lim=False)
         if y_hem[1] > 0:
             # верхняя кромка/торец
-            # dummy = Rectangle.create_by_size(min_rect.tlp, y_hem[1], min_rect.width + x_hem[1])
             dummy = Rectangle.create_by_size(min_rect.tlp, y_hem[1], min_rect.width)
             all_tailings.append(dummy)
-            # new_min_rect = min_enclosing_rect((min_rect, dummy))
-            # main_region.update(new_min_rect, with_lim=False)
             min_rect = min_enclosing_rect((min_rect, dummy))
             main_region.update(min_rect, with_lim=False)
 
@@ -288,17 +268,12 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
         rect = min_enclosing_rect((main_region.rectangle, src_rect))
         if rect.length > 0 and rect.width > 0:
             main_region.update(rect, with_lim=False)
-
-    print(f'Остатки: {all_tailings}')
     return src_rect, main_region, min_rect, result, unplaced, all_tailings
 
 
 def get_best_fig(rectangles, estimator, src_rect,
                  hem, allowance=0, x0=0, y0=0):
     priority, orientation, best = 16, None, None
-    # w_0 = estimator.min_width
-    # l_0 = estimator.min_length
-    # w_max = estimator.max_width
     w_0 = estimator.min_width_lim
     l_0 = estimator.min_length_lim
     w_max = estimator.max_width_lim
@@ -321,11 +296,9 @@ def get_best_fig(rectangles, estimator, src_rect,
             trp = estimator.rectangle.trp
             estimate_point = max(x0 + rect_w, trp.x), max(y0 + rect_l, trp.y)
             if estimator(*estimate_point) is None:
-                # priority, orientation, best = 15, j, rect
                 continue
             dist = estimator(x0 + rect_w, y0)
             if dist is None:
-                # priority, orientation, best = 15, j, rect
                 continue
             _, l_max = dist
 
