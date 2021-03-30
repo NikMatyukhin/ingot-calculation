@@ -1358,17 +1358,19 @@ class CuttingChartNode(Node):
             self.hem = (hem, 0)
             # self.hem = (0, hem)
             self.y_hem = (hem, hem)
+            x_hem = end * length if end * length <= 30 else 30
             if bin_node.parent.direction == Direction.H:
-                self.x_hem = (end * length, 0)
+                self.x_hem = (x_hem, 0)
             else:
-                self.x_hem = (end * length, end * length)
+                self.x_hem = (x_hem, x_hem)
         else:
             self.hem = (0, hem)
             self.x_hem = (hem, hem)
+            y_hem = end * width if end * width <= 30 else 30
             if bin_node.parent.direction == Direction.H:
-                self.y_hem = (end * width, 0)
+                self.y_hem = (y_hem, 0)
             else:
-                self.y_hem = (end * width, end * width)
+                self.y_hem = (y_hem, y_hem)
 
         if isinstance(self.bin, UnsizedBin):
             group = bin_node.kit[self.bin.d_height]
