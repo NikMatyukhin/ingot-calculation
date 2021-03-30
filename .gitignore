@@ -108,7 +108,7 @@ dmypy.json
 *.gv
 *.pdf
 
-*.sqdbpro
+*.sqbpro
 *.ui
 *.qrc
 
