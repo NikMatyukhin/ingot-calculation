@@ -77,13 +77,13 @@ def main(example, use_graphviz=False):
             f'Доступны примеры с номерами от {1} до {len(EXAMPLES)}'
         )
     restrictions = {
-        'max_size': data.pop('max_size'),
-        'cutting_length': data.pop('cutting_length'),
-        'cutting_thickness': data.pop('cutting_thickness'),
-        'hem_until_3': data.pop('hem_until_3'),
-        'hem_after_3': data.pop('hem_after_3'),
-        'allowance': data.pop('allowance'),
-        'end': data.pop('end'),
+        'max_size': data.get('max_size'),
+        'cutting_length': data.get('cutting_length'),
+        'cutting_thickness': data.get('cutting_thickness'),
+        'hem_until_3': data.get('hem_until_3'),
+        'hem_after_3': data.get('hem_after_3'),
+        'allowance': data.get('allowance'),
+        'end': data.get('end'),
     }
     kit = []
     for item in data['kit']:
@@ -134,5 +134,5 @@ def main(example, use_graphviz=False):
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 1
+    NUMBER = 2
     main(NUMBER, USE_GRAPHVIZ)
