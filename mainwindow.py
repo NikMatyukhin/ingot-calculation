@@ -1,4 +1,7 @@
 import sys
+from typing import Iterable, Union
+from itertools import chain
+from operator import itemgetter
 
 from PySide6.QtCore import (Qt, QSettings)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QTableWidget,
@@ -9,6 +12,14 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QTableWidget,
 from gui import ui_mainwindow
 from gui.ui_functions import *
 
+from sequential_mh.bpp_dsc.rectangle import (
+    Direction, Material, Blank, Kit, Bin
+)
+from sequential_mh.bpp_dsc.tree import (
+    BinNode, Tree, optimal_configuration, solution_efficiency
+)
+from sequential_mh.bpp_dsc.stm import _stmh_idrd
+
 from section import Section
 from plate import Plate
 from service import StandardDataService, OrderDataService
@@ -16,6 +27,11 @@ from page import OrderPage
 from dialogs import NewOrderDialog, CloseOrderDialog
 from catalog import Catalog
 from settings import Settings
+
+
+Number = Union[int, float]
+Sizes = tuple[Number, Number, Number]
+ListSizes = list[Sizes]
 
 
 class MainWindow (QMainWindow):
@@ -190,6 +206,22 @@ class MainWindow (QMainWindow):
         ingots = OrderDataService.ingots({'order_id': id})
         complects = OrderDataService.complects({'order_id': id})
 
+        # пока работаем только с одном слитком
+        # print(ingots[0])
+        main_ingot = ingots[0][-3:]
+        print(f'Слиток: {main_ingot}')
+
+        # TODO: Вторым аргументом нужно вставить плотность сплава
+        material = Material(main_ingot[1], 2.2, 1.)
+
+        # выбор заготовок и удаление лишних значений
+        details_info = map(
+            itemgetter(0), chain.from_iterable(complects.values())
+        )
+        details = self.getDetails(details_info, material)
+
+        self.createCut(main_ingot, details, material)
+
         # Если статус "в работе", то скрыть статистику и остатки
         if status == 1 or status == 2:
             page.ui.label_4.hide()
@@ -255,6 +287,78 @@ class MainWindow (QMainWindow):
         self.ui.informationPage.layout().takeAt(0)
         self.ui.informationPage.layout().addWidget(page)
         self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
+
+    def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
+        # выбор заготовок и удаление лишних значений
+        details = []
+        for id_ in details_id:
+            detail = StandardDataService.get_by_id(
+                'details', {'detail_id': id_}
+            )
+            amount = detail[-3]
+            size: tuple[Number, Number, Number] = detail[4:-3]
+            if size[0] == 0 or size[1] == 0 or size[2] == 0:
+                continue
+            priority: int = detail[-2]
+            direction: int = detail[-1]
+            for _ in range(amount):
+                blank = Blank(
+                    *size, priority, direction=Direction(direction),
+                    material=material
+                )
+                details.append(blank)
+            print(details)
+        kit = Kit(details)
+        kit.sort('width')
+        return kit
+
+    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material):
+        """Метод запуска алоритма раскроя
+
+        :param ingot_size: Размер слитка
+        :type ingot_size: tuple[Number, Number, Number]
+        :param kit: Набор заготовок
+        :type kit: Kit
+        :param material: Материал
+        :type material: Material
+        """
+        # считать настройки и сложить в словарь
+        self.readSettings()
+        settings = {
+            'max_size': (
+                (self.maximum_plate_height, self.clean_roll_plate_width),
+                (self.maximum_plate_height, self.rough_roll_plate_width)
+                # (2000, self.clean_roll_plate_width),
+                # (2000, self.rough_roll_plate_width)
+            ),
+            'cutting_length': self.guillotine_width,
+            'cutting_thickness': 4.2,
+            'hem_until_3': self.rough_roll_edge_loss,
+            'hem_after_3': self.clean_roll_edge_loss,
+            'allowance': self.cut_allowance,
+            'end': self.end_face_loss,
+        }
+        bin_ = Bin(*ingot_size, material=material)
+        root = BinNode(bin_, kit=kit)
+        tree = Tree(root)
+        # tree = _stmh_idrd(tree, restrictions=settings)
+        
+        # TODO: Удалить создание pdf
+        # import os
+        # os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+        # from sequential_mh.bpp_dsc.graph import plot, create_edges
+        # graph1, all_nodes1 = plot(tree.root, 'pdf/graph1.gv')
+        # create_edges(graph1, all_nodes1)
+        # graph1.view()
+
+        # _, res, nodes = optimal_configuration(tree, nd=True)
+        # res.update_size()
+
+        # print(f'Всего деталей: {res.kit.qty()}')
+        # print(f'По всему объему: {solution_efficiency(res, nodes, is_total=True)}')
+        # print(f'По используемому объему: {solution_efficiency(res, nodes)}')
+        # print(f'Взвешенная: {solution_efficiency(res, nodes, nd=True)}')
+
 
     def open_catalog(self):
         window = Catalog(self)

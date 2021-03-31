@@ -60,7 +60,6 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
     if x[-1] > main_region.max_width:
         x[-1] = main_region.max_width
     for i in x:
-        # print(i)
         dist = main_region(i, 0, False)
         if dist is None:
             y.append(0)
@@ -85,7 +84,6 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
                 edgecolor = "g"
                 hatch = r"\\"
             else:
-                print(f'---> {rect, rect.rtype}')
                 edgecolor = "r"
                 hatch = "//"
             patch_rect(

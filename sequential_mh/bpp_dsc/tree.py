@@ -89,9 +89,6 @@ class BaseNode:
             rolling_node = cur_branch.parent
             rolling_node.delete(cur_branch)
             return rolling_node
-        # if rolling_node.children is None:
-        #     cur_branch = rolling_node.current_branch()
-        #     cur_branch.parent.delete(cur_branch)
 
     def insert(self, children) -> None:
         pass
@@ -143,7 +140,6 @@ class BaseNode:
                     node = node.parent
                 else:
                     return branch_root
-                # return [item for item in children if item is src][0]
         return None
 
     def adjacent_branch(self):
@@ -317,7 +313,6 @@ class BinNode(Node):
             height = self.bin.d_height
         else:
             height = self.bin.height
-        print(cut_thickness, height)
         if not cut_thickness or (cut_thickness and height <= cut_thickness):
             left = OperationNode(Operations.cutting)
             right = OperationNode(Operations.rolling)
@@ -396,7 +391,6 @@ class BinNode(Node):
     def estimate_size(self, *, start=None):
         if self._children is None:
             return 0., 0., self.bin.height
-        # print(self, self.parent, self.children)
         estimate = super().estimate_size(start=start)
         if self.bin.bin_type in (BinType.ingot, BinType.adjacent, BinType.INTERMEDIATE):
             if len(self.list_of_children()) == 2:
@@ -470,7 +464,6 @@ class BinNode(Node):
         return number != 0
 
     def in_right_branch(self):
-        print('--> = ', self)
         node = self
         parent = node.parent
         if node.is_troot():
@@ -478,30 +471,130 @@ class BinNode(Node):
         while parent.parent is not None and not parent.is_troot():
             node = parent
             parent = node.parent
-            # if hasattr(parent, 'bin'):
-            #     print('->', node, parent, parent.bin.bin_type)
-            # else:
-            #     print('->', node, parent)
         return node is parent.list_of_children()[1]
+
+    def _fix_semifinished(self, width, length, max_size=None, **kwargs):
+        print('Фиксация бина полуфабриката')
+        p_cont = self.parent_cont
+        rolldir = self.bin.last_rolldir
+        if is_cutting_node(self.parent):
+            estimate = self.parent.children[0].estimate_size()
+        else:
+            estimate = (0, 0)
+        is_locked = False
+        if rolldir == Direction.H:
+            length = max(length, p_cont.bin.length, estimate[LENGTH])
+            is_locked = to_delete(length, width, max_size)
+        else:
+            width = max(width, p_cont.bin.width, estimate[WIDTH])
+            is_locked = to_delete(width, length, max_size)
+
+        self.locked = is_locked
+        if not is_cutting_node(self.parent) and is_locked:
+            node = self.delete_branch()
+            return
+        bin_ = Bin(
+            length, width, self.bin.d_height,
+            rolldir, self.bin.material, self.bin.bin_type
+        )
+        self.bin = bin_
+        parent = self.get_parent_ubin()
+        parent.fix_sizes(width, length, max_size=max_size, **kwargs)
+
+    def _fix_intermediate(self, width, length, max_size=None, **kwargs):
+        # фиксирование промежуточного узла
+        p_cont = self.parent_cont
+        troot = self.get_troot()
+        last_rolldir = self.bin.last_rolldir
+        if last_rolldir == Direction.H:
+            if max_size:
+                new_length = max_size[WIDTH]
+                if length >= new_length:
+                    current_height = length * self.bin.d_height / new_length
+                    if current_height > p_cont.bin.d_height:
+                        current_height = p_cont.bin.d_height
+            else:
+                current_height = (p_cont.bin.d_height - self.bin.d_height) / 2 + self.bin.d_height
+            length = length * self.bin.d_height / current_height
+        else:
+            if max_size:
+                new_width = max_size[WIDTH]
+                if width >= new_width:
+                    current_height = width * self.bin.d_height / new_width
+                    if current_height > p_cont.bin.d_height:
+                        current_height = p_cont.bin.d_height
+            else:
+                current_height = (p_cont.bin.d_height - self.bin.d_height) / 2 + self.bin.d_height
+            width = width * self.bin.d_height / current_height
+        bin_ = Bin(
+            length, width, current_height,
+            last_rolldir, self.bin.material, self.bin.bin_type
+        )
+        self.bin = bin_
+        neighbour = self.get_bin_neighbors(troot)
+        neighbour = [is_bin_node(node) for node in neighbour]
+        if all(neighbour):
+            troot.fix_sizes(width, length, max_size=max_size, **kwargs)
+
+    def _fix_node_one_def(self, width, length, max_size=None, **kwargs):
+        # TODO: провести рефакторинг метода fix_sizes
+        pass
+
+    def _fix_node_two_def(self, width, length, max_size=None, **kwargs):
+        # TODO: провести рефакторинг метода fix_sizes
+        pass
+
+    def _fix_node_withot_def(self, width, length, **kwargs):
+        # бин без деформаций (ветки разреза)
+        p_cont = self.parent_cont
+        childe = self.children.children.children
+        size = childe.bin.size
+        last_rolldir = childe.bin.last_rolldir
+        if last_rolldir == Direction.H:
+            width = size[WIDTH] * size[HEIGHT] / self.bin.height
+        else:
+            length = size[LENGTH] * size[HEIGHT] / self.bin.height
+        parent_bin = p_cont.bin
+        if self.parent.direction == Direction.H:
+            width = parent_bin.width
+            adj_width = width
+            adj_length = parent_bin.length - length
+        else:
+            length = parent_bin.length
+            adj_width = parent_bin.width - width
+            adj_length = length
+        bin_ = Bin(
+            length, width, self.bin.height,
+            parent_bin.last_rolldir, self.bin.material, self.bin.bin_type
+        )
+        self.bin = bin_
+        adj_node = self.parent.children[0]
+        bin_ = Bin(
+            adj_length, adj_width, adj_node.bin.height,
+            adj_node.bin.last_rolldir, adj_node.bin.material,
+            adj_node.bin.bin_type
+        )
+        adj_node.bin = bin_
+        self.update_size(max_len=kwargs.get('max_len'))
 
     def fix_sizes(self, width, length, is_min=False, miss_bins=False,
                   max_len=None, max_size=None, restrictions=None):
         # Лучше разнести этот метод по разным классам
         p_cont = self.parent_cont
-        if miss_bins:
-            if not is_ubin_node(self):
+        if not is_ubin_node(self):
+            if miss_bins:
                 p_cont.fix_sizes(
                     self.bin.width, self.bin.length, is_min=is_min,
                     miss_bins=miss_bins, max_size=max_size,
                     restrictions=restrictions
                 )
-                return
-        else:
-            if not is_ubin_node(self):
-                return
+            return
         troot = self.get_troot()
+        if is_ubin_node(p_cont):
+            height = p_cont.bin.d_height
+        else:
+            height = p_cont.bin.height
         if is_ubin_node(troot) and troot.bin.bin_type == BinType.INTERMEDIATE:
-            print('Правая ветка')
             pass
         elif is_ubin_node(troot) and self.in_right_branch():
             return
@@ -511,37 +604,13 @@ class BinNode(Node):
         last_rolldir = last_deformations[-1]
         # если потомок упаковка (то фиксируем без всего)
         if self.children and is_packing_node(self.children):
-            print('Фиксация бина полуфабриката')
-            if is_cutting_node(self.parent):
-                estimate = self.parent.children[0].estimate_size()
-            else:
-                estimate = (0, 0)
-            if last_deformations[-1] == Direction.H:
-                length = max(length, p_cont.bin.length, estimate[LENGTH])
-                if max_size and (length > max_size[WIDTH] or width > max_size[LENGTH]):
-                    self.locked = True
-                    if not is_cutting_node(self.parent):
-                        node = self.delete_branch()
-                        return
-            else:
-                width = max(width, p_cont.bin.width, estimate[WIDTH])
-                if max_size and (width > max_size[WIDTH] or length > max_size[LENGTH]):
-                    self.locked = True
-                    if not is_cutting_node(self.parent):
-                        node = self.delete_branch()
-                        return
-            bin_ = Bin(
-                length, width, self.bin.d_height,
-                self.bin.last_rolldir, self.bin.material, self.bin.bin_type
-            )
-            self.bin = bin_
-            parent = self.get_parent_ubin()
-            parent.fix_sizes(
-                width, length, is_min=is_min, max_size=max_size,
+            self._fix_semifinished(
+                width, length, max_size=max_size, is_min=is_min,
+                miss_bins=miss_bins, max_len=max_len,
                 restrictions=restrictions
             )
         elif len(last_deformations) == 2:
-            print('Фиксация бина с двумя деформациями')
+            # print('Фиксация бина с двумя деформациями')
             if is_cutting_node(self.parent):
                 neighbour = [is_bin_node(node.children) for node in self.children.children]
                 if not all(neighbour):
@@ -602,7 +671,6 @@ class BinNode(Node):
                 height = self.bin.d_height
                 if last_rolldir == Direction.H:
                     width += dist[0]
-                    # FIXME: доделать удаление текущей ветки
                     if max_size and (length > max_size[WIDTH] or width > max_size[LENGTH]):
                         self.locked = True
                         node = self.delete_branch()
@@ -619,7 +687,6 @@ class BinNode(Node):
                         return
                 else:
                     length += dist[1]
-                    # FIXME: доделать удаление текущей ветки
                     if max_size and (width > max_size[WIDTH] or length > max_size[LENGTH]):
                         self.locked = True
                         node = self.delete_branch()
@@ -664,8 +731,7 @@ class BinNode(Node):
                     restrictions=restrictions
                 )
         elif len(last_deformations) == 1:
-            print('Фиксация бина с одной деф')
-            last_rolldir = last_deformations[-1]
+            # print('Фиксация бина с одной деф')
             if p_cont is not troot and is_ubin_node(p_cont):
                 current_height = (p_cont.bin.d_height - self.bin.d_height) / 2 + self.bin.d_height
                 if last_rolldir == Direction.H:
@@ -715,58 +781,56 @@ class BinNode(Node):
                     width, length, is_min=is_min, max_size=max_size,
                     restrictions=restrictions
                 )
-            elif is_ubin_node(troot):
-                if troot.bin.bin_type == BinType.INTERMEDIATE:
-                    if last_rolldir == Direction.H:
-                        if max_size:
-                            new_length = max_size[WIDTH]
-                            if length >= new_length:
-                                current_height = length * self.bin.d_height / new_length
-                                if current_height > p_cont.bin.d_height:
-                                    current_height = p_cont.bin.d_height
-                        else:
-                            current_height = (p_cont.bin.d_height - self.bin.d_height) / 2 + self.bin.d_height
-                        length = length * self.bin.d_height / current_height
-                    else:
-                        if max_size:
-                            new_width = max_size[WIDTH]
-                            if width >= new_width:
-                                current_height = width * self.bin.d_height / new_width
-                                if current_height > p_cont.bin.d_height:
-                                    current_height = p_cont.bin.d_height
-                        else:
-                            current_height = (p_cont.bin.d_height - self.bin.d_height) / 2 + self.bin.d_height
-                        width = width * self.bin.d_height / current_height
-                    bin_ = Bin(
-                        length, width, current_height,
-                        last_rolldir, self.bin.material, self.bin.bin_type
-                    )
-                    self.bin = bin_
-                    neighbour = self.get_bin_neighbors(troot)
-                    neighbour = [is_bin_node(node) for node in neighbour]
-                    if all(neighbour):
-                        troot.fix_sizes(
-                            width, length, is_min=is_min, max_size=max_size,
-                            restrictions=restrictions
-                        )
-                return
-            if not is_ubin_node(p_cont) or self.in_right_branch():
+            elif is_ubin_node(troot) and is_imt_node(troot):
+                self._fix_intermediate(
+                    width, length, max_size=max_size, is_min=is_min,
+                    miss_bins=miss_bins, max_len=max_len,
+                    restrictions=restrictions
+                )
+            elif not is_ubin_node(p_cont) or self.in_right_branch():
+                childe = self.children.children
                 if p_cont.bin.bin_type == BinType.leaf:
                     # устанавливаем минимальные размеры (у себя и у предка!!!)
                     if last_rolldir == Direction.H:
-                        current_height = length * self.bin.d_height / p_cont.bin.length
-                        length = p_cont.bin.length
-                        # FIXME: доделать удаление веток
-                        if max_size and length > max_size[WIDTH]:
-                            self.locked = True
+                        if length > p_cont.bin.length and width > p_cont.bin.width:
+                            current_height = p_cont.bin.width * height / width
+                            length = round(length * current_height / height, 4)
+                        elif length > p_cont.bin.length and width <= p_cont.bin.width:
+                            current_height = length * self.bin.d_height / p_cont.bin.length
+                            length = p_cont.bin.length
+                        elif length <= p_cont.bin.length and width > p_cont.bin.width:
+                            current_height = p_cont.bin.width * height / width
+                            length = round(length * current_height / height, 4)
+                        else:
+                            current_height = height
+
+                        is_locked = to_delete(length, width, max_size)
                     else:
-                        current_height = width * self.bin.d_height / p_cont.bin.width
-                        width = p_cont.bin.width
+                        if length > p_cont.bin.length and width > p_cont.bin.width:
+                            current_height = p_cont.bin.length * height / length
+                            width = width * self.bin.d_height / current_height
+                        elif length > p_cont.bin.length and width <= p_cont.bin.width:
+                            current_height = p_cont.bin.length * height / length
+                            width = width * self.bin.d_height / current_height
+                        elif length <= p_cont.bin.length and width > p_cont.bin.width:
+                            current_height = p_cont.bin.width * height / width
+                            width = p_cont.bin.width
+                        else:
+                            current_height = height
+
+                        is_locked = to_delete(width, length, max_size)
+
+                    self.locked = is_locked  # для отладки
+                    if not is_cutting_node(self.parent) and is_locked:
+                        node = self.delete_branch()
+                        return
                 else:
                     if last_rolldir == Direction.H:
+                        # TODO: не удаляются ветки
                         length = p_cont.bin.length
                         current_height = p_cont.bin.width * p_cont.bin.height / width
                     else:
+                        # TODO: не удаляются ветки
                         width = p_cont.bin.width
                         current_height = p_cont.bin.length * p_cont.bin.height / length
                 bin_ = Bin(
@@ -779,37 +843,11 @@ class BinNode(Node):
                     restrictions=restrictions
                 )
         else:
-            # print('Бин без деформаций (ветка разреза)')
-            height = p_cont.bin.height
-            childe = self.children.children.children
-            size = childe.bin.size
-            last_rolldir = childe.bin.last_rolldir
-            if last_rolldir == Direction.H:
-                width = size[WIDTH] * size[HEIGHT] / self.bin.height
-            else:
-                length = size[LENGTH] * size[HEIGHT] / self.bin.height
-            parent_bin = p_cont.bin
-            if self.parent.direction == Direction.H:
-                width = parent_bin.width
-                adj_width = width
-                adj_length = parent_bin.length - length
-            else:
-                length = parent_bin.length
-                adj_width = parent_bin.width - width
-                adj_length = length
-            bin_ = Bin(
-                length, width, self.bin.height,
-                parent_bin.last_rolldir, self.bin.material, self.bin.bin_type
+            self._fix_node_withot_def(
+                width, length, max_size=max_size, is_min=is_min,
+                miss_bins=miss_bins, max_len=max_len,
+                restrictions=restrictions
             )
-            self.bin = bin_
-            adj_node = self.parent.children[0]
-            bin_ = Bin(
-                adj_length, adj_width, adj_node.bin.height,
-                adj_node.bin.last_rolldir, adj_node.bin.material,
-                adj_node.bin.bin_type
-            )
-            adj_node.bin = bin_
-            self.update_size(max_len=max_len)
 
     def update_kit(self, height):
         self.kit.delete_height(height)
@@ -876,8 +914,6 @@ class OperationNode(Node):
     def _create_nodes_rolling(self, rolled_height, double_sided=True, **kwargs):
         """Создание потомков при прокате"""
         if self.operation == Operations.rolling:
-            # pparent = self.parent.parent
-            # if is_adj_node(self.parent):
             vertical = OperationNode(Operations.v_rolling)
             horizontal = OperationNode(Operations.h_rolling)
             return vertical, horizontal
@@ -887,7 +923,6 @@ class OperationNode(Node):
             # создание двух узлов с разными направлениями
         # создание одного бина с модифицированными размерами
         parent_bn = self.parent_bnode
-        # parent_bn = self.parent_cont
         if parent_bn is None:
             raise ParentNodeError(f'Узел {self} не имеет предка')
         size: Vec3 = parent_bn.bin.size  # length, width, height
@@ -919,32 +954,25 @@ class OperationNode(Node):
                     if is_ubin_node(self.parent):
                         bin_type = BinType.semifinished
 
-        # is_intermediate = 'cut_thickness' in kwargs
         cut_thickness = kwargs.get('cut_thickness')
         if is_ubin_node(self.parent_cont):
             height = self.parent_cont.bin.d_height
         else:
             height = parent_bn.bin.height
-        print(f'{cut_thickness = }')
-        is_intermediate = bool(cut_thickness) # and height == cut_thickness
-        print(f'{cut_thickness = }')
+        is_intermediate = bool(cut_thickness)
 
-        if is_intermediate and not is_op_node(self.parent):  #  and self.parent.operation != Operations.rolling
-            # bin_type = BinType.adjacent
+        if is_intermediate and not is_op_node(self.parent):
             bin_type = BinType.INTERMEDIATE
 
         if double_sided:
             parent_bn = self.parent_cont
             bin_ = UnsizedBin(
-                *size, rolled_height,  # rolldir=rolldir
+                *size, rolled_height,
                 material=parent_bn.bin.material, bin_type=bin_type
             )
-            # print(bin_.deformations)
             if is_ubin_node(parent_bn):
-                # previous_def = self.parent.bin.deformations[-1]
                 for d in parent_bn.bin.deformations:
                     bin_.add_deformation(d)
-            # print('--> ', bin_.deformations)
             bin_.add_deformation((rolled_height, rolldir))
         else:
             bin_ = Bin(
@@ -956,12 +984,9 @@ class OperationNode(Node):
 
     def _create_nodes_cutting(self, height, **kwargs):
         """Создание потомков при разрезе"""
-        # parent_bn = self.parent_bnode
         parent_bn = self.parent
         if parent_bn is None:
             raise ParentNodeError(f'Узел {self} не имеет предка')
-        # bin_ = self.parent_bnode.bin
-        # kit = self.parent_bnode.kit
         bin_ = self.parent_cont.bin
         kit = self.parent_cont.kit
         # if height not in kit:
@@ -1003,14 +1028,11 @@ class OperationNode(Node):
 
     def _create_nodes_packing(self, **kwargs):
         """Создание потомков при упаковке"""
-        # return CuttingChartNode(self.parent_bnode.bin)
-        # print(self.parent.bin)
         return CuttingChartNode(self.parent.bin)
 
     # работа с размерами (оценка, обновление) --------------------------
     def estimate_size(self, *, start=None):
         estimate = super().estimate_size(start=start)
-        # parent_bin = self.parent_bnode.bin
         parent_bin = self.parent_cont.bin
         if is_ubin_node(self.parent_cont):
             height = parent_bin.d_height
@@ -1018,10 +1040,7 @@ class OperationNode(Node):
             height = parent_bin.height
         if self.operation == Operations.cutting:
             if self.direction is None:
-                print('Нет разреза', estimate)
                 return (0, 0, height)
-                # msg = f'Узел {self} не содержит направление разреза'
-                # raise OperationNodeError(msg)
             if len(estimate) == 2:
                 left, right = estimate
                 if self.direction == Direction.H:
@@ -1045,7 +1064,6 @@ class OperationNode(Node):
             )
             estimate = length, estimate[WIDTH], height
         elif self.operation == Operations.h_rolling:
-            print(estimate)
             width = deformation(
                 estimate[WIDTH], estimate[HEIGHT],
                 height, parent_bin.material.extension
@@ -1090,7 +1108,6 @@ class OperationNode(Node):
             childe_bin = self.children.bin
             if is_ubin_node(self.children):
                 childe_bin.height = parent_size[HEIGHT]
-            # childe_bin.height = parent_size[HEIGHT]
             childe_bin.width = parent_size[WIDTH]
             childe_bin.length = deformation(
                 parent_size[LENGTH], parent_size[HEIGHT],
@@ -1113,24 +1130,16 @@ class OperationNode(Node):
             src, dst = right, left
         estimate = src.estimate_size()
         if estimate[LENGTH] == 0 or estimate[WIDTH] == 0:
-            # перенос всех размеров, без требований к разрезу
-            # FIXME: можно ставить ода нуля когда разрез не указан
-            # в остальных случаях нулем делать одну из сторон
             src.bin.length = 0.
             src.bin.width = 0.
             dst.bin.length = size[LENGTH]
             dst.bin.width = size[WIDTH]
         else:
             if is_ubin_node(self.children[0]):
-                print(f'-------> {estimate = }')
                 used_volume = estimate[0] * estimate[1] * estimate[2]
                 free_volume = self.children[0].bin.volume - used_volume
                 length, width = 50, 50
                 height = free_volume / (length * width)
-                print(f'Используемый объем: {used_volume}')
-                print(f'Общий объем: {self.children[0].bin.volume}')
-                print(f'Примерная толщина при размерах 50x50: {height}')
-                # src.bin.length = estimate[LENGTH]
                 dst.bin.length = length
                 dst.bin.width = width
                 dst.bin.height = height
@@ -1292,8 +1301,6 @@ class CuttingChartNode(Node):
             height = self.bin.height
             length = self.bin.length
             width = self.bin.width
-        # max_width, max_length = max_size[height > 3]
-        # max_size = max_size[height > 3]
         if restrictions:
             if height <= 3:
                 hem = restrictions.get('hem_after_3')
@@ -1306,31 +1313,30 @@ class CuttingChartNode(Node):
         if self.bin.rolldir == Direction.H:
             # ширина, длина
             self.hem = (hem, 0)
-            # self.hem = (0, hem)
             self.y_hem = (hem, hem)
+            x_hem = end * length if end * length <= 30 else 30
             if bin_node.parent.direction == Direction.H:
-                self.x_hem = (end * length, 0)
+                self.x_hem = (x_hem, 0)
             else:
-                self.x_hem = (end * length, end * length)
+                self.x_hem = (x_hem, x_hem)
         else:
             self.hem = (0, hem)
             self.x_hem = (hem, hem)
+            y_hem = end * width if end * width <= 30 else 30
             if bin_node.parent.direction == Direction.H:
-                self.y_hem = (end * width, 0)
+                self.y_hem = (y_hem, 0)
             else:
-                self.y_hem = (end * width, end * width)
+                self.y_hem = (y_hem, y_hem)
 
         if isinstance(self.bin, UnsizedBin):
             group = bin_node.kit[self.bin.d_height]
-            src_rect, main_region, result, unplaced, tailings = bpp_ts(
+            _, main_region, min_rect, result, unplaced, tailings = bpp_ts(
                 bin_node.bin.length, bin_node.bin.width, bin_node.bin.height,
                 bin_node.bin.d_height, group, x_hem=self.x_hem, y_hem=self.y_hem,
                 allowance=allowance, max_size=max_size,
                 is_visualize=False
             )
-            width, length = main_region.rectangle.trp
-            # width += self.hem[Direction.V.value[0]]
-            # length += self.hem[Direction.H.value[0]]
+            width, length = min_rect.width, min_rect.length
             self.bin = Bin(
                 length, width, bin_node.bin.d_height,
                 self.bin.last_rolldir, self.bin.material, self.bin.bin_type
@@ -1341,10 +1347,6 @@ class CuttingChartNode(Node):
             )
         else:
             length, width, _ = self.available_size()
-            # y_0 += hem[Direction.H.value]
-            # length -= hem[Direction.H.value]
-            # x_0 += hem[Direction.V.value]
-            # width -= hem[Direction.V.value]
             group = bin_node.kit[self.bin.height]
             result, total_len, total_width, _ = ph_bpp(
                 length, width, group, x0=x_0, y0=y_0, first_priority=True
@@ -1379,6 +1381,8 @@ class CuttingChartNode(Node):
             if cutting_node is None:
                 return
             cutting_node.update_size(start=self, max_len=max_len)
+        if self.parent_bnode is None:
+            return
         parent_size = self.parent_bnode.bin.size
         self.bin.length = parent_size[LENGTH]
         self.bin.width = parent_size[WIDTH]
@@ -1458,14 +1462,8 @@ class CuttingChartNode(Node):
 
     @property
     def kit(self):
-        # if self.parent_bnode:
         if self.parent.parent:
             return self.parent.parent.kit
-            # msg = (
-            #     f'Узел {self} должен иметь предка типа BinNode, '
-            #     f'текущий предок {self.parent}'
-            # )
-            # raise ParentNodeError(msg)
         return None
 
     def __copy__(self):
@@ -1545,7 +1543,7 @@ def top_down_traversal(start):
 
 
 def solution_efficiency(root, path, nd=False, is_total=False):
-    print('-> Эффективность решения')
+    # print('-> Эффективность решения')
     # is_total - Учитывая весь бин
     # nd - взвешенная на количество деталей
     used_total_volume = 0.
@@ -1563,14 +1561,14 @@ def solution_efficiency(root, path, nd=False, is_total=False):
             efficiency = 0
         else:
             efficiency = used_volume / used_total_volume
-    print(f'Упаковано деталей: {number_detail}')
+    # print(f'Упаковано деталей: {number_detail}')
     if nd and number_detail:
         efficiency *= number_detail / root.kit.qty()
     return efficiency
 
 
 def optimal_configuration(tree, lower=1., nd=False, is_total=False):
-    print('-> Оптимальная конфигурация')
+    # print('-> Оптимальная конфигурация')
     solutions = all_solutions(tree)
     if lower == 1:
         result =  max(
@@ -1589,22 +1587,6 @@ def optimal_configuration(tree, lower=1., nd=False, is_total=False):
         if efficiency >= lower:
             result.append((efficiency, *copy_tree(item[-1], item[:-1])))
     return result
-    #     result = [
-    #         item for item in solutions
-    #         if solution_efficiency(item[-1], item[:-1], True) >= lower
-    #     ]
-    # root = copy(tree.root)
-    # nodes = []
-    # level = deque([(root, tree.root)])
-    # while level:
-    #     dst, src = level.popleft()
-    #     for childe in src.list_of_children():
-    #         if childe in result:
-    #             new_childe = copy(childe)
-    #             dst.add(new_childe)
-    #             nodes.append(new_childe)
-    #             level.append((new_childe, childe))
-    # return root, nodes
 
 
 def copy_tree(root, nodes):
@@ -1670,3 +1652,7 @@ def is_imt_node(node):
         (is_bin_node(node) or is_ubin_node(node)) and
         node.bin.bin_type == BinType.INTERMEDIATE
     )
+
+
+def to_delete(length, width, max_size):
+    return max_size and (length > max_size[WIDTH] or width > max_size[LENGTH])

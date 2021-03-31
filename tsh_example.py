@@ -3,13 +3,9 @@
 Пакет sequential_mh.tsh реализует алгоритм раскроя в две стороны.
 """
 
-# import os
-
 from sequential_mh.tsh.bpp_ts import bpp_ts
 from sequential_mh.tsh.visualize import visualize
 from sequential_mh.bpp_dsc.rectangle import Material, Blank, Kit
-
-# os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 
 def example_1():
@@ -73,10 +69,49 @@ def example_3():
     return data
 
 
+def example_4():
+    data = {
+        'name': 'Синтетический пример 3',
+        'kit': [
+            (68, 110, 3, 1), (78, 30, 3, 1), (30, 30, 3, 1), (100, 68, 3, 1),
+            (110, 18, 3, 1), (110, 18, 3, 1), (110, 18, 3, 1), (110, 18, 3, 1),
+            (110, 20, 3, 1)
+        ],
+        'L0': 200,
+        'W0': 150,
+        'H0': 6,
+        'H1': 3,
+        'hem': (0, 5),
+        'allowance': 2,
+    }
+    return data
+
+
+def example_5():
+    data = {
+        'name': 'Синтетический пример 4',
+        'kit': [
+            (99, 98, 1, 1), (89, 98, 1, 1), (48.5, 30, 1, 1), (48.5, 30, 1, 1),
+            (48.5, 30, 1, 1), (38.5, 30, 1, 1), (99, 118, 1, 1),
+            (89, 118, 1, 1), (20, 190, 1, 1), (178, 38, 1, 1), (178, 38, 1, 1),
+            (178, 38, 1, 1), (178, 38, 1, 1), (178, 30, 1, 1)
+        ],
+        'L0': 305,
+        'W0': 100,
+        'H0': 3,
+        'H1': 1,
+        'hem': (0, 5),
+        'allowance': 2,
+    }
+    return data
+
+
 EXAMPLES = [
     example_1,
     example_2,
     example_3,
+    example_4,
+    example_5,
 ]
 
 
@@ -113,11 +148,12 @@ def main(example):
     else:
         x_hem = (end * W_0*H_0 / H_1, end * W_0*H_0 / H_1)
     allowance = data['allowance']
-    _, main_region, result, _, tailings = bpp_ts(
+    _, main_region, min_rect, result, _, tailings = bpp_ts(
         L_0, W_0, H_0, H_1, kit[H_1], x_hem=x_hem, y_hem=y_hem,
         allowance=allowance, is_visualize=False
     )
 
+    print(f'Используемый прямоугольник: {min_rect.length, min_rect.width}')
     print(
         f'Количество размещенных заготовок: {len(result)}/{len(data["kit"])}'
     )

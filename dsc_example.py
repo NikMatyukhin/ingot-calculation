@@ -18,25 +18,19 @@ from sequential_mh.tsh.visualize import visualize
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 
-def main(use_graphviz=False):
-    material = Material('Сплав 1', 2.2, 1.)
-    data = [
-        (160, 93, 3, 1),
-        (160, 93, 3, 1),
-        (160, 93, 3, 1),
-        (160, 93, 3, 1),
-        (200, 100, 1, 1),
-        (415, 170, 0.5, 1),
-        (77, 180, 3.3, 1),
-        (77, 180, 3.3, 1),
-        (82, 180, 2.2, 1),
-        (82, 180, 2.2, 1),
-        (420, 165, 0.5, 1),
-        (420, 170, 1., 1),
-        (420, 170, 1., 1),
-    ]
-    restrictions = {
-        'max_size': ((1200, 380), (1200, 400)),  # < 3, >= 3
+def example_1():
+    return {
+        'name': 'Пример 12ц',
+        'kit': [
+            (160, 93, 3, 1), (160, 93, 3, 1), (160, 93, 3, 1), (160, 93, 3, 1),
+            (200, 100, 1, 1), (415, 170, 0.5, 1), (77, 180, 3.3, 1),
+            (77, 180, 3.3, 1), (82, 180, 2.2, 1), (82, 180, 2.2, 1),
+            (420, 165, 0.5, 1), (420, 170, 1., 1), (420, 170, 1., 1),
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
         'cutting_length': 1200,  # максимальная длина реза
         'cutting_thickness': 4.2,  # толщина реза
         'hem_until_3': 10,  # кромка > 3 мм
@@ -44,27 +38,74 @@ def main(use_graphviz=False):
         'allowance': 2,  # припуски на разрез
         'end': 0.02,  # обработка торцов листа, в долях от длины
     }
+
+
+def example_2():
+    return {
+        'name': 'Синтетический пример 1',
+        'kit': [
+            (68, 110, 3, 1), (78, 30, 3, 1), (30, 30, 3, 1), (100, 68, 3, 1),
+            (110, 18, 3, 1), (110, 18, 3, 1), (110, 18, 3, 1), (110, 18, 3, 1),
+            (110, 20, 3, 1), (99, 98, 1, 1), (89, 98, 1, 1), (48.5, 30, 1, 1),
+            (48.5, 30, 1, 1), (48.5, 30, 1, 1), (38.5, 30, 1, 1),
+            (99, 118, 1, 1), (89, 118, 1, 1), (20, 190, 1, 1), (178, 38, 1, 1),
+            (178, 38, 1, 1), (178, 38, 1, 1), (178, 38, 1, 1), (178, 30, 1, 1)
+        ],
+        'L0': 200,
+        'W0': 150,
+        'H0': 6,
+        'cutting_thickness': 3,  # толщина реза
+        'hem_after_3': 5,  # кромка <= 3 мм
+        'allowance': 2,  # припуски на разрез
+        'end': 0.02,  # обработка торцов листа, в долях от длины
+    }
+
+
+EXAMPLES = [
+    example_1,
+    example_2,
+]
+
+
+def main(example, use_graphviz=False):
+    material = Material('Сплав 1', 2.2, 1.)
+    if 0 <= example - 1 < len(EXAMPLES):
+        data = EXAMPLES[example - 1]()
+    else:
+        raise ValueError(
+            'Некорректный номер примера. '
+            f'Доступны примеры с номерами от {1} до {len(EXAMPLES)}'
+        )
+    restrictions = {
+        'max_size': data.get('max_size'),
+        'cutting_length': data.get('cutting_length'),
+        'cutting_thickness': data.get('cutting_thickness'),
+        'hem_until_3': data.get('hem_until_3'),
+        'hem_after_3': data.get('hem_after_3'),
+        'allowance': data.get('allowance'),
+        'end': data.get('end'),
+    }
     kit = []
-    for item in data:
+    for item in data['kit']:
         kit.append(Blank(*item, material=material))
     kit = Kit(kit)
-    # bin_ = Bin(90, 50, 6, material=material, bin_type=BinType.ingot)
-    bin_ = Bin(180, 160, 28, material=material, bin_type=BinType.ingot)
+    bin_ = Bin(
+        data['L0'], data['W0'], data['H0'],
+        material=material, bin_type=BinType.ingot
+    )
     root = BinNode(bin_, kit=kit)
     tree = Tree(root)
     tree = _stmh_idrd(tree, restrictions=restrictions)
-    print(f'{root.estimate_size() = }')
 
     if use_graphviz:
         graph1, all_nodes1 = plot(tree.root, 'pdf/graph1.gv')
         create_edges(graph1, all_nodes1)
         graph1.view()
 
-    efficiency, res, nodes = optimal_configuration(tree, nd=True)
+    _, res, nodes = optimal_configuration(tree, nd=True)
     res.update_size()
 
     for node in res.cc_leaves:
-        # node.result.blanks.values
         main_rect = rect.Rectangle.create_by_size(
             (0, 0), node.bin.length, node.bin.width
         )
@@ -93,4 +134,5 @@ def main(use_graphviz=False):
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    main(USE_GRAPHVIZ)
+    NUMBER = 2
+    main(NUMBER, USE_GRAPHVIZ)
