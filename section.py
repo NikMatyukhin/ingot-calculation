@@ -49,8 +49,13 @@ class Section (QWidget):
 
         self.toggle_button.clicked.connect(self.toggle)
 
-    def getID(self):
+    @property
+    def order_id(self):
         return self.id
+
+    @order_id.setter
+    def order_id(self, value: int):
+        self.id = value
 
     def setWidgetStyles(self):
         self.toggle_button.setStyleSheet('''
