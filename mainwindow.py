@@ -283,6 +283,15 @@ class MainWindow (QMainWindow):
         self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
 
     def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
+        """Формирование набора заготовок
+
+        :param details_id: Список id заготовок
+        :type details_id: Iterable[int]
+        :param material: Материал
+        :type material: Material
+        :return: Набор заготовок
+        :rtype: Kit
+        """
         # выбор заготовок и удаление лишних значений
         details = []
         for id_ in details_id:
@@ -290,8 +299,9 @@ class MainWindow (QMainWindow):
                 'details', {'detail_id': id_}
             )
             amount = detail[-3]
-            size: tuple[Number, Number, Number] = detail[4:-3]
-            if size[0] == 0 or size[1] == 0 or size[2] == 0:
+            size: Sizes = detail[4:-3]
+            # если в Базе не будет нулевых размеров, можно убрать
+            if 0 in size:
                 continue
             priority: int = detail[-2]
             direction: int = detail[-1]
@@ -301,7 +311,6 @@ class MainWindow (QMainWindow):
                     material=material
                 )
                 details.append(blank)
-            print(details)
         kit = Kit(details)
         kit.sort('width')
         return kit
@@ -309,7 +318,7 @@ class MainWindow (QMainWindow):
     def createCut(self, ingot_size: Sizes, kit: Kit, material: Material):
         """Метод запуска алоритма раскроя
 
-        :param ingot_size: Размер слитка
+        :param ingot_size: Размер слитка в формате (длина, ширина, толщина)
         :type ingot_size: tuple[Number, Number, Number]
         :param kit: Набор заготовок
         :type kit: Kit
@@ -335,24 +344,10 @@ class MainWindow (QMainWindow):
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
-        # tree = _stmh_idrd(tree, restrictions=settings)
-        
-        # TODO: Удалить создание pdf
-        # import os
-        # os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
-        # from sequential_mh.bpp_dsc.graph import plot, create_edges
-        # graph1, all_nodes1 = plot(tree.root, 'pdf/graph1.gv')
-        # create_edges(graph1, all_nodes1)
-        # graph1.view()
+        tree = _stmh_idrd(tree, restrictions=settings)
 
-        # _, res, nodes = optimal_configuration(tree, nd=True)
-        # res.update_size()
-
-        # print(f'Всего деталей: {res.kit.qty()}')
-        # print(f'По всему объему: {solution_efficiency(res, nodes, is_total=True)}')
-        # print(f'По используемому объему: {solution_efficiency(res, nodes)}')
-        # print(f'Взвешенная: {solution_efficiency(res, nodes, nd=True)}')
-
+        _, res, nodes = optimal_configuration(tree, nd=True)
+        res.update_size()
 
     def open_catalog(self):
         window = Catalog(self)
