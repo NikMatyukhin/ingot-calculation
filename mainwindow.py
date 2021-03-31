@@ -1,16 +1,24 @@
 import sys
-from typing import Iterable, Union
+from typing import Iterable, Union, NoReturn
 from itertools import chain
 from operator import itemgetter, attrgetter
 
-from PySide6.QtCore import (Qt, QSettings)
-from PySide6.QtWidgets import (QApplication, QMainWindow, QTableWidget,
-                               QTableWidgetItem, QSizePolicy, QMessageBox,
-                               QDialog, QHBoxLayout, QTreeWidgetItem,
-                               QVBoxLayout, QPushButton)
+from PySide6.QtCore import (
+    Qt, QSettings, Signal
+)
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
+    QMessageBox, QDialog, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton,
+    QLayout, QGraphicsScene
+)
 
 from gui import ui_mainwindow
 from gui.ui_functions import *
+
+from plate import Plate
+from page import OrderPage
+from section import Section
+from button import ExclusiveButton
 
 from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
@@ -21,10 +29,7 @@ from sequential_mh.bpp_dsc.tree import (
 )
 from sequential_mh.bpp_dsc.stm import _stmh_idrd
 
-from section import Section
-from plate import Plate
 from service import StandardDataService, OrderDataService
-from page import OrderPage
 from dialogs import NewOrderDialog, CloseOrderDialog
 from catalog import Catalog
 from settings import Settings
@@ -67,65 +72,80 @@ class MainWindow (QMainWindow):
         self.clean_roll_plate_width = 450  # Ширина пластины проката на 3мм
         self.clean_roll_depth = 3          # Толщина чистового проката
         self.admissible_deformation = 70   # Допустимая деформация проката (%)
+        self.cutting_thickness = 4.2       # Толщина начала разрезов
 
         self.readSettings()
+
+        # Сцены для отрисовки
+        self.plan_scene = QGraphicsScene()
 
         # Заполняем список заказов из базы
         self.loadOrderList()
 
         # Соединяем сигналы окна со слотами класса
-        self.ui.newOrder.clicked.connect(self.open_new_order)
-        self.ui.catalog.clicked.connect(self.open_catalog)
-        self.ui.settings.clicked.connect(self.open_settings)
-        self.ui.closeOrder.clicked.connect(self.open_close_order)
+        self.ui.newOrder.clicked.connect(self.openNewOrder)
+        self.ui.catalog.clicked.connect(self.openCatalog)
+        self.ui.settings.clicked.connect(self.openSettings)
+
+        # Сигнал перехода на следующий шаг заказа
+        self.ui.closeOrder.clicked.connect(self.openCloseOrder)
+
+        # Сигнал возврата на исходную страницу с информацией о заказах
         self.ui.information.clicked.connect(
             lambda: (
                 self.ui.mainArea.setCurrentIndex(0),
                 self.ui.information.setChecked(True)
             )
         )
-        self.ui.pushButton_1.clicked.connect(self.depthLineChanged)
 
-    def loadOrderList(self):
+        # Кнопку "Исходная пластина" привызяваем отдельно от всех
+        self.ui.sourcePlate.clicked.connect(self.depthLineChanged)
 
+    def loadOrderList(self) -> NoReturn:
+        """Подгрузка списка заказов
+
+        Загружается список заказов из таблицы заказов и на его основе
+        формируется скомпанованный слой из виджетов Section с информацией.
+        TODO: Список заказов создаётся один раз и не меняется впоследствии.
+              стоит доработать по типу списка заготовок, но не сейчас.
+        """
         order_list = OrderDataService.get_table('orders')
         layout = QVBoxLayout()
         layout.setSpacing(10)
-
         for order in order_list:
             order_section = Section(order[0], order[1])
             order_section.setContentFields(
                 self.createOrderTable(order[0], *order[2:])
             )
+            order_section.st_name = order[3]
+            order_section.depth = order[4]
+            order_section.efficiency = order[5]
             order_section.clicked.connect(self.showOrderInformation)
             layout.addWidget(order_section)
-
         layout.setContentsMargins(0, 0, 7, 0)
         layout.addStretch()
         self.ui.scrollAreaWidgetContents.setLayout(layout)
 
-    def loadDetailList(self, depth: float = 0):
-
-        len = self.ui.verticalLayout_8.count()
-        for _ in range(len-1):
-            item = self.ui.verticalLayout_8.takeAt(0)
-            item.widget().hide()
-            self.ui.verticalLayout_8.removeWidget(item.widget())
-
-        cut_blanks = OrderDataService.cut_blanks(
-            {'order_id': self.current_order.id}, depth)
-
-        for detail in cut_blanks:
-            detail_section = Section(detail[0], detail[1])
-            detail_section.setContentFields(
-                self.createDetailTable(*detail[2:])
-            )
-            self.ui.verticalLayout_8.insertWidget(0, detail_section)
-
     def createOrderTable(self, id: int, amount: int, status: str,
-                         depth: float = 1.0,
-                         efficiency: float = 100.0) -> QVBoxLayout:
+                         depth: float, efficiency: float) -> QVBoxLayout:
+        """Создание информационной таблички заказа
 
+        Принимая основные характеристики заполняемого заказа формируется
+        табличка QTableWidget и устанавливается на возвращаемый слой.
+
+        :param id: Идентификатор записи заказа - забыл, зачем добавил
+        :type id: int
+        :param amount: Количество изделий в заказе - первая строка
+        :type amount: int
+        :param status: Статус заказа текстом - вторая строка
+        :type status: str
+        :param depth: Текущая толщина в заказе - третья строка
+        :type depth: float
+        :param efficiency: Выход годного в заказе - третья или четвёртая строка
+        :type efficiency: float
+        :return: Скомпанованный слой с таблицей внутри
+        :rtype: QVBoxLayout
+        """
         data = {
             'Состав заказа': str(amount) + ' изд.',
             'Статус заказа': status.capitalize()
@@ -134,56 +154,29 @@ class MainWindow (QMainWindow):
             data['Выход годного'] = str(efficiency) + '%'
         if depth:
             data['Текущая толщина'] = str(depth) + ' мм'
-
         table = QTableWidget(len(data), 2)
-
         table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.horizontalHeader().hide()
         table.verticalHeader().hide()
         table.horizontalHeader().setStretchLastSection(True)
-
         for row, values in enumerate(data.items()):
             table.setItem(row, 0, QTableWidgetItem(values[0]))
             table.setItem(row, 1, QTableWidgetItem(values[1]))
-
         table.resizeColumnToContents(0)
-
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(table)
         return layout
 
-    def createDetailTable(self, fusion: str, amount: int, height: int,
-                          width: int, depth: float) -> QVBoxLayout:
+    def showOrderInformation(self) -> NoReturn:
+        """Переключатель активных заказов и открытых секций
 
-        data = {
-            'Сплав': fusion,
-            'Количество': str(amount) + ' шт.',
-            'Размеры': f'{height}x{width}x{depth}'
-        }
-
-        table = QTableWidget(3, 2)
-
-        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        table.horizontalHeader().hide()
-        table.verticalHeader().hide()
-        table.horizontalHeader().setStretchLastSection(True)
-
-        for row, values in enumerate(data.items()):
-            table.setItem(row, 0, QTableWidgetItem(values[0]))
-            table.setItem(row, 1, QTableWidgetItem(values[1]))
-
-        table.resizeColumnToContents(0)
-
-        layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(table)
-        return layout
-
-    def showOrderInformation(self):
-
+        Отвечает за то, чтобы одновременно была раскрыта только одна секция
+        из списка заказов. Подгружает новую страницу заказа при его выборе.
+        TODO: Вместо постоянного пересоздавания страницы заказа нужно создать
+              его в формочке и просто заполнять нужные данные.
+        """
         choosen_order = self.sender()
 
         if not self.current_section:
@@ -196,10 +189,16 @@ class MainWindow (QMainWindow):
             self.current_section.collapse()
             self.current_section = choosen_order
         page = self.createInformationPage()
-        self.setInformationPage(page)
+        self.ui.informationPage.layout().takeAt(0)
+        self.ui.informationPage.layout().addWidget(page)
+        self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
 
-    def createInformationPage(self):
+    def createInformationPage(self) -> NoReturn:
+        """Создание страницы информации о заказе
 
+        Собирает все данные о текущем заказе и выгружает их на страницу.
+        TODO: Встроить её в начальное окно и там настроить работу этого окна.
+        """
         page = OrderPage()
 
         id = self.current_section.id
@@ -208,13 +207,13 @@ class MainWindow (QMainWindow):
         ingots = OrderDataService.ingots({'order_id': id})
         complects = OrderDataService.complects({'order_id': id})
 
-        # пока работаем только с одном слитком
+        # Пока работаем только с одном слитком
         main_ingot = ingots[0][-3:]
 
         # TODO: Вторым аргументом нужно вставить плотность сплава
         material = Material(main_ingot[1], 2.2, 1.)
 
-        # выбор заготовок и удаление лишних значений
+        # Выбор заготовок и удаление лишних значений
         details_info = map(
             itemgetter(0), chain.from_iterable(complects.values())
         )
@@ -222,128 +221,31 @@ class MainWindow (QMainWindow):
 
         self.createCut(main_ingot, details, material)
 
-        # Если статус "в работе", то скрыть статистику и остатки
-        if status == 1 or status == 2:
-            page.ui.label_4.hide()
-            page.ui.label_5.hide()
-            page.ui.label_6.hide()
-            page.ui.scrollArea_3.hide()
-        # Если статус "не начат", то скрыть статистику, карту и остатки
-        # TODO: НА ДАННЫЙ МОМЕНТ НЕ РАБОТАЕТ - НЕТ НЕ НАЧАТЫХ ЗАКАЗОВ
-        elif status == 3:
-            page.ui.label_4.hide()
-            page.ui.label_5.hide()
-            page.ui.label_6.hide()
-            page.ui.label_7.hide()
-            page.ui.scrollArea_3.hide()
-            page.ui.graphicsView.hide()
-        # Если статус "завершён", то скрыть кнопку перехода к подробному плану
-        elif status == 4 or status == 5:
-            page.ui.detailedPlanFrame.hide()
-
-        # Назначение названия заказа
-        storage = ' (на склад)' if int(on_storage) else ''
-        page.ui.label.setText('Заказ ' + name + storage)
-
-        # Назначение списка изделий и деталей заказа
-        for article, details in complects.items():
-            article_item = QTreeWidgetItem(
-                page.ui.treeWidget, [article[1], None, None])
-
-            for detail in details:
-                detail_item = QTreeWidgetItem(
-                    article_item, [detail[1], str(detail[2]), str(detail[3])])
-
-            page.ui.treeWidget.addTopLevelItem(article_item)
-        page.ui.treeWidget.resizeColumnToContents(0)
-
-        # Назначение слитков заказа
-        ingots_layout = QHBoxLayout()
-        for ingot in ingots:
-            ingot_plate = Plate(ingot[0], ingot[1], ingot[2], ingot[3:])
-            ingots_layout.addWidget(ingot_plate)
-        ingots_layout.setContentsMargins(0, 0, 0, 0)
-        ingots_layout.setSpacing(0)
-        ingots_layout.addStretch()
-        page.ui.scrollAreaWidgetContents_3.setLayout(ingots_layout)
-
-        self.current_order.id = self.current_section.id
-        self.current_order.ingots = ingots
-        self.current_order.complects = complects
-
+        page.hideForStatus(status)
+        page.setPageTitle(name, on_storage)
+        page.setComplects(complects)
+        page.setIngots(ingots)
         page.ui.detailedPlan.clicked.connect(
             lambda: (
                 self.ui.mainArea.setCurrentIndex(1),
                 self.ui.chart.setChecked(True),
-                self.createDepthLineBar(),
-                self.loadDetailList()
+                self.chartPagePreparation()
             )
         )
 
+        # Заполнение данных сущности текущего заказа
+        self.current_order.id = self.current_section.id
+        self.current_order.name = self.current_section.name
+        self.current_order.st_name = self.current_section.st_name
+        self.current_order.efficiency = self.current_section.efficiency
+        self.current_order.depth = self.current_section.depth
+        self.current_order.ingots = ingots
+        self.current_order.complects = complects
+
         return page
 
-    def setInformationPage(self, page: OrderPage):
-
-        self.ui.informationPage.layout().takeAt(0)
-        self.ui.informationPage.layout().addWidget(page)
-        self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
-
-    def createDepthLineBar(self):
-        len = self.ui.horizontalLayout_6.count()
-        for _ in range(len-1):
-            self.ui.horizontalLayout_6.takeAt(1)
-        leaves: list[CuttingChartNode] = self.current_order.tree.cc_leaves
-        leaves.sort(key=attrgetter('bin.height'), reverse=True)
-        for leave in leaves:
-            depth = leave.bin.height
-            button = QPushButton(f'{depth} мм')
-            button.setCheckable(True)
-            button.setAutoExclusive(True)
-            button.setStyleSheet('''
-                QPushButton {
-                    border: none;
-                    background-color: rgb(225, 225, 225);
-                    width: 80px;
-                    height: 40px;
-                    padding: 0px;
-                    color: black;
-                }
-
-                QPushButton:hover {
-                    background-color: rgb(235, 235, 235);
-                    border-bottom: 3px solid gray;
-                    font-weight: 800;
-                    padding-top: 3px;
-                }
-
-                QPushButton:pressed {
-                    background-color: rgb(245, 245, 245);
-                    border-bottom: 3px solid gray;
-                    font-weight: 800;
-                    padding-top: 3px;
-                }
-
-                QPushButton:checked {
-                    background-color: rgb(225, 225, 225);
-                    border-bottom: 3px solid black;
-                    padding-top: 3px;
-                    font-weight: 800;
-                }''')
-            button.clicked.connect(self.depthLineChanged)
-            self.ui.horizontalLayout_6.addWidget(button)
-        self.ui.horizontalLayout_6.addStretch()
-
-    def depthLineChanged(self):
-        button = self.sender()
-        name = button.text()
-        if name.startswith('Исходная'):
-            self.loadDetailList()
-        else:
-            depth, _, _ = name.partition(' ')
-            self.loadDetailList(depth=float(depth))
-
     def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
-        # выбор заготовок и удаление лишних значений
+        """Выбор заготовок и удаление лишних значений"""
         details = []
         for id_ in details_id:
             detail = StandardDataService.get_by_id(
@@ -375,8 +277,6 @@ class MainWindow (QMainWindow):
         :param material: Материал
         :type material: Material
         """
-        # считать настройки и сложить в словарь
-        self.readSettings()
         settings = {
             'max_size': (
                 (self.maximum_plate_height, self.clean_roll_plate_width),
@@ -397,22 +297,202 @@ class MainWindow (QMainWindow):
         tree = _stmh_idrd(tree, restrictions=settings)
         _, self.current_order.tree, _ = optimal_configuration(tree, nd=True)
 
-    def open_catalog(self):
+    def chartPagePreparation(self) -> NoReturn:
+        """Подготовка страницы с планами раскроя
+
+        Подгрузка списка заготовок, формирование кнопок толщин.
+        """
+        self.clearLayout(self.ui.horizontalLayout_6, take=1)
+
+        for depth in self.current_order.depth_list:
+            button = ExclusiveButton(depth=depth)
+            button.clicked.connect(self.depthLineChanged)
+            self.ui.horizontalLayout_6.addWidget(button)
+        self.ui.horizontalLayout_6.addStretch()
+        self.ui.sourcePlate.setChecked(True)
+
+        # Заполняем список деталей слева
+        self.loadDetailList(depth=0.0)
+
+        # Кнопку заверешния заказа меняем на кнопку перехода на след.шаг
+        depth = self.current_order.depth
+        self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
+
+    def depthLineChanged(self) -> NoReturn:
+        """Просмотр другой толщины и подгрузка нового списка деталей"""
+        button = self.sender()
+        if button is self.ui.sourcePlate:
+            self.loadDetailList(depth=0.0)
+            # self.current_order.root.bin.length
+            # self.current_order.root.bin.width
+            # self.current_order.root.bin.height
+            # TODO: Отрисовка пластины целиком
+        else:
+            depth = button.depth
+            self.loadDetailList(depth=float(depth))
+            # self.current_order.root.cc_leaves[0].bin.length
+            # self.current_order.root.cc_leaves[0].bin.width
+            # self.current_order.root.cc_leaves[0].bin.height
+            index = self.current_order.depth_index(depth)
+            print(self.current_order.root.cc_leaves[index].result.blanks)
+            # TODO: Отрисовка заготовок на текущей толщине
+
+    def loadDetailList(self, depth: float) -> NoReturn:
+        """Подгрузка списка заготовок
+
+        Список заготовок конкретной толщины, если выбрана толщина, но
+        полный список всех заготовок заказа, если выбрана <Исходная пластина>.
+        """
+        self.clearLayout(self.ui.verticalLayout_8, hidden=True)
+        id = self.current_order.id
+        cut_blanks = OrderDataService.cut_blanks({'order_id': id}, depth)
+        for detail in cut_blanks:
+            detail_section = Section(detail[0], detail[1])
+            detail_section.setContentFields(
+                self.createDetailTable(*detail[2:])
+            )
+            self.ui.verticalLayout_8.insertWidget(0, detail_section)
+
+    def createDetailTable(self, fusion: str, amount: int, height: int,
+                          width: int, depth: float) -> QVBoxLayout:
+        """Создание информационной таблички заготовки
+
+        Принимая основные характеристики заполняемой заготовки формируется
+        табличка QTableWidget и устанавливается на возвращаемый слой.
+
+        :param fusion: Сплав из которого выполняется заготовка - первая строка
+        :type fusion: str
+        :param amount: Количество заготовок в заказе - вторая строка
+        :type amount: int
+        :param height: Длина заготовки - третья строка
+        :type heithg: int
+        :param width: Ширина заготовки - третья строка
+        :type width: int
+        :param depth: Толщина заготовки - третья строка
+        :type depth: float
+        :return: Скомпанованный слой с таблицей внутри
+        :rtype: QVBoxLayout
+        """
+        data = {
+            'Сплав': fusion,
+            'Количество': str(amount) + ' шт.',
+            'Размеры': f'{height}x{width}x{depth}'
+        }
+        table = QTableWidget(3, 2)
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.horizontalHeader().hide()
+        table.verticalHeader().hide()
+        table.horizontalHeader().setStretchLastSection(True)
+        for row, values in enumerate(data.items()):
+            table.setItem(row, 0, QTableWidgetItem(values[0]))
+            table.setItem(row, 1, QTableWidgetItem(values[1]))
+        table.resizeColumnToContents(0)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(table)
+        return layout
+
+    def clearLayout(self, layout: QLayout, take: int = 0,
+                    hidden: bool = False) -> NoReturn:
+        """Метод для очистки слоёв компановки
+
+        :param layout: Слой с которого удаляются виджеты по заданным правилам
+        :type layout: QLayout
+        :param take: Индекс элементов, которые будут удаляться
+        :type take: int
+        :param hidden: Флаг для сокрытия виджетов, которым мало удаления
+        :type hidden: bool
+        """
+        length = layout.count()
+        for _ in range(length-1):
+            item = layout.takeAt(take)
+            if hidden:
+                item.widget().hide()
+
+    def openCatalog(self) -> NoReturn:
+        """Работа со справочником изделий"""
         window = Catalog(self)
         window.show()
 
-    def open_settings(self):
+    def openSettings(self) -> NoReturn:
+        """Работа с окном настроек"""
         window = Settings(self, self.settings)
         if window.exec_() == QDialog.Accepted:
             self.readSettings()
 
-    def open_new_order(self):
-        window = NewOrderDialog(self)
-        window.exec_()
+    def openNewOrder(self) -> NoReturn:
+        """Добавление нового заказа
 
-    def open_close_order(self):
-        window = CloseOrderDialog(self)
-        window.exec_()
+        Открывается диалоговое окно и если пользователь нажал <Добавить>,
+        то необходимо будет добавить секцию заказа в список заказов на
+        первую позицию
+        """
+        window = NewOrderDialog(self)
+        if window.exec_() == QDialog.Accepted:
+            order = window.getNewOrder()
+            order_section = Section(order[0], order[1])
+            order_section.setContentFields(
+                self.createOrderTable(order[0], *order[2:])
+            )
+            order_section.clicked.connect(self.showOrderInformation)
+            self.ui.scrollAreaWidgetContents.layout().insertWidget(
+                0, order_section
+            )
+
+    def openCloseOrder(self) -> NoReturn:
+        """Диалоговое окно завершения шага
+
+        При завершении обычного <не последнего> шага заказа просто потребует
+        ввести некоторые данные для продолжения работы. При достижении
+        последнего шага уведомит о завершении заказа.
+        """
+        if self.current_order.isLast():
+            QMessageBox.information(
+                self,
+                'Завершение заказа',
+                f'Заказ {self.current_section.name} завершён!',
+                QMessageBox.Ok
+            )
+            self.closeCurrentOrder()
+        else:
+            # TODO: Божественный мисснейминг, это не окно завершения заказа,
+            #       а окно завершения шага
+            window = CloseOrderDialog(self)
+            window.setWindowTitle(self.ui.closeOrder.text())
+            if window.exec_() == QDialog.Accepted:
+                depth = self.current_order.toNextDepth()
+                # TODO: переключение вкладки после перехода на следующий шаг
+                self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
+
+    def closeCurrentOrder(self) -> NoReturn:
+        """Закрытие текущего заказа
+
+        Удаление секции с текущим заказом и создание новой секции того же
+        заказа с новыми параметрами. Обновление данных о заказе в базе данных.
+        Возврат на начальную страницу.
+        """
+        order = self.current_order.drop()
+        StandardDataService.update_record(
+            'orders',
+            {'order_id': order[0]},
+            status_id=4,
+            current_depth=None,
+            efficiency=order[4]
+        )
+        order_section = Section(order[0], order[1])
+        order_section.setContentFields(
+            self.createOrderTable(order[0], order[2], order[3], None, order[4])
+        )
+        order_section.clicked.connect(self.showOrderInformation)
+        self.ui.scrollAreaWidgetContents.layout().insertWidget(
+            0, order_section
+        )
+        self.ui.verticalLayout_8.removeWidget(self.current_section)
+        self.current_section.hide()
+        self.ui.mainArea.setCurrentIndex(0)
+        self.ui.orderInformationArea.setCurrentIndex(0)
+        self.ui.information.setChecked(True)
 
     def readSettings(self):
 
@@ -428,6 +508,8 @@ class MainWindow (QMainWindow):
             'cutting/min_height', defaultValue=100, type=int)
         self.maximum_plate_height = self.settings.value(
             'cutting/max_height', defaultValue=1200, type=int)
+        self.cutting_thickness = self.settings.value(
+            'cutting/cutting_thickness', defaultValue=4.2, type=float)
 
         self.clean_roll_depth = self.settings.value(
             'rolling/clean_depth', defaultValue=3, type=int)
@@ -456,6 +538,8 @@ class MainWindow (QMainWindow):
             'cutting/min_height', self.minimum_plate_height)
         self.settings.setValue(
             'cutting/max_height', self.maximum_plate_height)
+        self.settings.setValue(
+            'cutting/cutting_thickness', self.cutting_thickness)
 
         self.settings.setValue(
             'rolling/clean_depth', self.clean_roll_depth)
@@ -473,76 +557,91 @@ class MainWindow (QMainWindow):
     def closeEvent(self, event):
         event.accept()
 
-        # TODO: разобрать эту помойку на запчасти, а может и вовсе удалить
-        # want_to_exit = QMessageBox.question(
-        #     self,
-        #     'Выход',
-        #     'Вы уверены, что хотите выйти?',
-        #     QMessageBox.Ok | QMessageBox.Cancel
-        # )
-        # if want_to_exit == QMessageBox.Ok:
-        #     self.writeSettings()
-        #     event.accept()
-        # else:
-        #     event.ignore()
-
 
 class OrderContext:
 
     def __init__(self):
-        self.order_id = 0
-        self.order_ingots = []
-        # TODO: как оформить дерево - не знаю, но число деревьев зависит от
-        #       числа слитков, которые указаны в заказе
+        self.id: int = 0
+        self.name: str = ''
+        self.st_name: str = ''
+        self.st_id: int = 1
+        self.ingots: list = []
+        self.__complects: dict = {}
+        self.amount: int = 0
+        self.depth_list: list = []
+        self.depth_ptr: int = 0
+        self.efficiency: float = 0.0
+
         self.root = None
-        self.order_complects = []
-        self.current_depth = 0.0
-        self.order_efficiency = 0
 
     @property
-    def id(self):
-        return self.order_id
-
-    @id.setter
-    def id(self, value: int):
-        self.order_id = value
-
-    @property
-    def ingots(self):
-        return self.order_ingots
-
-    @ingots.setter
-    def ingots(self, value: []):
-        self.order_ingots = value
-
-    @property
-    def complects(self):
-        return self.order_complects
+    def complects(self) -> dict:
+        return self.__complects
 
     @complects.setter
-    def complects(self, value: []):
-        self.order_complects = value
-
-    @property
-    def depth(self):
-        return self.current_depth
-
-    @depth.setter
-    def depth(self, value: float):
-        self.current_depth = value
+    def complects(self, value: dict) -> NoReturn:
+        self.__complects = value
+        self.amount = len(value)
 
     @property
     def tree(self):
+        # TODO: переделать в возврат итерируемой коллекции, через которую
+        #       я и сделаю дерево карты раскроя
         return self.root
 
     @tree.setter
     def tree(self, value: BinNode):
         self.root = value
         self.root.update_size()
+        leaves: list[CuttingChartNode] = self.root.cc_leaves
+        leaves.sort(key=attrgetter('bin.height'), reverse=True)
+        self.depth_list = [leave.bin.height for leave in leaves]
 
     @property
-    def efficiency(self):
-        return self.order_efficiency
+    def depth(self):
+        return self.depth_list[self.depth_ptr]
+
+    @depth.setter
+    def depth(self, value: float):
+        if value in self.depth_list:
+            self.depth_ptr = self.depth_list.index(value)
+        else:
+            self.depth_ptr = 0
+
+    def depth_index(self, depth: float):
+        if depth in self.depth_list:
+            return self.depth_list.index(depth)
+        return -1
+
+    def isLast(self):
+        return self.depth_ptr + 1 == len(self.depth_list)
+
+    def toNextDepth(self):
+        self.depth_ptr = (self.depth_ptr + 1) % len(depth_list)
+        StandardDataService.update_record(
+            'orders',
+            {'order_id': self.order_id},
+            current_depth=self.depth
+        )
+
+    def drop(self):
+        data = [
+            self.id, self.name, self.amount, "Завершён, укомплектован",
+            self.efficiency
+        ]
+        self.id = 0
+        self.name = ''
+        self.st_name = ''
+        self.st_id = 1
+        self.ingots = []
+        self.__complects = {}
+        self.amount = 0
+        self.depth_list = []
+        self.depth_ptr = 0
+        self.efficiency = 0.0
+        self.root = None
+
+        return data
 
 
 if __name__ == '__main__':

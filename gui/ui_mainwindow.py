@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowFstngf.ui'
+## Form generated from reading UI file 'mainwindowgrdqJb.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -523,19 +523,19 @@ class Ui_MainWindow(object):
         self.horizontalLayout_6.setSpacing(0)
         self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
         self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
-        self.pushButton_1 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_1.setObjectName(u"pushButton_1")
+        self.sourcePlate = QPushButton(self.scrollAreaWidgetContents_3)
+        self.sourcePlate.setObjectName(u"sourcePlate")
         sizePolicy3 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.pushButton_1.sizePolicy().hasHeightForWidth())
-        self.pushButton_1.setSizePolicy(sizePolicy3)
-        self.pushButton_1.setMinimumSize(QSize(80, 40))
-        self.pushButton_1.setMaximumSize(QSize(80, 40))
+        sizePolicy3.setHeightForWidth(self.sourcePlate.sizePolicy().hasHeightForWidth())
+        self.sourcePlate.setSizePolicy(sizePolicy3)
+        self.sourcePlate.setMinimumSize(QSize(80, 40))
+        self.sourcePlate.setMaximumSize(QSize(80, 40))
         font = QFont()
         font.setPointSize(8)
-        self.pushButton_1.setFont(font)
-        self.pushButton_1.setStyleSheet(u"QPushButton {\n"
+        self.sourcePlate.setFont(font)
+        self.sourcePlate.setStyleSheet(u"QPushButton {\n"
 "	border: none;\n"
 "	background-color: rgb(225, 225, 225);\n"
 "	width: 80px;\n"
@@ -564,11 +564,11 @@ class Ui_MainWindow(object):
 "	padding-top: 3px;\n"
 "	font-weight: 800;\n"
 "}")
-        self.pushButton_1.setCheckable(True)
-        self.pushButton_1.setChecked(True)
-        self.pushButton_1.setAutoExclusive(True)
+        self.sourcePlate.setCheckable(True)
+        self.sourcePlate.setChecked(True)
+        self.sourcePlate.setAutoExclusive(True)
 
-        self.horizontalLayout_6.addWidget(self.pushButton_1)
+        self.horizontalLayout_6.addWidget(self.sourcePlate)
 
 
         self.horizontalLayout_7.addLayout(self.horizontalLayout_6)
@@ -629,7 +629,7 @@ class Ui_MainWindow(object):
         self.defaultLabel.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u043a\u0430\u0437 \u043d\u0435 \u0432\u044b\u0431\u0440\u0430\u043d", None))
         self.searchName.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0434\u0435\u0442\u0430\u043b\u0438...", None))
         self.closeOrder.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437", None))
-        self.pushButton_1.setText(QCoreApplication.translate("MainWindow", u"\u0418\u0441\u0445\u043e\u0434\u043d\u0430\u044f\n"
+        self.sourcePlate.setText(QCoreApplication.translate("MainWindow", u"\u0418\u0441\u0445\u043e\u0434\u043d\u0430\u044f\n"
 "\u043f\u043b\u0430\u0441\u0442\u0438\u043d\u0430", None))
     # retranslateUi
 
