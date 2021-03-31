@@ -69,4 +69,4 @@ def dfs(root):
     while stack:
         node = stack.popleft()
         yield node
-        stack.extend(node.list_of_children())
+        stack.extendleft(reversed(node.list_of_children()))
