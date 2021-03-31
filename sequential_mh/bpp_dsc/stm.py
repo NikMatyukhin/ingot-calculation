@@ -62,14 +62,14 @@ def get_unpacked_item(parent, node):
 
 def _stmh_idrd(tree, local=False, restrictions=None):
     if local:
-        print('-> Локальная оптимизация')
+        # print('-> Локальная оптимизация')
         level = deque(tree.root.leaves())
         for node in tree.root.cc_leaves:
             parent = node.parent_bnode.parent_bnode
             add_detail = get_unpacked_item(parent, node)
             node.kit.update(add_detail)
     else:
-        print('-> Построение дерева')
+        # print('-> Построение дерева')
         level = deque([tree.root])
 
     while level:
@@ -97,6 +97,7 @@ def _stmh_idrd(tree, local=False, restrictions=None):
             node = level.popleft()
             _create_insert_template(node, level, tree, local, restrictions)
 
+    print('Построение дерева завершено')
     return tree
 
 

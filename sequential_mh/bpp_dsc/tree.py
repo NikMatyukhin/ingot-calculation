@@ -474,7 +474,7 @@ class BinNode(Node):
         return node is parent.list_of_children()[1]
 
     def _fix_semifinished(self, width, length, max_size=None, **kwargs):
-        print('Фиксация бина полуфабриката')
+        # print('Фиксация бина полуфабриката')
         p_cont = self.parent_cont
         rolldir = self.bin.last_rolldir
         if is_cutting_node(self.parent):
@@ -1586,6 +1586,7 @@ def optimal_configuration(tree, lower=1., nd=False, is_total=False):
         )
         if efficiency >= lower:
             result.append((efficiency, *copy_tree(item[-1], item[:-1])))
+    print('Выбор оптимальной конфигурации завершен')
     return result
 
 
