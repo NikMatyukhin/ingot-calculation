@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowupdIWq.ui'
+## Form generated from reading UI file 'mainwindowFstngf.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -418,6 +418,22 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
         self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 343, 437))
+        self.verticalLayout_9 = QVBoxLayout(self.scrollAreaWidgetContents_2)
+        self.verticalLayout_9.setSpacing(0)
+        self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_9.setObjectName(u"verticalLayout_9")
+        self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_8 = QVBoxLayout()
+        self.verticalLayout_8.setSpacing(10)
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.verticalLayout_8.setContentsMargins(-1, -1, 7, -1)
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.verticalLayout_8.addItem(self.verticalSpacer)
+
+
+        self.verticalLayout_9.addLayout(self.verticalLayout_8)
+
         self.searchResult_2.setWidget(self.scrollAreaWidgetContents_2)
 
         self.verticalLayout_7.addWidget(self.searchResult_2)
@@ -554,297 +570,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_6.addWidget(self.pushButton_1)
 
-        self.pushButton_2 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_2.setObjectName(u"pushButton_2")
-        sizePolicy3.setHeightForWidth(self.pushButton_2.sizePolicy().hasHeightForWidth())
-        self.pushButton_2.setSizePolicy(sizePolicy3)
-        self.pushButton_2.setMinimumSize(QSize(80, 40))
-        self.pushButton_2.setMaximumSize(QSize(80, 16777215))
-        self.pushButton_2.setFont(font)
-        self.pushButton_2.setStyleSheet(u"QPushButton {\n"
-"	border: none;\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	width: 80px;\n"
-"	height: 40px;\n"
-"	padding: 0px;\n"
-"	color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"	background-color: rgb(235, 235, 235);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"	background-color: rgb(245, 245, 245);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	border-bottom: 3px solid black;\n"
-"	padding-top: 3px;\n"
-"	font-weight: 800;\n"
-"}")
-        self.pushButton_2.setCheckable(True)
-        self.pushButton_2.setAutoExclusive(True)
-
-        self.horizontalLayout_6.addWidget(self.pushButton_2)
-
-        self.pushButton_3 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_3.setObjectName(u"pushButton_3")
-        sizePolicy3.setHeightForWidth(self.pushButton_3.sizePolicy().hasHeightForWidth())
-        self.pushButton_3.setSizePolicy(sizePolicy3)
-        self.pushButton_3.setMinimumSize(QSize(80, 40))
-        self.pushButton_3.setMaximumSize(QSize(80, 16777215))
-        self.pushButton_3.setFont(font)
-        self.pushButton_3.setStyleSheet(u"QPushButton {\n"
-"	border: none;\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	width: 80px;\n"
-"	height: 40px;\n"
-"	padding: 0px;\n"
-"	color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"	background-color: rgb(235, 235, 235);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"	background-color: rgb(245, 245, 245);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	border-bottom: 3px solid black;\n"
-"	padding-top: 3px;\n"
-"	font-weight: 800;\n"
-"}")
-        self.pushButton_3.setCheckable(True)
-        self.pushButton_3.setAutoExclusive(True)
-
-        self.horizontalLayout_6.addWidget(self.pushButton_3)
-
-        self.pushButton_4 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_4.setObjectName(u"pushButton_4")
-        sizePolicy3.setHeightForWidth(self.pushButton_4.sizePolicy().hasHeightForWidth())
-        self.pushButton_4.setSizePolicy(sizePolicy3)
-        self.pushButton_4.setMinimumSize(QSize(80, 40))
-        self.pushButton_4.setMaximumSize(QSize(80, 16777215))
-        self.pushButton_4.setFont(font)
-        self.pushButton_4.setStyleSheet(u"QPushButton {\n"
-"	border: none;\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	width: 80px;\n"
-"	height: 40px;\n"
-"	padding: 0px;\n"
-"	color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"	background-color: rgb(235, 235, 235);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"	background-color: rgb(245, 245, 245);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	border-bottom: 3px solid black;\n"
-"	padding-top: 3px;\n"
-"	font-weight: 800;\n"
-"}")
-        self.pushButton_4.setCheckable(True)
-        self.pushButton_4.setAutoExclusive(True)
-
-        self.horizontalLayout_6.addWidget(self.pushButton_4)
-
-        self.pushButton_5 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_5.setObjectName(u"pushButton_5")
-        sizePolicy3.setHeightForWidth(self.pushButton_5.sizePolicy().hasHeightForWidth())
-        self.pushButton_5.setSizePolicy(sizePolicy3)
-        self.pushButton_5.setMinimumSize(QSize(80, 40))
-        self.pushButton_5.setMaximumSize(QSize(80, 16777215))
-        self.pushButton_5.setFont(font)
-        self.pushButton_5.setStyleSheet(u"QPushButton {\n"
-"	border: none;\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	width: 80px;\n"
-"	height: 40px;\n"
-"	padding: 0px;\n"
-"	color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"	background-color: rgb(235, 235, 235);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"	background-color: rgb(245, 245, 245);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	border-bottom: 3px solid black;\n"
-"	padding-top: 3px;\n"
-"	font-weight: 800;\n"
-"}")
-        self.pushButton_5.setCheckable(True)
-        self.pushButton_5.setAutoExclusive(True)
-
-        self.horizontalLayout_6.addWidget(self.pushButton_5)
-
-        self.pushButton_6 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_6.setObjectName(u"pushButton_6")
-        sizePolicy3.setHeightForWidth(self.pushButton_6.sizePolicy().hasHeightForWidth())
-        self.pushButton_6.setSizePolicy(sizePolicy3)
-        self.pushButton_6.setMinimumSize(QSize(80, 40))
-        self.pushButton_6.setMaximumSize(QSize(80, 16777215))
-        self.pushButton_6.setFont(font)
-        self.pushButton_6.setStyleSheet(u"QPushButton {\n"
-"	border: none;\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	width: 80px;\n"
-"	height: 40px;\n"
-"	padding: 0px;\n"
-"	color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"	background-color: rgb(235, 235, 235);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"	background-color: rgb(245, 245, 245);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	border-bottom: 3px solid black;\n"
-"	padding-top: 3px;\n"
-"	font-weight: 800;\n"
-"}")
-        self.pushButton_6.setCheckable(True)
-        self.pushButton_6.setAutoExclusive(True)
-
-        self.horizontalLayout_6.addWidget(self.pushButton_6)
-
-        self.pushButton_7 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_7.setObjectName(u"pushButton_7")
-        sizePolicy3.setHeightForWidth(self.pushButton_7.sizePolicy().hasHeightForWidth())
-        self.pushButton_7.setSizePolicy(sizePolicy3)
-        self.pushButton_7.setMinimumSize(QSize(80, 40))
-        self.pushButton_7.setMaximumSize(QSize(80, 16777215))
-        self.pushButton_7.setFont(font)
-        self.pushButton_7.setStyleSheet(u"QPushButton {\n"
-"	border: none;\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	width: 80px;\n"
-"	height: 40px;\n"
-"	padding: 0px;\n"
-"	color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"	background-color: rgb(235, 235, 235);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"	background-color: rgb(245, 245, 245);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	border-bottom: 3px solid black;\n"
-"	padding-top: 3px;\n"
-"	font-weight: 800;\n"
-"}")
-        self.pushButton_7.setCheckable(True)
-        self.pushButton_7.setAutoExclusive(True)
-
-        self.horizontalLayout_6.addWidget(self.pushButton_7)
-
-        self.pushButton_8 = QPushButton(self.scrollAreaWidgetContents_3)
-        self.pushButton_8.setObjectName(u"pushButton_8")
-        sizePolicy3.setHeightForWidth(self.pushButton_8.sizePolicy().hasHeightForWidth())
-        self.pushButton_8.setSizePolicy(sizePolicy3)
-        self.pushButton_8.setMinimumSize(QSize(80, 40))
-        self.pushButton_8.setMaximumSize(QSize(80, 16777215))
-        self.pushButton_8.setFont(font)
-        self.pushButton_8.setStyleSheet(u"QPushButton {\n"
-"	border: none;\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	width: 80px;\n"
-"	height: 40px;\n"
-"	padding: 0px;\n"
-"	color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"	background-color: rgb(235, 235, 235);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"	background-color: rgb(245, 245, 245);\n"
-"	border-bottom: 3px solid gray;\n"
-"	font-weight: 800;\n"
-"	padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"	background-color: rgb(225, 225, 225);\n"
-"	border-bottom: 3px solid black;\n"
-"	padding-top: 3px;\n"
-"	font-weight: 800;\n"
-"}")
-        self.pushButton_8.setCheckable(True)
-        self.pushButton_8.setAutoExclusive(True)
-
-        self.horizontalLayout_6.addWidget(self.pushButton_8)
-
-        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_6.addItem(self.horizontalSpacer_2)
-
 
         self.horizontalLayout_7.addLayout(self.horizontalLayout_6)
 
@@ -906,12 +631,5 @@ class Ui_MainWindow(object):
         self.closeOrder.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437", None))
         self.pushButton_1.setText(QCoreApplication.translate("MainWindow", u"\u0418\u0441\u0445\u043e\u0434\u043d\u0430\u044f\n"
 "\u043f\u043b\u0430\u0441\u0442\u0438\u043d\u0430", None))
-        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"3.3 \u043c\u043c", None))
-        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"3.0 \u043c\u043c", None))
-        self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"2.2 \u043c\u043c", None))
-        self.pushButton_5.setText(QCoreApplication.translate("MainWindow", u"2.0 \u043c\u043c", None))
-        self.pushButton_6.setText(QCoreApplication.translate("MainWindow", u"1.5 \u043c\u043c", None))
-        self.pushButton_7.setText(QCoreApplication.translate("MainWindow", u"1.0 \u043c\u043c", None))
-        self.pushButton_8.setText(QCoreApplication.translate("MainWindow", u"0.5 \u043c\u043c", None))
     # retranslateUi
 

@@ -1,13 +1,13 @@
 import sys
 from typing import Iterable, Union
 from itertools import chain
-from operator import itemgetter
+from operator import itemgetter, attrgetter
 
 from PySide6.QtCore import (Qt, QSettings)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QTableWidget,
                                QTableWidgetItem, QSizePolicy, QMessageBox,
                                QDialog, QHBoxLayout, QTreeWidgetItem,
-                               QVBoxLayout)
+                               QVBoxLayout, QPushButton)
 
 from gui import ui_mainwindow
 from gui.ui_functions import *
@@ -16,7 +16,8 @@ from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Tree, optimal_configuration, solution_efficiency
+    BinNode, Tree, optimal_configuration, solution_efficiency,
+    CuttingChartNode
 )
 from sequential_mh.bpp_dsc.stm import _stmh_idrd
 
@@ -83,6 +84,7 @@ class MainWindow (QMainWindow):
                 self.ui.information.setChecked(True)
             )
         )
+        self.ui.pushButton_1.clicked.connect(self.depthLineChanged)
 
     def loadOrderList(self):
 
@@ -104,21 +106,21 @@ class MainWindow (QMainWindow):
 
     def loadDetailList(self, depth: float = 0):
 
+        len = self.ui.verticalLayout_8.count()
+        for _ in range(len-1):
+            item = self.ui.verticalLayout_8.takeAt(0)
+            item.widget().hide()
+            self.ui.verticalLayout_8.removeWidget(item.widget())
+
         cut_blanks = OrderDataService.cut_blanks(
-            {'order_id': self.current_order.getID()}, depth)
-        layout = QVBoxLayout()
-        layout.setSpacing(10)
+            {'order_id': self.current_order.id}, depth)
 
         for detail in cut_blanks:
             detail_section = Section(detail[0], detail[1])
             detail_section.setContentFields(
                 self.createDetailTable(*detail[2:])
             )
-            layout.addWidget(detail_section)
-
-        layout.setContentsMargins(0, 0, 7, 0)
-        layout.addStretch()
-        self.ui.scrollAreaWidgetContents_2.setLayout(layout)
+            self.ui.verticalLayout_8.insertWidget(0, detail_section)
 
     def createOrderTable(self, id: int, amount: int, status: str,
                          depth: float = 1.0,
@@ -200,16 +202,14 @@ class MainWindow (QMainWindow):
 
         page = OrderPage()
 
-        id = self.current_section.getID()
+        id = self.current_section.id
         data = OrderDataService.get_by_id('orders', {'order_id': id})
         status, name, depth, efficiency, on_storage = data[1:]
         ingots = OrderDataService.ingots({'order_id': id})
         complects = OrderDataService.complects({'order_id': id})
 
         # пока работаем только с одном слитком
-        # print(ingots[0])
         main_ingot = ingots[0][-3:]
-        print(f'Слиток: {main_ingot}')
 
         # TODO: Вторым аргументом нужно вставить плотность сплава
         material = Material(main_ingot[1], 2.2, 1.)
@@ -275,7 +275,7 @@ class MainWindow (QMainWindow):
             lambda: (
                 self.ui.mainArea.setCurrentIndex(1),
                 self.ui.chart.setChecked(True),
-                self.createDepthLineBar()
+                self.createDepthLineBar(),
                 self.loadDetailList()
             )
         )
@@ -287,6 +287,60 @@ class MainWindow (QMainWindow):
         self.ui.informationPage.layout().takeAt(0)
         self.ui.informationPage.layout().addWidget(page)
         self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
+
+    def createDepthLineBar(self):
+        len = self.ui.horizontalLayout_6.count()
+        for _ in range(len-1):
+            self.ui.horizontalLayout_6.takeAt(1)
+        leaves: list[CuttingChartNode] = self.current_order.tree.cc_leaves
+        leaves.sort(key=attrgetter('bin.height'), reverse=True)
+        for leave in leaves:
+            depth = leave.bin.height
+            button = QPushButton(f'{depth} мм')
+            button.setCheckable(True)
+            button.setAutoExclusive(True)
+            button.setStyleSheet('''
+                QPushButton {
+                    border: none;
+                    background-color: rgb(225, 225, 225);
+                    width: 80px;
+                    height: 40px;
+                    padding: 0px;
+                    color: black;
+                }
+
+                QPushButton:hover {
+                    background-color: rgb(235, 235, 235);
+                    border-bottom: 3px solid gray;
+                    font-weight: 800;
+                    padding-top: 3px;
+                }
+
+                QPushButton:pressed {
+                    background-color: rgb(245, 245, 245);
+                    border-bottom: 3px solid gray;
+                    font-weight: 800;
+                    padding-top: 3px;
+                }
+
+                QPushButton:checked {
+                    background-color: rgb(225, 225, 225);
+                    border-bottom: 3px solid black;
+                    padding-top: 3px;
+                    font-weight: 800;
+                }''')
+            button.clicked.connect(self.depthLineChanged)
+            self.ui.horizontalLayout_6.addWidget(button)
+        self.ui.horizontalLayout_6.addStretch()
+
+    def depthLineChanged(self):
+        button = self.sender()
+        name = button.text()
+        if name.startswith('Исходная'):
+            self.loadDetailList()
+        else:
+            depth, _, _ = name.partition(' ')
+            self.loadDetailList(depth=float(depth))
 
     def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
         # выбор заготовок и удаление лишних значений
@@ -307,7 +361,6 @@ class MainWindow (QMainWindow):
                     material=material
                 )
                 details.append(blank)
-            print(details)
         kit = Kit(details)
         kit.sort('width')
         return kit
@@ -341,24 +394,8 @@ class MainWindow (QMainWindow):
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
-        # tree = _stmh_idrd(tree, restrictions=settings)
-        
-        # TODO: Удалить создание pdf
-        # import os
-        # os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
-        # from sequential_mh.bpp_dsc.graph import plot, create_edges
-        # graph1, all_nodes1 = plot(tree.root, 'pdf/graph1.gv')
-        # create_edges(graph1, all_nodes1)
-        # graph1.view()
-
-        # _, res, nodes = optimal_configuration(tree, nd=True)
-        # res.update_size()
-
-        # print(f'Всего деталей: {res.kit.qty()}')
-        # print(f'По всему объему: {solution_efficiency(res, nodes, is_total=True)}')
-        # print(f'По используемому объему: {solution_efficiency(res, nodes)}')
-        # print(f'Взвешенная: {solution_efficiency(res, nodes, nd=True)}')
-
+        tree = _stmh_idrd(tree, restrictions=settings)
+        _, self.current_order.tree, _ = optimal_configuration(tree, nd=True)
 
     def open_catalog(self):
         window = Catalog(self)
@@ -457,11 +494,10 @@ class OrderContext:
         self.order_ingots = []
         # TODO: как оформить дерево - не знаю, но число деревьев зависит от
         #       числа слитков, которые указаны в заказе
-        self.cutting_trees = {}
+        self.root = None
         self.order_complects = []
         self.current_depth = 0.0
         self.order_efficiency = 0
-
 
     @property
     def id(self):
@@ -478,7 +514,6 @@ class OrderContext:
     @ingots.setter
     def ingots(self, value: []):
         self.order_ingots = value
-        self.cutting_trees = dict.fromkeys()
 
     @property
     def complects(self):
@@ -495,6 +530,15 @@ class OrderContext:
     @depth.setter
     def depth(self, value: float):
         self.current_depth = value
+
+    @property
+    def tree(self):
+        return self.root
+
+    @tree.setter
+    def tree(self, value: BinNode):
+        self.root = value
+        self.root.update_size()
 
     @property
     def efficiency(self):
