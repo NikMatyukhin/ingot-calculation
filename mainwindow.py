@@ -30,7 +30,8 @@ class MainWindow (QMainWindow):
         UIFunctions.set_topbar_shadow(self)
 
         # Текущий заказ, информация о котором отображается в главном окне
-        self.current_order = None
+        self.current_order = OrderContext()
+        self.current_section = None
 
         # Работа с настройками приложения: подгрузка настроек
         self.settings = QSettings('configs', QSettings.IniFormat, self)
@@ -85,10 +86,10 @@ class MainWindow (QMainWindow):
         layout.addStretch()
         self.ui.scrollAreaWidgetContents.setLayout(layout)
 
-    def loadDetailList(self):
+    def loadDetailList(self, depth: float = 0):
 
         cut_blanks = OrderDataService.cut_blanks(
-            {'order_id': self.current_order.getID()}, 0)
+            {'order_id': self.current_order.getID()}, depth)
         layout = QVBoxLayout()
         layout.setSpacing(10)
 
@@ -167,15 +168,15 @@ class MainWindow (QMainWindow):
 
         choosen_order = self.sender()
 
-        if not self.current_order:
-            self.current_order = choosen_order
-        elif choosen_order is self.current_order:
-            self.current_order = None
+        if not self.current_section:
+            self.current_section = choosen_order
+        elif choosen_order is self.current_section:
+            self.current_section = None
             self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
             return
         else:
-            self.current_order.collapse()
-            self.current_order = choosen_order
+            self.current_section.collapse()
+            self.current_section = choosen_order
         page = self.createInformationPage()
         self.setInformationPage(page)
 
@@ -183,7 +184,7 @@ class MainWindow (QMainWindow):
 
         page = OrderPage()
 
-        id = self.current_order.getID()
+        id = self.current_section.getID()
         data = OrderDataService.get_by_id('orders', {'order_id': id})
         status, name, depth, efficiency, on_storage = data[1:]
         ingots = OrderDataService.ingots({'order_id': id})
@@ -209,7 +210,7 @@ class MainWindow (QMainWindow):
             page.ui.detailedPlanFrame.hide()
 
         # Назначение названия заказа
-        storage = '(на склад)' if int(on_storage) else ''
+        storage = ' (на склад)' if int(on_storage) else ''
         page.ui.label.setText('Заказ ' + name + storage)
 
         # Назначение списка изделий и деталей заказа
@@ -234,10 +235,15 @@ class MainWindow (QMainWindow):
         ingots_layout.addStretch()
         page.ui.scrollAreaWidgetContents_3.setLayout(ingots_layout)
 
+        self.current_order.id = self.current_section.id
+        self.current_order.ingots = ingots
+        self.current_order.complects = complects
+
         page.ui.detailedPlan.clicked.connect(
             lambda: (
                 self.ui.mainArea.setCurrentIndex(1),
                 self.ui.chart.setChecked(True),
+                self.createDepthLineBar()
                 self.loadDetailList()
             )
         )
@@ -338,6 +344,57 @@ class MainWindow (QMainWindow):
         #     event.accept()
         # else:
         #     event.ignore()
+
+
+class OrderContext:
+
+    def __init__(self):
+        self.order_id = 0
+        self.order_ingots = []
+        # TODO: как оформить дерево - не знаю, но число деревьев зависит от
+        #       числа слитков, которые указаны в заказе
+        self.cutting_trees = {}
+        self.order_complects = []
+        self.current_depth = 0.0
+        self.order_efficiency = 0
+
+
+    @property
+    def id(self):
+        return self.order_id
+
+    @id.setter
+    def id(self, value: int):
+        self.order_id = value
+
+    @property
+    def ingots(self):
+        return self.order_ingots
+
+    @ingots.setter
+    def ingots(self, value: []):
+        self.order_ingots = value
+        self.cutting_trees = dict.fromkeys()
+
+    @property
+    def complects(self):
+        return self.order_complects
+
+    @complects.setter
+    def complects(self, value: []):
+        self.order_complects = value
+
+    @property
+    def depth(self):
+        return self.current_depth
+
+    @depth.setter
+    def depth(self, value: float):
+        self.current_depth = value
+
+    @property
+    def efficiency(self):
+        return self.order_efficiency
 
 
 if __name__ == '__main__':
