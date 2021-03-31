@@ -38,6 +38,8 @@ class Settings(QDialog):
             'cutting/min_height', defaultValue=100, type=int))
         self.ui.spinBox_5.setValue(self.settings.value(
             'cutting/max_height', defaultValue=1200, type=int))
+        self.ui.doubleSpinBox_3.setValue(self.settings.value(
+            'cutting/cutting_thickness', defaultValue=4.2, type=float))
 
         self.ui.spinBox_4.setValue(self.settings.value(
             'rolling/clean_depth', defaultValue=3, type=int))
@@ -65,6 +67,8 @@ class Settings(QDialog):
                                self.ui.spinBox_7.value())
         self.settings.setValue('cutting/max_height',
                                self.ui.spinBox_5.value())
+        self.settings.setValue('cutting/cutting_thickness',
+                               self.ui.doubleSpinBox_3.value())
 
         self.settings.setValue('rolling/clean_depth',
                                self.ui.spinBox_4.value())
