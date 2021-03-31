@@ -57,7 +57,7 @@ def deformation(length: Number, height: Number, new_height: Number,
     return (extension * length * height) / new_height
 
 
-def bfs(root):
+def dfs(root):
     """Обход дерева в глубину
 
     :param root: Корневой узел с которого начинается обход
