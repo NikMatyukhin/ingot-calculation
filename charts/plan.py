@@ -1,47 +1,17 @@
-from PySide6.QtWidgets import (QGraphicsItem, QGraphicsScene,
-                               QGraphicsView, QApplication,
-                               QStyleOptionGraphicsItem, QWidget,
-                               QGraphicsSceneHoverEvent, QMenu)
-from PySide6.QtCore import (Qt, QRectF, QPointF)
-from PySide6.QtGui import (QPainter, QPen, QBrush, QColor, QFont,
-                           QFontMetrics, QTransform)
-
-
-plan = {
-    "1.0": {
-        "1": [
-            {'x': 0.0, 'y': 0.0, 'w': 200.0, 'h': 200.0, 'idx': 1},
-            {'x': 0.0, 'y': 200.0, 'w': 40.0, 'h': 40.0, 'idx': 2},
-            {'x': 0.0, 'y': 240.0, 'w': 40.0, 'h': 40.0, 'idx': 3},
-            {'x': 40.0, 'y': 200.0, 'w': 40.0, 'h': 40.0, 'idx': 4},
-            {'x': 40.0, 'y': 240.0, 'w': 40.0, 'h': 40.0, 'idx': 5},
-            {'x': 80.0, 'y': 200.0, 'w': 40.0, 'h': 40.0, 'idx': 6},
-            {'x': 80.0, 'y': 240.0, 'w': 40.0, 'h': 40.0, 'idx': 7},
-            {'x': 120.0, 'y': 200.0, 'w': 40.0, 'h': 40.0, 'idx': 8},
-            {'x': 120.0, 'y': 240.0, 'w': 40.0, 'h': 40.0, 'idx': 9},
-            {'x': 160.0, 'y': 200.0, 'w': 40.0, 'h': 40.0, 'idx': 10},
-            {'x': 160.0, 'y': 240.0, 'w': 40.0, 'h': 40.0, 'idx': 11},
-            {'x': 200.0, 'y': 0.0, 'w': 40.0, 'h': 40.0, 'idx': 12},
-            {'x': 200.0, 'y': 40.0, 'w': 40.0, 'h': 40.0, 'idx': 13},
-            {'x': 200.0, 'y': 80.0, 'w': 40.0, 'h': 40.0, 'idx': 14},
-            {'x': 200.0, 'y': 120.0, 'w': 40.0, 'h': 40.0, 'idx': 15},
-            {'x': 200.0, 'y': 160.0, 'w': 40.0, 'h': 40.0, 'idx': 16},
-            {'x': 200.0, 'y': 200.0, 'w': 40.0, 'h': 40.0, 'idx': 17},
-            {'x': 200.0, 'y': 240.0, 'w': 40.0, 'h': 40.0, 'idx': 18},
-            {'x': 240.0, 'y': 0.0, 'w': 40.0, 'h': 40.0, 'idx': 19},
-            {'x': 240.0, 'y': 40.0, 'w': 40.0, 'h': 40.0, 'idx': 20},
-            {'x': 240.0, 'y': 80.0, 'w': 40.0, 'h': 40.0, 'idx': 21},
-            {'x': 240.0, 'y': 120.0, 'w': 40.0, 'h': 40.0, 'idx': 22},
-            {'x': 280.0, 'y': 0.0, 'w': 160.0, 'h': 100.0, 'idx': 23},
-            {'x': 280.0, 'y': 100.0, 'w': 160.0, 'h': 200.0, 'idx': 24},
-        ]
-    }
-}
+import random
+from PySide6.QtCore import Qt, QRectF, QPointF
+from PySide6.QtWidgets import (
+    QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QWidget,
+    QGraphicsSceneHoverEvent, QMenu
+)
+from PySide6.QtGui import (
+    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QTransform
+)
 
 
 class DetailGraphicsItem(QGraphicsItem):
 
-    def __init__(self, x, y, w, h, idx, txt,
+    def __init__(self, x, y, w, h, txt, idx=0,
                  clr=QColor(100, 100, 100), parent=None):
         super(DetailGraphicsItem, self).__init__(parent)
         self.x_pos = x
@@ -94,64 +64,79 @@ class DetailGraphicsItem(QGraphicsItem):
         self.update()
 
 
-def draw_plan(m_scene: QGraphicsScene, plan):
-    m_scene.addRect(0.0, 0.0, 500, 300,
-                    QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 2.0,
-                         Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                         Qt.PenJoinStyle.RoundJoin),
-                    QBrush(QColor(0, 0, 0),
-                           Qt.BrushStyle.DiagCrossPattern))
-    m_scene.addLine(0, -10, 500, -10, QPen(QColor(0, 0, 0)))
-    m_scene.addLine(-10, 0, -10, 300, QPen(QColor(0, 0, 0)))
-    x_coords = set()
-    y_coords = set()
-    for depth in plan:
-        for priority in plan[depth]:
-            for detail in plan[depth][priority]:
-                x, y, w, h, idx = detail.values()
-                x_coords.add(x)
-                x_coords.add(x + w)
-                y_coords.add(y)
-                y_coords.add(y + h)
-                item = DetailGraphicsItem(x, y, w, h, idx, f'Деталь №{idx}')
-                item.setAcceptHoverEvents(True)
-                m_scene.addItem(item)
-    for x in x_coords:
-        x_t = m_scene.addText(str(x))
-        x_t.setPos(x - x_t.boundingRect().width() // 2, -30)
-    for y in y_coords:
-        y_t = m_scene.addText(str(y))
-        y_t.setPos(-y_t.boundingRect().width() - 10, y - 12)
+class CuttingPlanPainter:
 
+    def __init__(self, scene: QGraphicsScene):
+        self.scene = scene
+        self.bin_lenght = 0
+        self.bin_width = 0
+        self.bin_depth = 0
+        self.x_coords = set([0.0])
+        self.y_coords = set([0.0])
+        self.blanks = []
+        self.blanks_colors = {}
 
-def detail_clicked(text: str, point: QPointF):
-    global view
-    item = view.itemAt(point)
-    if item:
-        print(f"Нажата деталь {item.index} "
-              f"с размерами {item.width} на {item.height} "
-              "была " + text)
+    def setBin(self, length: float, width: float, depth: float):
+        self.bin_lenght = length
+        self.y_coords.add(length)
+        self.bin_width = width
+        self.x_coords.add(width)
+        self.bin_depth = depth
 
+    def addBlank(self, h: float, w: float, depth: float, x: float, y: float,
+                 name: str):
+        self.blanks.append([x, y, w, h, name])
+        if name not in self.blanks_colors:
+            self.blanks_colors[name] = self.randomColor()
+        self.x_coords.add(x)
+        self.x_coords.add(x + w)
+        self.y_coords.add(y)
+        self.y_coords.add(y + h)
 
-def open_context_menu(point: QPointF):
-    menu = QMenu()
-    ready_action = menu.addAction('успешно вырезана')
-    drop_action = menu.addAction('забракована')
+    def drawPlan(self):
+        self.drawBin()
+        for blank in self.blanks:
+            color = self.blanks_colors[blank[4]]
+            item = DetailGraphicsItem(*blank, clr=color)
+            item.setAcceptHoverEvents(True)
+            self.scene.addItem(item)
+        self.drawCoords()
 
-    global view
-    action = menu.exec_(view.mapToGlobal(point))
-    detail_clicked(action.text(), point)
+    def drawBin(self):
+        pen = QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 2.0,
+                   Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                   Qt.PenJoinStyle.RoundJoin)
+        brush = QBrush(QColor(0, 0, 0), Qt.BrushStyle.DiagCrossPattern)
+        self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght,
+                           pen, brush)
+        self.drawCoords()
 
+    def drawCoords(self):
+        self.scene.addLine(0, -10, self.bin_width, -10, QPen(QColor(0, 0, 0)))
+        self.scene.addLine(-10, 0, -10, self.bin_lenght, QPen(QColor(0, 0, 0)))
+        for x in self.x_coords:
+            x_t = self.scene.addText(str(x))
+            x_t.setPos(x - x_t.boundingRect().width() // 2, -30)
+        for y in self.y_coords:
+            y_t = self.scene.addText(str(y))
+            y_t.setPos(-y_t.boundingRect().width() - 10, y - 12)
 
-if __name__ == '__main__':
-    app = QApplication()
-    view = QGraphicsView()
-    view.setContextMenuPolicy(Qt.CustomContextMenu)
-    view.customContextMenuRequested.connect(open_context_menu)
-    scene = QGraphicsScene()
+    def randomColor(self):
+        color = QColor()
+        color.setNamedColor(
+            "#"+''.join(
+                [
+                    random.choice('0123456789ABCDEF') for j in range(6)
+                ]
+            )
+        )
+        return color
 
-    draw_plan(scene, plan)
-
-    view.setScene(scene)
-    view.show()
-    app.exec_()
+    def clearCanvas(self):
+        self.scene.clear()
+        self.bin_lenght = 0
+        self.bin_width = 0
+        self.bin_depth = 0
+        self.blanks = []
+        self.x_coords = set([0.0])
+        self.y_coords = set([0.0])

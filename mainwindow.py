@@ -19,6 +19,7 @@ from plate import Plate
 from page import OrderPage
 from section import Section
 from button import ExclusiveButton
+from charts.plan import CuttingPlanPainter
 
 from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
@@ -78,6 +79,8 @@ class MainWindow (QMainWindow):
 
         # Сцены для отрисовки
         self.plan_scene = QGraphicsScene()
+        self.ui.graphicsView.setScene(self.plan_scene)
+        self.plan_painter = CuttingPlanPainter(self.plan_scene)
 
         # Заполняем список заказов из базы
         self.loadOrderList()
@@ -262,6 +265,7 @@ class MainWindow (QMainWindow):
                     *size, priority, direction=Direction(direction),
                     material=material
                 )
+                blank.name = detail[3]
                 details.append(blank)
         kit = Kit(details)
         kit.sort('width')
@@ -321,21 +325,37 @@ class MainWindow (QMainWindow):
     def depthLineChanged(self) -> NoReturn:
         """Просмотр другой толщины и подгрузка нового списка деталей"""
         button = self.sender()
+        self.plan_painter.clearCanvas()
         if button is self.ui.sourcePlate:
             self.loadDetailList(depth=0.0)
-            # self.current_order.root.bin.length
-            # self.current_order.root.bin.width
-            # self.current_order.root.bin.height
-            # TODO: Отрисовка пластины целиком
+            bin = self.current_order.root.bin
+            self.plan_painter.setBin(
+                round(bin.length, 1),
+                round(bin.width, 1),
+                round(bin.height, 1)
+            )
+            self.plan_painter.drawBin()
         else:
             depth = button.depth
             self.loadDetailList(depth=float(depth))
-            # self.current_order.root.cc_leaves[0].bin.length
-            # self.current_order.root.cc_leaves[0].bin.width
-            # self.current_order.root.cc_leaves[0].bin.height
             index = self.current_order.depth_index(depth)
-            print(self.current_order.root.cc_leaves[index].result.blanks)
-            # TODO: Отрисовка заготовок на текущей толщине
+            pack = self.current_order.root.cc_leaves[index]
+            self.plan_painter.setBin(
+                round(pack.bin.length, 1),
+                round(pack.bin.width, 1),
+                round(pack.bin.height, 1)
+            )
+            for blank in pack.result:
+                rect = blank.rectangle
+                self.plan_painter.addBlank(
+                    round(rect.length, 1),
+                    round(rect.width, 1),
+                    round(rect.height, 1),
+                    round(blank.x, 1),
+                    round(blank.y, 1),
+                    rect.name
+                )
+            self.plan_painter.drawPlan()
 
     def loadDetailList(self, depth: float) -> NoReturn:
         """Подгрузка списка заготовок
