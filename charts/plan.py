@@ -23,7 +23,7 @@ class DetailGraphicsItem(QGraphicsItem):
         self.draw_color = clr
         self.visible_text = txt
 
-        self.font = QFont('Century Gothic', 14)
+        self.font = QFont('Century Gothic', 9)
         self.metr = QFontMetrics(self.font)
 
     def boundingRect(self):
@@ -36,7 +36,7 @@ class DetailGraphicsItem(QGraphicsItem):
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
               widget: QWidget):
         painter.setPen(
-            QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 2.0,
+            QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 1.0,
                  Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                  Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(
@@ -68,11 +68,12 @@ class CuttingPlanPainter:
 
     def __init__(self, scene: QGraphicsScene):
         self.scene = scene
+        self.font = QFont('Segoe UI', 6)
         self.bin_lenght = 0
         self.bin_width = 0
         self.bin_depth = 0
-        self.x_coords = set([0.0])
-        self.y_coords = set([0.0])
+        self.x_coords = set([0])
+        self.y_coords = set([0])
         self.blanks = []
         self.blanks_colors = {}
 
@@ -103,7 +104,7 @@ class CuttingPlanPainter:
         self.drawCoords()
 
     def drawBin(self):
-        pen = QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 2.0,
+        pen = QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 1.0,
                    Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                    Qt.PenJoinStyle.RoundJoin)
         brush = QBrush(QColor(0, 0, 0), Qt.BrushStyle.DiagCrossPattern)
@@ -114,12 +115,27 @@ class CuttingPlanPainter:
     def drawCoords(self):
         self.scene.addLine(0, -10, self.bin_width, -10, QPen(QColor(0, 0, 0)))
         self.scene.addLine(-10, 0, -10, self.bin_lenght, QPen(QColor(0, 0, 0)))
-        for x in self.x_coords:
+        prev = None
+        for x in sorted(list(self.x_coords)):
             x_t = self.scene.addText(str(x))
-            x_t.setPos(x - x_t.boundingRect().width() // 2, -30)
-        for y in self.y_coords:
+            x_t.setFont(self.font)
+            w_t = x_t.boundingRect().width()
+            x_t.setPos(x - w_t // 2, -30)
+            if prev:
+                h_p = prev.boundingRect().height()
+                if x_t.collidesWithItem(prev):
+                    x_t.setPos(x - w_t // 2, -30 - h_p // 2)
+            prev = x_t
+        for y in sorted(list(self.y_coords)):
             y_t = self.scene.addText(str(y))
-            y_t.setPos(-y_t.boundingRect().width() - 10, y - 12)
+            y_t.setFont(self.font)
+            w_t = y_t.boundingRect().width()
+            y_t.setPos(-w_t - 10, y - 12)
+            if prev:
+                w_p = prev.boundingRect().width()
+                if y_t.collidesWithItem(prev):
+                    y_t.setPos(-w_t - w_p - 10, y - 12)
+            prev = y_t
 
     def randomColor(self):
         color = QColor()
@@ -138,5 +154,5 @@ class CuttingPlanPainter:
         self.bin_width = 0
         self.bin_depth = 0
         self.blanks = []
-        self.x_coords = set([0.0])
-        self.y_coords = set([0.0])
+        self.x_coords = set([0])
+        self.y_coords = set([0])

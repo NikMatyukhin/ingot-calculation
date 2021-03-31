@@ -80,6 +80,8 @@ class MainWindow (QMainWindow):
         # Сцены для отрисовки
         self.plan_scene = QGraphicsScene()
         self.ui.graphicsView.setScene(self.plan_scene)
+        self.ui.graphicsView.scale(1.9, 1.9)
+        self.ui.graphicsView.setAlignment(Qt.AlignCenter)
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
 
         # Заполняем список заказов из базы
@@ -97,7 +99,8 @@ class MainWindow (QMainWindow):
         self.ui.information.clicked.connect(
             lambda: (
                 self.ui.mainArea.setCurrentIndex(0),
-                self.ui.information.setChecked(True)
+                self.ui.information.setChecked(True),
+                self.plan_painter.clearCanvas()
             )
         )
 
@@ -324,8 +327,7 @@ class MainWindow (QMainWindow):
         self.ui.horizontalLayout_6.addStretch()
         self.ui.sourcePlate.setChecked(True)
 
-        # Заполняем список деталей слева
-        self.loadDetailList(depth=0.0)
+        self.sourcePage()
 
         # Кнопку заверешния заказа меняем на кнопку перехода на след.шаг
         depth = self.current_order.depth
@@ -336,35 +338,41 @@ class MainWindow (QMainWindow):
         button = self.sender()
         self.plan_painter.clearCanvas()
         if button is self.ui.sourcePlate:
-            self.loadDetailList(depth=0.0)
-            bin = self.current_order.root.bin
-            self.plan_painter.setBin(
-                round(bin.length, 1),
-                round(bin.width, 1),
-                round(bin.height, 1)
-            )
-            self.plan_painter.drawBin()
+            self.sourcePage()
         else:
             depth = button.depth
-            self.loadDetailList(depth=float(depth))
-            index = self.current_order.depth_index(depth)
-            pack = self.current_order.root.cc_leaves[index]
-            self.plan_painter.setBin(
-                round(pack.bin.length, 1),
-                round(pack.bin.width, 1),
-                round(pack.bin.height, 1)
+            self.stepPage(depth)
+
+    def sourcePage(self):
+        self.loadDetailList(depth=0.0)
+        bin = self.current_order.root.bin
+        self.plan_painter.setBin(
+            round(bin.length, 1),
+            round(bin.width, 1),
+            round(bin.height, 1)
+        )
+        self.plan_painter.drawBin()
+
+    def stepPage(self, depth: float):
+        self.loadDetailList(depth=float(depth))
+        index = self.current_order.depth_index(depth)
+        pack = self.current_order.root.cc_leaves[index]
+        self.plan_painter.setBin(
+            round(pack.bin.length, 1),
+            round(pack.bin.width, 1),
+            round(pack.bin.height, 1)
+        )
+        for blank in pack.result:
+            rect = blank.rectangle
+            self.plan_painter.addBlank(
+                round(rect.length, 1),
+                round(rect.width, 1),
+                round(rect.height, 1),
+                round(blank.x, 1),
+                round(blank.y, 1),
+                rect.name
             )
-            for blank in pack.result:
-                rect = blank.rectangle
-                self.plan_painter.addBlank(
-                    round(rect.length, 1),
-                    round(rect.width, 1),
-                    round(rect.height, 1),
-                    round(blank.x, 1),
-                    round(blank.y, 1),
-                    rect.name
-                )
-            self.plan_painter.drawPlan()
+        self.plan_painter.drawPlan()
 
     def loadDetailList(self, depth: float) -> NoReturn:
         """Подгрузка списка заготовок
