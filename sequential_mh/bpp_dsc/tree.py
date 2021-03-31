@@ -1607,40 +1607,56 @@ def copy_tree(root, nodes):
 
 
 def is_bin_node(node) -> bool:
+    """Узел является контейнером (фикс. размера)"""
     return isinstance(node, BinNode) and not isinstance(node.bin, UnsizedBin)
 
 
 def is_ubin_node(node) -> bool:
+    """Узел является контейнером (нефикс. размера)"""
     return isinstance(node, BinNode) and isinstance(node.bin, UnsizedBin)
 
 
 def is_ingot_node(node):
+    """Узел является слитком"""
     return is_bin_node(node) and node.bin.bin_type == BinType.ingot
 
 
 def is_op_node(node) -> bool:
+    """Узел является операцией"""
     return isinstance(node, OperationNode)
 
 
 def is_rolling_node(node):
+    """Узел является операцией проката
+
+    В том числе: прокат, горизонтальный прокат, вертикальный прокат.
+    """
     return is_op_node(node) and node.operation in (
         Operations.rolling, Operations.h_rolling, Operations.v_rolling
     )
 
 
 def is_cutting_node(node):
+    """Узел является операцией резки"""
     return is_op_node(node) and node.operation == Operations.cutting
 
 
 def is_packing_node(node):
+    """Узел является операцией упаковки"""
     return is_op_node(node) and node.operation == Operations.packing
 
 
 def is_cc_node(node) -> bool:
+    """Узел является схемой раскроя"""
     return isinstance(node, CuttingChartNode)
 
 
 def is_adj_node(node) -> bool:
+    """Узел является корнем шаблона (фикс./нефикс. размеры)
+
+    Корнем шаблона могут быть узлы типа: слиток, смежный остаток,
+    промежуточный
+    """
     return (
         (is_bin_node(node) or is_ubin_node(node)) and
         node.bin.bin_type in (BinType.adjacent, BinType.ingot,
@@ -1649,6 +1665,7 @@ def is_adj_node(node) -> bool:
 
 
 def is_imt_node(node):
+    """Узел является промежуточным (фикс./нефикс. размеры)"""
     return (
         (is_bin_node(node) or is_ubin_node(node)) and
         node.bin.bin_type == BinType.INTERMEDIATE
@@ -1656,4 +1673,5 @@ def is_imt_node(node):
 
 
 def to_delete(length, width, max_size):
+    """Проверка на максимальные размеры"""
     return max_size and (length > max_size[WIDTH] or width > max_size[LENGTH])
