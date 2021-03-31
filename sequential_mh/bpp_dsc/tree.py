@@ -813,7 +813,7 @@ class BinNode(Node):
                             current_height = p_cont.bin.length * height / length
                             width = width * self.bin.d_height / current_height
                         elif length <= p_cont.bin.length and width > p_cont.bin.width:
-                            current_height = p_cont.bin.width * height / width
+                            current_height = width * height / p_cont.bin.width
                             width = p_cont.bin.width
                         else:
                             current_height = height
