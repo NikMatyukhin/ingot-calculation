@@ -1,6 +1,7 @@
 """Модуль вспомогательных функций"""
 
 
+from collections import deque
 from typing import Union
 
 
@@ -54,3 +55,18 @@ def deformation(length: Number, height: Number, new_height: Number,
     if height < new_height:
         extension = 1 / extension
     return (extension * length * height) / new_height
+
+
+def dfs(root):
+    """Обход дерева в глубину
+
+    :param root: Корневой узел с которого начинается обход
+    :type root: BaseNode или наследники
+    :yield: Очередной узел дерева
+    :rtype: BaseNode или наследники
+    """
+    stack = deque([root])
+    while stack:
+        node = stack.popleft()
+        yield node
+        stack.extendleft(reversed(node.list_of_children()))

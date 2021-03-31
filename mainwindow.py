@@ -248,15 +248,24 @@ class MainWindow (QMainWindow):
         return page
 
     def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
-        """Выбор заготовок и удаление лишних значений"""
+        """Формирование набора заготовок
+
+        :param details_id: Список id заготовок
+        :type details_id: Iterable[int]
+        :param material: Материал
+        :type material: Material
+        :return: Набор заготовок
+        :rtype: Kit
+        """
         details = []
         for id_ in details_id:
             detail = StandardDataService.get_by_id(
                 'details', {'detail_id': id_}
             )
             amount = detail[-3]
-            size: tuple[Number, Number, Number] = detail[4:-3]
-            if size[0] == 0 or size[1] == 0 or size[2] == 0:
+            size: Sizes = detail[4:-3]
+            # если в Базе не будет нулевых размеров, можно убрать
+            if 0 in size:
                 continue
             priority: int = detail[-2]
             direction: int = detail[-1]
@@ -274,7 +283,7 @@ class MainWindow (QMainWindow):
     def createCut(self, ingot_size: Sizes, kit: Kit, material: Material):
         """Метод запуска алоритма раскроя
 
-        :param ingot_size: Размер слитка
+        :param ingot_size: Размер слитка в формате (длина, ширина, толщина)
         :type ingot_size: tuple[Number, Number, Number]
         :param kit: Набор заготовок
         :type kit: Kit
