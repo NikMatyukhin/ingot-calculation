@@ -1,6 +1,8 @@
-from PySide6.QtCore import (Qt)
-from PySide6.QtWidgets import (QApplication, QWidget)
-
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QApplication, QWidget, QHBoxLayout, QTreeWidgetItem
+)
+from plate import Plate
 from gui import ui_order_page
 
 
@@ -10,3 +12,44 @@ class OrderPage(QWidget):
         super(OrderPage, self).__init__()
         self.ui = ui_order_page.Ui_Form()
         self.ui.setupUi(self)
+
+    def hideForStatus(self, status: int):
+        """Скрывает ненужные элементы интерфейса
+
+        Если статус <В работе> и <В ожидании>, то скрыть статистику и остатки.
+        Если статус <Завершён>, то скрыть кнопку перехода к подробному плану.
+        """
+        if status == 1 or status == 2:
+            self.ui.label_4.hide()
+            self.ui.label_5.hide()
+            self.ui.label_6.hide()
+            self.ui.scrollArea_3.hide()
+        elif status == 4 or status == 5:
+            self.ui.detailedPlanFrame.hide()
+
+    def setPageTitle(self, name: str, on_storage: bool = False):
+        """Назначение названия заказа"""
+        storage = ' (на склад)' if int(on_storage) else ''
+        self.ui.label.setText('Заказ ' + name + storage)
+
+    def setComplects(self, complects: dict):
+        """Назначение списка изделий и деталей заказа"""
+        for article, details in complects.items():
+            article_item = QTreeWidgetItem(
+                self.ui.treeWidget, [article[1], None, None])
+            for detail in details:
+                detail_item = QTreeWidgetItem(
+                    article_item, [detail[1], str(detail[2]), str(detail[3])])
+            self.ui.treeWidget.addTopLevelItem(article_item)
+        self.ui.treeWidget.resizeColumnToContents(0)
+
+    def setIngots(self, ingots: list):
+        """Назначение слитков заказа"""
+        ingots_layout = QHBoxLayout()
+        for ingot in ingots:
+            ingot_plate = Plate(ingot[0], ingot[1], ingot[2], ingot[3:])
+            ingots_layout.addWidget(ingot_plate)
+        ingots_layout.setContentsMargins(0, 0, 0, 0)
+        ingots_layout.setSpacing(0)
+        ingots_layout.addStretch()
+        self.ui.scrollAreaWidgetContents_3.setLayout(ingots_layout)

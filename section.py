@@ -1,8 +1,10 @@
 import application_rc
-from PySide6.QtCore import (Qt, Signal, QPropertyAnimation,
-                            QParallelAnimationGroup, QAbstractAnimation)
-from PySide6.QtWidgets import (QWidget, QToolButton, QVBoxLayout, QSizePolicy,
-                               QScrollArea)
+from PySide6.QtCore import (
+    Qt, Signal, QPropertyAnimation, QParallelAnimationGroup, QAbstractAnimation
+)
+from PySide6.QtWidgets import (
+    QWidget, QToolButton, QVBoxLayout, QSizePolicy, QScrollArea
+)
 
 
 class Section (QWidget):
@@ -11,8 +13,11 @@ class Section (QWidget):
 
     def __init__(self, id: int, name: str):
         super(Section, self).__init__()
-        self.name = name
         self.id = id
+        self.name = name
+        self.depth = None
+        self.st_name = None
+        self.efficiency = None
 
         self.toggle_button = QToolButton()
         self.toggle_button.setText(name)
@@ -48,14 +53,6 @@ class Section (QWidget):
         self.setWidgetStyles()
 
         self.toggle_button.clicked.connect(self.toggle)
-
-    @property
-    def order_id(self):
-        return self.id
-
-    @order_id.setter
-    def order_id(self, value: int):
-        self.id = value
 
     def setWidgetStyles(self):
         self.toggle_button.setStyleSheet('''
