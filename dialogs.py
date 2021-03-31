@@ -56,8 +56,11 @@ class ProductDialog (QDialog):
                     'успешно добавлена!',
                     QMessageBox.Ok
                 )
-                self.recordSavedSuccess.emit(
-                    [register_number, product_type, designation])
+                self.recordSavedSuccess.emit([
+                    register_number,
+                    product_type,
+                    designation
+                ])
             else:
                 QMessageBox.critical(
                     self,
@@ -118,8 +121,12 @@ class ArticleDialog (QDialog):
                     f'Изделие {nomenclature}\nуспешно добавлено!',
                     QMessageBox.Ok
                 )
-                self.recordSavedSuccess.emit(
-                    [register_id, type, nomenclature, rent])
+                self.recordSavedSuccess.emit([
+                    register_id,
+                    type,
+                    nomenclature,
+                    rent
+                ])
             else:
                 QMessageBox.critical(
                     self,
@@ -236,12 +243,10 @@ class NewOrderDialog(QDialog):
         self.ui = ui_add_order_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
-        self.model = ComplectsModel(
-            [
+        self.model = ComplectsModel([
                 'Ведомость', 'Название', 'Аренда', 'Количество',
                 'Приоритет', 'ID', 'ADDED'
-            ]
-        )
+        ])
         self.proxy_1 = ArticleInformationFilterProxyModel()
         self.proxy_1.setSourceModel(self.model)
         self.ui.treeView_1.setModel(self.proxy_1)
@@ -261,7 +266,6 @@ class NewOrderDialog(QDialog):
         self.ui.treeView_2.setColumnHidden(5, True)
         self.ui.treeView_2.setColumnHidden(6, True)
 
-        # Назначение слитков, непривязанных к заказам
         ingots_layout = QHBoxLayout()
         self.ingots = []
         for ingot in IngotsDataService.vacancy_ingots():
@@ -374,6 +378,7 @@ class NewOrderDialog(QDialog):
             self.model.setData(parent_state_index, False, Qt.EditRole)
 
     def haveAcceptedRows(self, index: QModelIndex) -> bool:
+
         rows_states = []
         for row in range(self.model.rowCount(index)):
             row_index = self.model.index(row, 6, index)
@@ -394,19 +399,22 @@ class NewOrderDialog(QDialog):
             )
             success = True
             if success:
-                complect = []
                 order_id = StandardDataService.get_by_fields(
                     'orders',
-                    status_id=2,
+                    status_id=1,
                     name=name,
                     is_on_storage=on_storage
                 )[0][0]
+                order_amount = 0
+                complect = []
+                max_depth = -1
                 for row in range(self.proxy_2.rowCount(QModelIndex())):
                     proxy_index = self.proxy_2.index(row, 0, QModelIndex())
                     index = self.proxy_2.mapToSource(proxy_index)
 
                     id_index = self.model.index(index.row(), 5, QModelIndex())
                     id_1 = self.model.data(id_index, Qt.DisplayRole)
+                    order_amount += 1
 
                     # TODO: без этого работать не будет
                     index = self.model.index(index.row(), 0, QModelIndex())
@@ -422,6 +430,9 @@ class NewOrderDialog(QDialog):
                             index_3 = self.model.index(row, 5, index)
                             id_2 = self.model.data(index_3, Qt.DisplayRole)
 
+                            max_depth = max(DetailDataService.detail_depth(
+                                {'detail_id': id_2}), max_depth)
+
                             StandardDataService.save_record(
                                 'complects',
                                 order_id=order_id,
@@ -436,6 +447,21 @@ class NewOrderDialog(QDialog):
                             {'ingot_id': ingot},
                             order_id=order_id
                         )
+                QMessageBox.information(
+                    self,
+                    f'Заказ {name}',
+                    f'Заказ {name} был успешно добавлен в базу!',
+                    QMessageBox.Ok
+                )
+                self.pack = [
+                    order_id,
+                    name,
+                    order_amount,
+                    'В работе',
+                    max_depth,
+                    None
+                ]
+                self.accept()
             else:
                 QMessageBox.critical(
                     self,
@@ -451,7 +477,9 @@ class NewOrderDialog(QDialog):
                 'Поле названия заказа обязательно должно быть заполнено!',
                 QMessageBox.Ok
             )
-        self.accept()
+
+    def getNewOrder(self):
+        return self.pack
 
 
 class CloseOrderDialog (QDialog):
@@ -460,3 +488,6 @@ class CloseOrderDialog (QDialog):
         super(CloseOrderDialog, self).__init__(parent)
         self.ui = ui_finish_step_dialog.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.ui.finish.clicked.connect(self.accept)
+        self.ui.cancel.clicked.connect(self.reject)

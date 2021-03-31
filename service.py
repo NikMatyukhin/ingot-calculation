@@ -225,6 +225,20 @@ class DetailDataService (StandardDataService):
         cursor.execute(sql)
         return cursor.fetchall()
 
+    @staticmethod
+    @db_connector
+    def detail_depth(connection, record_id: TableField) -> float:
+
+        field, value = parse_field(record_id)
+
+        sql = str('SELECT details.depth '
+                  'FROM details '
+                  f'WHERE details.{field} = {value}')
+
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return cursor.fetchone()[0]
+
 
 class OrderDataService (StandardDataService):
 

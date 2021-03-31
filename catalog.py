@@ -18,7 +18,7 @@ from dialogs import ProductDialog, ArticleDialog, DetailDialog
 
 class Catalog (QDialog):
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super(Catalog, self).__init__(parent)
         self.ui = ui_catalog.Ui_Form()
         self.ui.setupUi(self)
@@ -344,7 +344,7 @@ class Catalog (QDialog):
 if __name__ == '__main__':
     application = QApplication()
 
-    window = Catalog(None)
+    window = Catalog()
     window.show()
 
     application.exec_()
