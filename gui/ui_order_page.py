@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'order_pageQdQkbK.ui'
+## Form generated from reading UI file 'order_pageyBVbEg.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -18,6 +18,7 @@ class Ui_Form(object):
         if not Form.objectName():
             Form.setObjectName(u"Form")
         Form.resize(627, 1476)
+        Form.setMinimumSize(QSize(627, 0))
         self.verticalLayout = QVBoxLayout(Form)
         self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -95,7 +96,7 @@ class Ui_Form(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 593, 1496))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -70, 593, 1506))
         self.scrollAreaWidgetContents.setStyleSheet(u"* {\n"
 "	margin-right: 7px;\n"
 "}\n"
@@ -203,13 +204,6 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addWidget(self.label_7)
 
-        self.graphicsView = QGraphicsView(self.scrollAreaWidgetContents)
-        self.graphicsView.setObjectName(u"graphicsView")
-        self.graphicsView.setMinimumSize(QSize(0, 500))
-        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
-
-        self.verticalLayout_2.addWidget(self.graphicsView)
-
         self.detailedPlanFrame = QFrame(self.scrollAreaWidgetContents)
         self.detailedPlanFrame.setObjectName(u"detailedPlanFrame")
         self.detailedPlanFrame.setFrameShape(QFrame.NoFrame)
@@ -217,10 +211,13 @@ class Ui_Form(object):
         self.horizontalLayout = QHBoxLayout(self.detailedPlanFrame)
         self.horizontalLayout.setSpacing(0)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(0, 10, 0, 0)
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalLayout.setContentsMargins(0, 10, 0, 10)
+        self.fullScreen = QPushButton(self.detailedPlanFrame)
+        self.fullScreen.setObjectName(u"fullScreen")
+        self.fullScreen.setMinimumSize(QSize(120, 24))
+        self.fullScreen.setMaximumSize(QSize(120, 24))
 
-        self.horizontalLayout.addItem(self.horizontalSpacer)
+        self.horizontalLayout.addWidget(self.fullScreen)
 
         self.detailedPlan = QPushButton(self.detailedPlanFrame)
         self.detailedPlan.setObjectName(u"detailedPlan")
@@ -229,8 +226,19 @@ class Ui_Form(object):
 
         self.horizontalLayout.addWidget(self.detailedPlan)
 
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
 
         self.verticalLayout_2.addWidget(self.detailedPlanFrame)
+
+        self.graphicsView = QGraphicsView(self.scrollAreaWidgetContents)
+        self.graphicsView.setObjectName(u"graphicsView")
+        self.graphicsView.setMinimumSize(QSize(0, 500))
+        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
+
+        self.verticalLayout_2.addWidget(self.graphicsView)
 
         self.label_5 = QLabel(self.scrollAreaWidgetContents)
         self.label_5.setObjectName(u"label_5")
@@ -270,6 +278,7 @@ class Ui_Form(object):
         self.label_3.setText(QCoreApplication.translate("Form", u"\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u0441\u043b\u0438\u0442\u043a\u0438", None))
         self.label_4.setText(QCoreApplication.translate("Form", u"\u041e\u0441\u0442\u0430\u0442\u043a\u0438 \u0441\u043e \u0441\u043b\u0438\u0442\u043a\u043e\u0432", None))
         self.label_7.setText(QCoreApplication.translate("Form", u"\u041a\u0430\u0440\u0442\u0430 \u0440\u0430\u0441\u043a\u0440\u043e\u044f", None))
+        self.fullScreen.setText(QCoreApplication.translate("Form", u"\u041d\u0430 \u0432\u0435\u0441\u044c \u044d\u043a\u0440\u0430\u043d", None))
         self.detailedPlan.setText(QCoreApplication.translate("Form", u"\u041f\u0435\u0440\u0435\u0439\u0442\u0438 \u043a \u043f\u043b\u0430\u043d\u0443", None))
         self.label_5.setText(QCoreApplication.translate("Form", u"\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043a\u0430 \u043f\u043e \u0437\u0430\u043a\u0430\u0437\u0443", None))
         self.label_6.setText(QCoreApplication.translate("Form", u"\u0412\u044b\u0445\u043e\u0434 \u0433\u043e\u0434\u043d\u043e\u0433\u043e:\n"

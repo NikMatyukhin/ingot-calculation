@@ -323,6 +323,27 @@ class OrderDataService (StandardDataService):
         cursor.execute(sql)
         return list(map(list, cursor.fetchall()))
 
+    @staticmethod
+    @db_connector
+    def get_detail(connection, order_id: TableField,
+                   detail_id: TableField) -> List:
+
+        field_1, value_1 = parse_field(order_id)
+        field_2, value_2 = parse_field(detail_id)
+
+        sql = str('SELECT complects.amount, details.height, details.width, '
+                  'details.depth, complects.priority, details.direction_id, '
+                  'details.name '
+                  'FROM complects '
+                  'LEFT JOIN details ON '
+                  'details.detail_id = complects.detail_id '
+                  f'WHERE complects.{field_1}={value_1} '
+                  f'AND complects.{field_2}={value_2}')
+
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return cursor.fetchone()
+
 
 class IngotsDataService (StandardDataService):
 

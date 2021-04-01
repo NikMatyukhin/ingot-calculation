@@ -238,6 +238,7 @@ class MainWindow (QMainWindow):
                 self.chartPagePreparation()
             )
         )
+        page.drawCuttingMap(self.current_order.tree)
 
         # Заполнение данных сущности текущего заказа
         self.current_order.id = self.current_section.id
@@ -262,22 +263,23 @@ class MainWindow (QMainWindow):
         """
         details = []
         for id_ in details_id:
-            detail = StandardDataService.get_by_id(
-                'details', {'detail_id': id_}
+            detail = OrderDataService.get_detail(
+                {'order_id': self.current_section.id},
+                {'detail_id': id_}
             )
-            amount = detail[-3]
-            size: Sizes = detail[4:-3]
+            amount = detail[0]
+            size: Sizes = detail[1:4]
             # если в Базе не будет нулевых размеров, можно убрать
             if 0 in size:
                 continue
-            priority: int = detail[-2]
-            direction: int = detail[-1]
+            priority: int = detail[4]
+            direction: int = detail[5]
             for _ in range(amount):
                 blank = Blank(
                     *size, priority, direction=Direction(direction),
                     material=material
                 )
-                blank.name = detail[3]
+                blank.name = detail[6]
                 details.append(blank)
         kit = Kit(details)
         kit.sort('width')
@@ -654,7 +656,7 @@ class OrderContext:
         return self.depth_ptr + 1 == len(self.depth_list)
 
     def toNextDepth(self):
-        self.depth_ptr = (self.depth_ptr + 1) % len(depth_list)
+        self.depth_ptr = (self.depth_ptr + 1) % len(self.depth_list)
         StandardDataService.update_record(
             'orders',
             {'order_id': self.order_id},

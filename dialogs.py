@@ -2,15 +2,21 @@ from typing import NoReturn
 
 from PySide6.QtCore import Qt, Signal, QPointF, QModelIndex
 from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import (QDialog, QCompleter, QMessageBox, QHBoxLayout,
-                               QMenu)
+from PySide6.QtWidgets import (
+    QDialog, QCompleter, QMessageBox, QHBoxLayout, QMenu
+)
 
-from gui import (ui_add_product_dialog, ui_add_article_dialog,
-                 ui_add_detail_dialog, ui_finish_step_dialog,
-                 ui_add_order_dialog)
-from service import ProductDataService, StandardDataService, IngotsDataService
-from models import (ComplectsModel, ArticleInformationFilterProxyModel,
-                    NewOrderFilterProxyModel)
+from gui import (
+    ui_add_product_dialog, ui_add_article_dialog, ui_add_detail_dialog,
+    ui_finish_step_dialog, ui_add_order_dialog
+)
+from service import (
+    ProductDataService, StandardDataService, IngotsDataService,
+    DetailDataService
+)
+from models import (
+   ComplectsModel, ArticleInformationFilterProxyModel, NewOrderFilterProxyModel
+)
 from plate import Plate
 
 
@@ -393,11 +399,10 @@ class NewOrderDialog(QDialog):
         if name:
             success = StandardDataService.save_record(
                 'orders',
-                status_id=2,
+                status_id=1,
                 name=name,
                 is_on_storage=on_storage
             )
-            success = True
             if success:
                 order_id = StandardDataService.get_by_fields(
                     'orders',
@@ -461,6 +466,11 @@ class NewOrderDialog(QDialog):
                     max_depth,
                     None
                 ]
+                StandardDataService.update_record(
+                    'orders',
+                    {'order_id': order_id},
+                    current_depth=max_depth
+                )
                 self.accept()
             else:
                 QMessageBox.critical(

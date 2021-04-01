@@ -1,17 +1,24 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QHBoxLayout, QTreeWidgetItem
+    QApplication, QWidget, QHBoxLayout, QTreeWidgetItem, QGraphicsScene,
+    QGraphicsView, QDialog
 )
 from plate import Plate
-from gui import ui_order_page
+from charts.map import CuttingMapPainter
+from gui import ui_order_page, ui_full_screen
 
 
-class OrderPage(QWidget):
+class OrderPage (QWidget):
 
     def __init__(self):
         super(OrderPage, self).__init__()
         self.ui = ui_order_page.Ui_Form()
         self.ui.setupUi(self)
+
+        self.scene = QGraphicsScene()
+        self.map_painter = CuttingMapPainter(self.scene)
+        self.ui.graphicsView.setScene(self.scene)
+        self.ui.fullScreen.clicked.connect(self.openFullScreen)
 
     def hideForStatus(self, status: int):
         """Скрывает ненужные элементы интерфейса
@@ -53,3 +60,23 @@ class OrderPage(QWidget):
         ingots_layout.setSpacing(0)
         ingots_layout.addStretch()
         self.ui.scrollAreaWidgetContents_3.setLayout(ingots_layout)
+
+    def drawCuttingMap(self, tree):
+        self.map_painter.setTree(tree)
+        self.map_painter.drawTree()
+
+    def openFullScreen(self):
+        window = FullScreenWindow(self)
+        window.ui.graphicsView.setScene(self.scene)
+        window.setWindowTitle('Карта: полноэкранный режим')
+        window.show()
+
+
+class FullScreenWindow (QDialog):
+
+    def __init__(self, parent=None):
+        super(FullScreenWindow, self).__init__(parent)
+        self.ui = ui_full_screen.Ui_Dialog()
+        self.ui.setupUi(self)
+
+        self.setWindowFlags(Qt.Window)
