@@ -285,7 +285,8 @@ class MainWindow (QMainWindow):
         kit.sort('width')
         return kit
 
-    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material):
+    def createCut(self, ingot_size: Sizes, kit: Kit,
+                  material: Material) -> None:
         """Метод запуска алоритма раскроя
 
         :param ingot_size: Размер слитка в формате (длина, ширина, толщина)
@@ -299,8 +300,6 @@ class MainWindow (QMainWindow):
             'max_size': (
                 (self.maximum_plate_height, self.clean_roll_plate_width),
                 (self.maximum_plate_height, self.rough_roll_plate_width)
-                # (2000, self.clean_roll_plate_width),
-                # (2000, self.rough_roll_plate_width)
             ),
             'cutting_length': self.guillotine_width,
             'cutting_thickness': 4.2,
@@ -313,7 +312,13 @@ class MainWindow (QMainWindow):
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
         tree = _stmh_idrd(tree, restrictions=settings)
-        _, self.current_order.tree, _ = optimal_configuration(tree, nd=True)
+        _, self.current_order.tree, path = optimal_configuration(tree, nd=True)
+
+        # считаем эффективность со всего слитка (в долях!)
+        # для отображения нужно округлить!
+        self.current_order.efficiency = solution_efficiency(
+            self.current_order.tree, path, is_total=True
+        )
 
     def chartPagePreparation(self) -> NoReturn:
         """Подготовка страницы с планами раскроя
