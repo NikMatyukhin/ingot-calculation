@@ -6,14 +6,18 @@
     - Воронов Владимир Сергеевич
 """
 
+import os
 from collections import deque
 from operator import itemgetter
 
 from .tree import (
-    Operations, is_cc_node, is_ingot_node, is_op_node, is_adj_node,
-    is_ubin_node, is_imt_node
+    Operations, Tree, is_cc_node, is_cutting_node, is_ingot_node, is_op_node,
+    is_adj_node, is_rolling_node,
+    is_ubin_node, is_imt_node, delete_all_branch, optimal_configuration,
+    solution_efficiency
 )
 
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 def is_zero_size(length, width, height):
     return length == 0 or width == 0 or height == 0
@@ -56,8 +60,29 @@ def get_unpacked_item(parent, node):
     return add_detail
 
 
-# def stmh_idrd(tree, sorting='width', rf=None):
-#     pass
+def stmh_idrd(tree, restrictions=None):
+    efficiency = 0
+    root = tree.root
+    is_main = True
+    while True:
+        tree = Tree(root)
+        tree = _stmh_idrd(tree, restrictions=restrictions, local=not is_main)
+        tree.root.update_size()
+        if restrictions['max_size']:
+            delete_all_branch(tree.root, restrictions['max_size'])
+        _, root, nodes = optimal_configuration(tree, nd=True)
+        root.update_size()
+        new_efficiency = solution_efficiency(root, nodes, nd=True)
+        if new_efficiency <= efficiency:
+            break
+        efficiency = new_efficiency
+        is_main = False
+    total_efficiency = solution_efficiency(root, nodes, is_total=True)
+    print('Построение дерева завершено')
+    print(f'Общая эффективность: {total_efficiency:.4f}')
+    print(f'Взвешенная эффективность: {efficiency:.4f}')
+    print('-' * 50)
+    return tree
 
 
 def _stmh_idrd(tree, local=False, restrictions=None):
@@ -97,7 +122,7 @@ def _stmh_idrd(tree, local=False, restrictions=None):
             node = level.popleft()
             _create_insert_template(node, level, tree, local, restrictions)
 
-    print('Построение дерева завершено')
+    # print('Построение дерева завершено')
     return tree
 
 
@@ -210,11 +235,11 @@ def _create_insert_template(node, level, tree, local, restrictions):
             new_parent, height, cut_thickness=cut_thickness
         )
         if local:
-            if new_parent.children.operation == Operations.cutting:
+            if is_cutting_node(new_parent.children):
                 # доупаковка при дочернем разреза
                 children[1].parent = None
                 children = children[0]
-            elif new_parent.children.operation == Operations.rolling:
+            elif is_rolling_node(new_parent.children):
                 children[0].parent = None
                 children = children[1]
                 if new_parent.children.children.operation == Operations.h_rolling:
