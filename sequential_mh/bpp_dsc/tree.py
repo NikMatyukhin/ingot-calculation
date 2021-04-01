@@ -603,6 +603,8 @@ class BinNode(Node):
         last_deformations = [item for _, item in self.bin.last_deformations()]
         last_rolldir = last_deformations[-1]
         # если потомок упаковка (то фиксируем без всего)
+        if self._id == 2753:
+            print('qwewqe')
         if self.children and is_packing_node(self.children):
             self._fix_semifinished(
                 width, length, max_size=max_size, is_min=is_min,
@@ -813,7 +815,7 @@ class BinNode(Node):
                             current_height = p_cont.bin.length * height / length
                             width = width * self.bin.d_height / current_height
                         elif length <= p_cont.bin.length and width > p_cont.bin.width:
-                            current_height = width * height / p_cont.bin.width
+                            current_height = width * self.bin.d_height / p_cont.bin.width
                             width = p_cont.bin.width
                         else:
                             current_height = height
