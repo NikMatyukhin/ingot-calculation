@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'order_pageyBVbEg.ui'
+## Form generated from reading UI file 'order_pageyQrJqU.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -96,7 +96,7 @@ class Ui_Form(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, -70, 593, 1506))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 593, 1462))
         self.scrollAreaWidgetContents.setStyleSheet(u"* {\n"
 "	margin-right: 7px;\n"
 "}\n"
@@ -193,7 +193,18 @@ class Ui_Form(object):
 
         self.verticalLayout_2.addWidget(self.scrollArea_3)
 
-        self.label_7 = QLabel(self.scrollAreaWidgetContents)
+        self.detailedPlanFrame = QFrame(self.scrollAreaWidgetContents)
+        self.detailedPlanFrame.setObjectName(u"detailedPlanFrame")
+        self.detailedPlanFrame.setStyleSheet(u"* {\n"
+"	margin-right: 0px;\n"
+"}")
+        self.detailedPlanFrame.setFrameShape(QFrame.NoFrame)
+        self.detailedPlanFrame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout = QHBoxLayout(self.detailedPlanFrame)
+        self.horizontalLayout.setSpacing(0)
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.label_7 = QLabel(self.detailedPlanFrame)
         self.label_7.setObjectName(u"label_7")
         self.label_7.setMinimumSize(QSize(0, 40))
         self.label_7.setMaximumSize(QSize(16777215, 40))
@@ -202,33 +213,48 @@ class Ui_Form(object):
 "	background-color: rgb(234, 234, 234);\n"
 "}")
 
-        self.verticalLayout_2.addWidget(self.label_7)
+        self.horizontalLayout.addWidget(self.label_7)
 
-        self.detailedPlanFrame = QFrame(self.scrollAreaWidgetContents)
-        self.detailedPlanFrame.setObjectName(u"detailedPlanFrame")
-        self.detailedPlanFrame.setFrameShape(QFrame.NoFrame)
-        self.detailedPlanFrame.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout = QHBoxLayout(self.detailedPlanFrame)
-        self.horizontalLayout.setSpacing(0)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setContentsMargins(0, 10, 0, 10)
         self.fullScreen = QPushButton(self.detailedPlanFrame)
         self.fullScreen.setObjectName(u"fullScreen")
-        self.fullScreen.setMinimumSize(QSize(120, 24))
-        self.fullScreen.setMaximumSize(QSize(120, 24))
+        self.fullScreen.setMinimumSize(QSize(120, 40))
+        self.fullScreen.setMaximumSize(QSize(120, 40))
+        self.fullScreen.setStyleSheet(u"QPushButton {\n"
+"	margin-top: 10px;\n"
+"	border: none;\n"
+"	background-color: rgb(234, 234, 234);\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"	background-color: rgb(216, 216, 216);\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"	background-color: rgb(200, 200, 200);\n"
+"}")
 
         self.horizontalLayout.addWidget(self.fullScreen)
 
         self.detailedPlan = QPushButton(self.detailedPlanFrame)
         self.detailedPlan.setObjectName(u"detailedPlan")
-        self.detailedPlan.setMinimumSize(QSize(120, 24))
-        self.detailedPlan.setMaximumSize(QSize(120, 24))
+        self.detailedPlan.setMinimumSize(QSize(120, 40))
+        self.detailedPlan.setMaximumSize(QSize(120, 40))
+        self.detailedPlan.setStyleSheet(u"QPushButton {\n"
+"	margin-top: 10px;\n"
+"	margin-right: 7px;\n"
+"	border: none;\n"
+"	background-color: rgb(234, 234, 234);\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"	background-color: rgb(216, 216, 216);\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"	background-color: rgb(200, 200, 200);\n"
+"}")
 
         self.horizontalLayout.addWidget(self.detailedPlan)
-
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout.addItem(self.horizontalSpacer)
 
 
         self.verticalLayout_2.addWidget(self.detailedPlanFrame)

@@ -168,6 +168,9 @@ class CuttingMapPainter:
     def setTree(self, tree):
         self.tree = tree
 
+    def setEfficiency(self, efficiency):
+        self.efficiency = efficiency
+
     def drawTree(self):
         self.cutting_nodes = []
         self.x = 0.0
@@ -180,6 +183,13 @@ class CuttingMapPainter:
         for node in dfs(self.tree):
             cur_item = self.createItem(node)
             self.scene.addItem(cur_item)
+            if is_bin_node(node):
+                if node.bin.bin_type == BinType.ingot:
+                    efficiency = self.scene.addText(
+                        'Выход годного: ' + str(self.efficiency)
+                    )
+                    efficiency.setX(self.x)
+                    efficiency.setY(self.y + 70)
             if is_op_node(node):
                 if not self.in_width:
                     cur_item.x_pos += 30

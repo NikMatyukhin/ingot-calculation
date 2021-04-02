@@ -9,7 +9,7 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
     QMessageBox, QDialog, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton,
-    QLayout, QGraphicsScene
+    QLayout, QGraphicsScene, QSpacerItem
 )
 
 from gui import ui_mainwindow
@@ -239,7 +239,8 @@ class MainWindow (QMainWindow):
                 self.chartPagePreparation()
             )
         )
-        page.drawCuttingMap(self.current_order.tree)
+        page.drawCuttingMap(
+            self.current_order.tree, self.current_order.efficiency)
 
         # Заполнение данных сущности текущего заказа
         self.current_order.id = self.current_section.id
@@ -331,7 +332,6 @@ class MainWindow (QMainWindow):
         Подгрузка списка заготовок, формирование кнопок толщин.
         """
         self.clearLayout(self.ui.horizontalLayout_6, take=1)
-
         for depth in self.current_order.depth_list:
             button = ExclusiveButton(depth=depth)
             button.clicked.connect(self.depthLineChanged)
@@ -456,7 +456,7 @@ class MainWindow (QMainWindow):
         length = layout.count()
         for _ in range(length-1):
             item = layout.takeAt(take)
-            if hidden:
+            if hidden or isinstance(item.widget(), ExclusiveButton):
                 item.widget().hide()
 
     def openCatalog(self) -> NoReturn:
@@ -627,7 +627,7 @@ class OrderContext:
         self.amount: int = 0
         self.depth_list: list = []
         self.depth_ptr: int = 0
-        self.efficiency: float = 0.0
+        self.__efficiency: float = 0.0
 
         self.root = None
 
@@ -653,6 +653,20 @@ class OrderContext:
         leaves: list[CuttingChartNode] = self.root.cc_leaves
         leaves.sort(key=attrgetter('bin.height'), reverse=True)
         self.depth_list = [leave.bin.height for leave in leaves]
+
+    @property
+    def efficiency(self):
+        return self.__efficiency
+
+    @efficiency.setter
+    def efficiency(self, value: float):
+        if value:
+            self.__efficiency = round(value, 2) * 100
+            StandardDataService.update_record(
+                'orders',
+                {'order_id': self.id},
+                efficiency=self.__efficiency
+            )
 
     @property
     def depth(self):

@@ -61,8 +61,9 @@ class OrderPage (QWidget):
         ingots_layout.addStretch()
         self.ui.scrollAreaWidgetContents_3.setLayout(ingots_layout)
 
-    def drawCuttingMap(self, tree):
+    def drawCuttingMap(self, tree, efficiency):
         self.map_painter.setTree(tree)
+        self.map_painter.setEfficiency(efficiency)
         self.map_painter.drawTree()
 
     def openFullScreen(self):
