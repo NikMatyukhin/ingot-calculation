@@ -353,7 +353,7 @@ class Estimator:
                 width, length = max_x - x, y1 - y
             elif x1 < x <= x2 and y <= y2:
                 width, length = x2 - x, max_y - y
-            elif x1 != x2 and y1 != y2 and x1 < x < x2 and y2 < y < y1 and y <= max_y:
+            elif x1 != x2 and y1 != y2 and x1 < x < x2 and y2 < y < y1:  # and y <= max_y
                 width, length = max_x - x, max_y - y
 
             if width is None and length is None:
