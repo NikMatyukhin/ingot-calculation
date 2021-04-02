@@ -210,6 +210,7 @@ class CuttingMapPainter:
 
     def createItem(self, node):
         item = None
+        print(node)
         if is_bin_node(node):
             h, w, d = node.bin.size
             size = f'{round(h, 1)}x{round(w, 1)}x{round(d, 1)}'

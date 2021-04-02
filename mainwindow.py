@@ -30,7 +30,9 @@ from sequential_mh.bpp_dsc.tree import (
 )
 from sequential_mh.bpp_dsc.stm import stmh_idrd
 
-from service import StandardDataService, OrderDataService, FusionDataService
+from service import (
+    StandardDataService, OrderDataService, FusionDataService, IngotsDataService
+)
 from dialogs import NewOrderDialog, CloseOrderDialog, NewIngotDialog
 from catalog import Catalog
 from settings import Settings
@@ -124,7 +126,7 @@ class MainWindow (QMainWindow):
             order_section.setContentFields(
                 self.createOrderTable(order[0], *order[2:])
             )
-            order_section.st_name = order[3]
+            order_section.status = order[3]
             order_section.depth = order[4]
             order_section.efficiency = order[5]
             order_section.clicked.connect(self.showOrderInformation)
@@ -245,7 +247,7 @@ class MainWindow (QMainWindow):
         # Заполнение данных сущности текущего заказа
         self.current_order.id = self.current_section.id
         self.current_order.name = self.current_section.name
-        self.current_order.st_name = self.current_section.st_name
+        self.current_order.status = self.current_section.status
         self.current_order.efficiency = self.current_section.efficiency
         self.current_order.depth = self.current_section.depth
         self.current_order.ingots = ingots
@@ -332,7 +334,7 @@ class MainWindow (QMainWindow):
         Подгрузка списка заготовок, формирование кнопок толщин.
         """
         self.clearLayout(self.ui.horizontalLayout_6, take=1)
-        for depth in self.current_order.depth_list:
+        for depth in self.current_order.steps():
             button = ExclusiveButton(depth=depth)
             button.clicked.connect(self.depthLineChanged)
             self.ui.horizontalLayout_6.addWidget(button)
@@ -367,7 +369,7 @@ class MainWindow (QMainWindow):
 
     def stepPage(self, depth: float):
         self.loadDetailList(depth=float(depth))
-        index = self.current_order.depth_index(depth)
+        index = self.current_order.step(depth)
         pack = self.current_order.root.cc_leaves[index]
         self.plan_painter.setBin(
             round(pack.bin.length, 1),
@@ -484,18 +486,26 @@ class MainWindow (QMainWindow):
         Открывается диалоговое окно и если пользователь нажал <Добавить>,
         то необходимо будет добавить секцию заказа в список заказов на
         первую позицию
-        """
-        window = NewOrderDialog(self)
-        if window.exec_() == QDialog.Accepted:
-            order = window.getNewOrder()
-            order_section = Section(order[0], order[1])
-            order_section.setContentFields(
-                self.createOrderTable(order[0], *order[2:])
+        """        
+        if not IngotsDataService.vacancy_ingots():
+            QMessageBox.critical(
+                self,
+                'Ошибка добавления',
+                'Отсутствуют свободные слитки\nНевозможно добавить заказ.',
+                QMessageBox.Ok
             )
-            order_section.clicked.connect(self.showOrderInformation)
-            self.ui.scrollAreaWidgetContents.layout().insertWidget(
-                0, order_section
-            )
+        else:
+            window = NewOrderDialog(self)
+            if window.exec_() == QDialog.Accepted:
+                order = window.getNewOrder()
+                order_section = Section(order[0], order[1])
+                order_section.setContentFields(
+                    self.createOrderTable(order[0], *order[2:])
+                )
+                order_section.clicked.connect(self.showOrderInformation)
+                self.ui.scrollAreaWidgetContents.layout().insertWidget(
+                    0, order_section
+                )
 
     def openCloseOrder(self) -> NoReturn:
         """Диалоговое окно завершения шага
@@ -611,25 +621,24 @@ class MainWindow (QMainWindow):
         self.settings.setValue(
             'rolling/max_clean_width', self.clean_roll_plate_width)
 
-    def closeEvent(self, event):
-        event.accept()
-
 
 class OrderContext:
 
     def __init__(self):
         self.id: int = 0
         self.name: str = ''
-        self.st_name: str = ''
-        self.st_id: int = 1
-        self.ingots: list = []
-        self.__complects: dict = {}
+        self.status: str = ''
         self.amount: int = 0
-        self.depth_list: list = []
-        self.depth_ptr: int = 0
+        self.ingots: list = []
         self.__efficiency: float = 0.0
+        self.__depth_ptr: int = 0
+        self.__depth_list: list = []
+        self.__complects: dict = {}
 
-        self.root = None
+        # TODO: менять в зависимости от комплектации
+        self.__finish_status = 'Завершён и укомплектован'
+
+        self.root: BinNode = None
 
     @property
     def complects(self) -> dict:
@@ -642,17 +651,17 @@ class OrderContext:
 
     @property
     def tree(self):
-        # TODO: переделать в возврат итерируемой коллекции, через которую
-        #       я и сделаю дерево карты раскроя
         return self.root
 
     @tree.setter
     def tree(self, value: BinNode):
         self.root = value
         self.root.update_size()
+
         leaves: list[CuttingChartNode] = self.root.cc_leaves
         leaves.sort(key=attrgetter('bin.height'), reverse=True)
-        self.depth_list = [leave.bin.height for leave in leaves]
+
+        self.__depth_list = [leave.bin.height for leave in leaves]
 
     @property
     def efficiency(self):
@@ -667,28 +676,33 @@ class OrderContext:
                 {'order_id': self.id},
                 efficiency=self.__efficiency
             )
+        else:
+            self.__efficiency = 0.0
 
     @property
     def depth(self):
-        return self.depth_list[self.depth_ptr]
+        return self.__depth_list[self.__depth_ptr]
 
     @depth.setter
     def depth(self, value: float):
-        if value in self.depth_list:
-            self.depth_ptr = self.depth_list.index(value)
+        if value in self.__depth_list:
+            self.__depth_ptr = self.__depth_list.index(value)
         else:
-            self.depth_ptr = 0
+            self.__depth_ptr = 0
 
-    def depth_index(self, depth: float):
-        if depth in self.depth_list:
-            return self.depth_list.index(depth)
+    def steps(self):
+        return self.__depth_list
+
+    def step(self, depth: float):
+        if depth in self.__depth_list:
+            return self.__depth_list.index(depth)
         return -1
 
     def isLast(self):
-        return self.depth_ptr + 1 == len(self.depth_list)
+        return self.__depth_ptr + 1 == len(self.__depth_list)
 
     def toNextDepth(self):
-        self.depth_ptr = (self.depth_ptr + 1) % len(self.depth_list)
+        self.__depth_ptr = (self.__depth_ptr + 1) % len(self.__depth_list)
         StandardDataService.update_record(
             'orders',
             {'order_id': self.order_id},
@@ -697,21 +711,19 @@ class OrderContext:
 
     def drop(self):
         data = [
-            self.id, self.name, self.amount, "Завершён, укомплектован",
-            self.efficiency
+            self.id, self.name, self.amount, self.__finish_status,
+            self.__efficiency
         ]
-        self.id = 0
-        self.name = ''
-        self.st_name = ''
-        self.st_id = 1
-        self.ingots = []
-        self.__complects = {}
-        self.amount = 0
-        self.depth_list = []
-        self.depth_ptr = 0
-        self.efficiency = 0.0
+        self.id: int = 0
+        self.name: str = ''
+        self.status: str = ''
+        self.amount: int = 0
+        self.ingots: list = []
+        self.__efficiency: float = 0.0
+        self.__depth_ptr: int = 0
+        self.__depth_list: list = []
+        self.__complects: dict = {}
         self.root = None
-
         return data
 
 

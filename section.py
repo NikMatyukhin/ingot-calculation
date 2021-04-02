@@ -16,7 +16,7 @@ class Section (QWidget):
         self.id = id
         self.name = name
         self.depth = None
-        self.st_name = None
+        self.status = None
         self.efficiency = None
 
         self.toggle_button = QToolButton()

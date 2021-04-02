@@ -274,7 +274,8 @@ class NewOrderDialog(QDialog):
 
         ingots_layout = QHBoxLayout()
         self.ingots = []
-        for ingot in IngotsDataService.vacancy_ingots():
+        vacancy_ingots = IngotsDataService.vacancy_ingots()
+        for ingot in vacancy_ingots:
             ingot_plate = Plate(ingot[0], ingot[1], ingot[2], ingot[3:],
                                 is_selected=False)
             ingot_plate.checked.connect(self.addIngot)
