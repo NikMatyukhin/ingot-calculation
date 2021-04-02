@@ -87,14 +87,12 @@ def stmh_idrd(tree, restrictions=None):
 
 def _stmh_idrd(tree, local=False, restrictions=None):
     if local:
-        # print('-> Локальная оптимизация')
         level = deque(tree.root.leaves())
         for node in tree.root.cc_leaves:
             parent = node.parent_bnode.parent_bnode
             add_detail = get_unpacked_item(parent, node)
             node.kit.update(add_detail)
     else:
-        # print('-> Построение дерева')
         level = deque([tree.root])
 
     while level:
@@ -112,7 +110,6 @@ def _stmh_idrd(tree, local=False, restrictions=None):
         #       первостепенное влияние)
         level = deque(sorted(level, key=predicate))
         # 3) получить первую ноду (без удаления)
-        # node = level[0]
         # 4) если она типа 'карта раскроя':
         if is_cc_node(level[0]):
             _pack(level[0], level, restrictions)
@@ -122,7 +119,6 @@ def _stmh_idrd(tree, local=False, restrictions=None):
             node = level.popleft()
             _create_insert_template(node, level, tree, local, restrictions)
 
-    # print('Построение дерева завершено')
     return tree
 
 
@@ -160,11 +156,6 @@ def _pack(node, level, restrictions):
         # метода pack)
         node.pack(max_size=max_size, restrictions=restrictions)
         adj_cc_node.pack(max_size=max_size, restrictions=restrictions)
-        # if cur_branch.parent:
-        #     rolling_node = cur_branch.parent
-        # else:
-        #     rolling_node = adj_cc_node.parent
-        # rolling_node = cur_branch.parent
 
         if len(rolling_node.list_of_children()) != 2:
             if adj_branch is rolling_node.children:
@@ -174,14 +165,11 @@ def _pack(node, level, restrictions):
         else:
             rolling_node.delete(adj_branch)
             rolling_node.parent.parent.update_size(max_len=max_len)
-            # print(node.result.total_efficiency(*node.bin.size[:2]))
             rolling_node.direction = None
 
             rolling_node.delete(cur_branch)
             rolling_node.add(adj_branch)
-            # adj_branch.update_size(max_len=max_len)
             rolling_node.parent.parent.update_size(max_len=max_len)
-            # print(adj_cc_node.result.total_efficiency(*adj_cc_node.bin.size[:2]))
             rolling_node.direction = None
             rolling_node.add(cur_branch)
 
@@ -206,7 +194,6 @@ def _pack(node, level, restrictions):
 
 
 def _create_insert_template(node, level, tree, local, restrictions):
-    # print('*' * 50)
     if restrictions:
         max_len = restrictions.get('cutting_length')
         cut_thickness = restrictions.get('cutting_thickness')
@@ -227,7 +214,11 @@ def _create_insert_template(node, level, tree, local, restrictions):
         new_parent.parent.transfer_size(to_right=False)
     if new_parent.size_check(height):
         # 5.4) создание шаблона с корнем в месте вставки
-        if new_parent is tree.root and is_ingot_node(new_parent) and cut_thickness > max_heigh:
+        if is_ubin_node(new_parent):
+            node_height = new_parent.bin.d_height
+        else:
+            node_height = new_parent.bin.height
+        if new_parent is tree.root and is_ingot_node(new_parent) and cut_thickness > max_heigh and cut_thickness < node_height:
             height = cut_thickness
         else:
             cut_thickness = None

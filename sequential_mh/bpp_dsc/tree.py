@@ -628,10 +628,10 @@ class BinNode(Node):
                 width = estimate[WIDTH]
                 length = estimate[LENGTH]
                 dist = self.bin.estimator(width, length, last_deformations)
-                if last_rolldir == Direction.H:
-                    width += dist[0]
-                else:
-                    length += dist[1]
+                # if last_rolldir == Direction.H:
+                #     width += dist[0]
+                # else:
+                #     length += dist[1]
                 bin_ = Bin(
                     length, width, self.bin.d_height,
                     last_rolldir, self.bin.material, self.bin.bin_type
@@ -834,14 +834,25 @@ class BinNode(Node):
                     #     node = self.delete_branch()
                     #     return
                 else:
+                    # здесь фиксируются бины между промежуточным и корнем
                     if last_rolldir == Direction.H:
-                        # TODO: не удаляются ветки
                         length = p_cont.bin.length
-                        current_height = p_cont.bin.width * p_cont.bin.height / width
+                        max_width = p_cont.bin.width
+                        if max_size:
+                            max_width = max(max_size[WIDTH], p_cont.bin.width)
+                        if max_size and width > max_width:
+                            current_height = p_cont.bin.width * p_cont.bin.height / max_width
+                        else:
+                            current_height = p_cont.bin.width * p_cont.bin.height / width
                     else:
-                        # TODO: не удаляются ветки
                         width = p_cont.bin.width
-                        current_height = p_cont.bin.length * p_cont.bin.height / length
+                        max_length = p_cont.bin.length
+                        if max_size:
+                            max_length = max(max_size[WIDTH], p_cont.bin.length)
+                        if max_size and length > max_length:
+                            current_height = p_cont.bin.length * p_cont.bin.height / max_length
+                        else:
+                            current_height = p_cont.bin.length * p_cont.bin.height / length
                 bin_ = Bin(
                     length, width, current_height,
                     last_rolldir, self.bin.material, self.bin.bin_type
@@ -1176,6 +1187,8 @@ class OperationNode(Node):
             dst.update_size(max_len=max_len)
 
     def set_cut(self, max_len=None):
+        if self._id == 30:
+            print(123123123)
         if self.operation == Operations.cutting:
             is_left = False
             parent_size = self.parent_bnode.bin.size
@@ -1571,7 +1584,6 @@ def top_down_traversal(start):
 
 
 def solution_efficiency(root, path, nd=False, is_total=False):
-    # print('-> Эффективность решения')
     # is_total - Учитывая весь бин
     # nd - взвешенная на количество деталей
     used_total_volume = 0.
@@ -1589,14 +1601,12 @@ def solution_efficiency(root, path, nd=False, is_total=False):
             efficiency = 0
         else:
             efficiency = used_volume / used_total_volume
-    # print(f'Упаковано деталей: {number_detail}')
     if nd and number_detail:
         efficiency *= number_detail / root.kit.qty()
     return efficiency
 
 
 def optimal_configuration(tree, lower=1., nd=False, is_total=False):
-    # print('-> Оптимальная конфигурация')
     solutions = all_solutions(tree)
     if lower == 1:
         result =  max(
@@ -1614,7 +1624,6 @@ def optimal_configuration(tree, lower=1., nd=False, is_total=False):
         )
         if efficiency >= lower:
             result.append((efficiency, *copy_tree(item[-1], item[:-1])))
-    print('Выбор оптимальной конфигурации завершен')
     return result
 
 
