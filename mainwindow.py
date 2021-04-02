@@ -289,6 +289,8 @@ class MainWindow (QMainWindow):
                 )
                 blank.name = detail[6]
                 details.append(blank)
+        print(details)
+        print(material)
         kit = Kit(details)
         kit.sort('width')
         return kit
@@ -310,7 +312,7 @@ class MainWindow (QMainWindow):
                 (self.maximum_plate_height, self.rough_roll_plate_width)
             ),
             'cutting_length': self.guillotine_width,
-            'cutting_thickness': 4.2,
+            'cutting_thickness': self.cutting_thickness,
             'hem_until_3': self.rough_roll_edge_loss,
             'hem_after_3': self.clean_roll_edge_loss,
             'allowance': self.cut_allowance,
@@ -656,12 +658,14 @@ class OrderContext:
     @tree.setter
     def tree(self, value: BinNode):
         self.root = value
-        self.root.update_size()
+        # self.root.update_size()
 
         leaves: list[CuttingChartNode] = self.root.cc_leaves
         leaves.sort(key=attrgetter('bin.height'), reverse=True)
+        print(leaves)
 
         self.__depth_list = [leave.bin.height for leave in leaves]
+        print(self.__depth_list)
 
     @property
     def efficiency(self):
