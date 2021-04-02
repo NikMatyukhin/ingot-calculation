@@ -7,7 +7,7 @@ from sequential_mh.bpp_dsc.rectangle import Material, Blank, Kit, Bin, BinType
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, optimal_configuration, solution_efficiency
 )
-from sequential_mh.bpp_dsc.stm import _stmh_idrd
+from sequential_mh.bpp_dsc.stm import stmh_idrd
 from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 from sequential_mh.tsh import rect
@@ -79,10 +79,104 @@ def example_3():
         'end': 0.02,  # обработка торцов листа, в долях от длины
     }
 
+
+def example_4():
+    return {
+        'name': 'Синтетический пример 3',
+        'kit': [
+            # TODO: Алгоритм выдает ошибку из-за ограничений
+            (160, 93, 3.0, 1), (128, 180, 3.2, 1), (150, 180, 2.0, 1),
+            (430, 100, 1.0, 1), (430, 100, 1.0, 1), (850, 120, 0.5, 1),
+            (430, 180, 0.5, 1), (160, 100, 0.5, 1), (260, 180, 1.0, 1)
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,  # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,  # кромка > 3 мм
+        'hem_after_3': 2,  # кромка <= 3 мм
+        'allowance': 2,  # припуски на разрез
+        'end': 0.02,  # обработка торцов листа, в долях от длины
+    }
+
+
+def example_5():
+    return {
+        'name': 'Реальный пример 1',
+        'kit': [
+            (50, 180, 3.0, 1),
+            (122, 417, 0.5, 1), (122, 417, 0.5, 1),
+            (103, 417, 0.5, 1), (103, 417, 0.5, 1),
+            (32, 350, 0.7, 1), (32, 350, 0.7, 1), (32, 350, 0.7, 1), (32, 350, 0.7, 1)
+        ],
+        'L0': 100,
+        'W0': 180,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,  # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,  # кромка > 3 мм
+        'hem_after_3': 2,  # кромка <= 3 мм
+        'allowance': 2,  # припуски на разрез
+        'end': 0.02,  # обработка торцов листа, в долях от длины
+    }
+
+
+def example_6():
+    return {
+        'name': 'Реальный пример 2',
+        'kit': [
+            (86, 220, 3.0, 1),
+            (86, 220, 3.0, 1), (86, 220, 3.0, 1),
+            (86, 220, 3.0, 1), (86, 220, 3.0, 1),
+            (86, 220, 3.0, 1), (86, 220, 3.0, 1), (54, 160, 3.0, 1)
+        ],
+        'L0': 100,
+        'W0': 180,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,  # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,  # кромка > 3 мм
+        'hem_after_3': 2,  # кромка <= 3 мм
+        'allowance': 2,  # припуски на разрез
+        'end': 0.02,  # обработка торцов листа, в долях от длины
+    }
+
+
+def example_7():
+    return {
+        'name': 'Реальный пример 3',
+        'kit': [
+            (86, 220, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
+            (76, 110, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
+            (76, 110, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
+            (76, 110, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
+            (76, 110, 3.0, 1)
+        ],
+        'L0': 100,
+        'W0': 180,
+        'H0': 23,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,  # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,  # кромка > 3 мм
+        'hem_after_3': 2,  # кромка <= 3 мм
+        'allowance': 2,  # припуски на разрез
+        'end': 0.02,  # обработка торцов листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
     example_3,
+    example_4,
+    example_5,
+    example_6,
+    example_7,
 ]
 
 
@@ -114,10 +208,10 @@ def main(example, use_graphviz=False):
     )
     root = BinNode(bin_, kit=kit)
     tree = Tree(root)
-    tree = _stmh_idrd(tree, restrictions=restrictions)
+    tree = stmh_idrd(tree, restrictions=restrictions)
 
     if use_graphviz:
-        graph1, all_nodes1 = plot(tree.root, 'pdf/graph1.gv')
+        graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
         create_edges(graph1, all_nodes1)
         graph1.view()
 
@@ -153,5 +247,5 @@ def main(example, use_graphviz=False):
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 2
+    NUMBER = 5
     main(NUMBER, USE_GRAPHVIZ)

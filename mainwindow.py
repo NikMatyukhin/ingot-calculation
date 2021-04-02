@@ -28,7 +28,7 @@ from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, optimal_configuration, solution_efficiency,
     CuttingChartNode
 )
-from sequential_mh.bpp_dsc.stm import _stmh_idrd
+from sequential_mh.bpp_dsc.stm import stmh_idrd
 
 from service import StandardDataService, OrderDataService, FusionDataService
 from dialogs import NewOrderDialog, CloseOrderDialog, NewIngotDialog
@@ -316,7 +316,7 @@ class MainWindow (QMainWindow):
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
-        tree = _stmh_idrd(tree, restrictions=settings)
+        tree = stmh_idrd(tree, restrictions=settings)
         _, self.current_order.tree, path = optimal_configuration(tree, nd=True)
 
         # считаем эффективность со всего слитка (в долях!)
