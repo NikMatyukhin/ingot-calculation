@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 
 from gui import (
     ui_add_product_dialog, ui_add_article_dialog, ui_add_detail_dialog,
-    ui_finish_step_dialog, ui_add_order_dialog
+    ui_finish_step_dialog, ui_add_order_dialog, ui_add_ingot_dialog
 )
 from service import (
     ProductDataService, StandardDataService, IngotsDataService,
@@ -501,3 +501,61 @@ class CloseOrderDialog (QDialog):
 
         self.ui.finish.clicked.connect(self.accept)
         self.ui.cancel.clicked.connect(self.reject)
+
+
+class NewIngotDialog (QDialog):
+
+    def __init__(self, parent=None):
+        super(NewIngotDialog, self).__init__(parent)
+        self.ui = ui_add_ingot_dialog.Ui_Dialog()
+        self.ui.setupUi(self)
+
+        self.ui.add.clicked.connect(self.add)
+        self.ui.cancel.clicked.connect(self.reject)
+
+    def setFusionsList(self, fusions: list) -> NoReturn:
+        self.fusions_id = []
+        self.fusions_names = []
+        for fusion in fusions:
+            self.fusions_id.append(fusion[0])
+            self.fusions_names.append(fusion[1])
+        self.ui.fusion.addItems(self.fusions_names)
+
+    def add(self):
+        batch = self.ui.batch.text()
+        height = self.ui.height.value()
+        width = self.ui.width.value()
+        depth = self.ui.depth.value()
+        fusion_id = self.fusions_id[self.ui.fusion.currentIndex()]
+
+        if batch and height and width and depth:
+            success = StandardDataService.save_record(
+                'ingots',
+                fusion_id=fusion_id,
+                batch=batch,
+                height=height,
+                width=width,
+                depth=depth
+            )
+            if success:
+                QMessageBox.information(
+                    self,
+                    f'Партия {batch}',
+                    f'Слиток из партии {batch}\nуспешно добавлен!',
+                    QMessageBox.Ok
+                )
+            else:
+                QMessageBox.critical(
+                    self,
+                    'Ошибка добавления',
+                    f'Слиток из партии {bacth} не был добавлен в базу\n'
+                    'из-за программной ошибки!',
+                    QMessageBox.Ok
+                )
+        else:
+            QMessageBox.critical(
+                self,
+                'Ошибка добавления',
+                'Все поля должны быть обязательно заполнены!',
+                QMessageBox.Ok
+            )

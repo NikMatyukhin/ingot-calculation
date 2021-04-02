@@ -30,8 +30,8 @@ from sequential_mh.bpp_dsc.tree import (
 )
 from sequential_mh.bpp_dsc.stm import _stmh_idrd
 
-from service import StandardDataService, OrderDataService
-from dialogs import NewOrderDialog, CloseOrderDialog
+from service import StandardDataService, OrderDataService, FusionDataService
+from dialogs import NewOrderDialog, CloseOrderDialog, NewIngotDialog
 from catalog import Catalog
 from settings import Settings
 
@@ -91,6 +91,7 @@ class MainWindow (QMainWindow):
         self.ui.newOrder.clicked.connect(self.openNewOrder)
         self.ui.catalog.clicked.connect(self.openCatalog)
         self.ui.settings.clicked.connect(self.openSettings)
+        self.ui.newIngot.clicked.connect(self.openNewIngot)
 
         # Сигнал перехода на следующий шаг заказа
         self.ui.closeOrder.clicked.connect(self.openCloseOrder)
@@ -274,9 +275,13 @@ class MainWindow (QMainWindow):
                 continue
             priority: int = detail[4]
             direction: int = detail[5]
+            if direction >= 2:
+                direction = None
+            else:
+                direction = Direction(direction)
             for _ in range(amount):
                 blank = Blank(
-                    *size, priority, direction=Direction(direction),
+                    *size, priority, direction=direction,
                     material=material
                 )
                 blank.name = detail[6]
@@ -464,6 +469,14 @@ class MainWindow (QMainWindow):
         window = Settings(self, self.settings)
         if window.exec_() == QDialog.Accepted:
             self.readSettings()
+
+    def openNewIngot(self):
+        window = NewIngotDialog(self)
+
+        fusions_list = FusionDataService.fusions_list()
+        window.setFusionsList(fusions_list)
+        
+        window.exec_()
 
     def openNewOrder(self) -> NoReturn:
         """Добавление нового заказа
