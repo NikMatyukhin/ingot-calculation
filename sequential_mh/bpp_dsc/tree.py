@@ -1695,8 +1695,12 @@ def to_delete(length, width, max_size):
     return max_size and (length > max_size[WIDTH] or width > max_size[LENGTH])
 
 
-def delete_all_branch(root, max_size):
+def delete_all_branch(root, max_size, without_root=False):
     for node in dfs(root):
+        if node not in list(dfs(root)):
+            continue
+        if without_root and node is root:
+            continue
         is_locked = False
         if is_rolling_node(node.parent):
             if node.parent.operation == Operations.h_rolling:
@@ -1707,3 +1711,30 @@ def delete_all_branch(root, max_size):
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             if not is_cutting_node(node.parent) and is_locked:
                 node.delete_branch()
+        elif is_cutting_node(node.parent):
+            parent = node.parent
+            children = parent.list_of_children()
+            if len(children) == 2:
+                left_size = children[0].bin.size[:2]
+                right_size = children[1].bin.size[:2]
+                if parent.direction == Direction.H:
+                    if left_size[0] < 0:
+                        is_locked = True
+                    size = (
+                        round(left_size[0] + right_size[0], 4),
+                        round(max(left_size[1], right_size[1]), 4)
+                    )
+                else:
+                    if left_size[1] < 0:
+                        is_locked = True
+                    size = (
+                        round(max(left_size[0], right_size[0]), 4),
+                        round(left_size[1] + right_size[1], 4)
+                    )
+            else:
+                size = children[0].bin.size[:2]
+            parent_bin = parent.parent.bin
+            if size[0] > round(parent_bin.size[0], 4) or size[1] > round(parent_bin.size[1], 4):
+                is_locked = True
+            if is_locked:
+                parent.delete_branch()
