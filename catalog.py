@@ -171,11 +171,13 @@ class Catalog (QDialog):
         register = self.model.data(register_index, Qt.DisplayRole)
         type = self.model.data(type_index, Qt.DisplayRole)
         designation = self.model.data(designation_index, Qt.DisplayRole)
-        fusions_list = FusionDataService.fusions_list()
+        directions_list = StandardDataService.get_table('directions')
+        fusions_list = StandardDataService.get_table('fusions')
 
         window.setRegister(register)
         window.setDesignation(designation)
         window.setFusionsList(fusions_list)
+        window.setDirectionsList(directions_list)
         window.setType(type)
 
         window.exec_()

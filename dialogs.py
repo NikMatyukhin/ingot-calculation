@@ -41,7 +41,7 @@ class ProductDialog (QDialog):
         self.ui.ok.clicked.connect(self.accept)
         self.ui.cancel.clicked.connect(self.reject)
 
-    def add(self) -> NoReturn:
+    def add(self):
         register_number = self.ui.register_number.text()
         product_type = self.ui.product_type.text()
         designation = self.ui.designation.text()
@@ -97,16 +97,16 @@ class ArticleDialog (QDialog):
         self.ui.ok.clicked.connect(self.accept)
         self.ui.cancel.clicked.connect(self.reject)
 
-    def setRegister(self, value: str) -> NoReturn:
+    def setRegister(self, value: str):
         self.ui.register_number.setText(value)
 
-    def setDesignation(self, value: str) -> NoReturn:
+    def setDesignation(self, value: str):
         self.ui.designation.setText(value)
 
-    def setType(self, value: str) -> NoReturn:
+    def setType(self, value: str):
         self.ui.product_type.setText(value)
 
-    def add(self) -> NoReturn:
+    def add(self):
         nomenclature = self.ui.nomenclature.text()
         rent = int(self.ui.rent.isChecked())
         register_id = int(self.ui.register_number.text())
@@ -163,16 +163,24 @@ class DetailDialog (QDialog):
         self.ui.ok.clicked.connect(self.accept)
         self.ui.cancel.clicked.connect(self.reject)
 
-    def setRegister(self, value: str) -> NoReturn:
+    def setRegister(self, value: str):
         self.ui.register_number.setText(value)
 
-    def setDesignation(self, value: str) -> NoReturn:
+    def setDesignation(self, value: str):
         self.ui.designation.setText(value)
 
-    def setType(self, value: str) -> NoReturn:
+    def setType(self, value: str):
         self.ui.product_type.setText(value)
 
-    def setFusionsList(self, fusions: list) -> NoReturn:
+    def setDirectionsList(self, directions: list):
+        self.directions_id = []
+        self.directions_names = []
+        for direction in directions:
+            self.directions_id.append(direction[0])
+            self.directions_names.append(direction[1])
+        self.ui.directions.addItems(self.directions_names)
+
+    def setFusionsList(self, fusions: list):
         self.fusions_id = []
         self.fusions_names = []
         for fusion in fusions:
@@ -180,15 +188,14 @@ class DetailDialog (QDialog):
             self.fusions_names.append(fusion[1])
         self.ui.fusions.addItems(self.fusions_names)
 
-    def add(self) -> NoReturn:
+    def add(self):
         name = self.ui.name.text()
         register_id = int(self.ui.register_number.text())
         fusion_id = self.fusions_id[self.ui.fusions.currentIndex()]
         height = self.ui.height.value()
         width = self.ui.width.value()
         depth = self.ui.depth.value()
-        # TODO: направления проката не подгружаются из базы, а вшиты в код
-        direction_id = self.ui.direction.currentIndex()
+        direction_id = self.directions_id[self.ui.directions.currentIndex()]
         priority = self.ui.priority.value()
         amount = self.ui.amount.value()
 
@@ -204,9 +211,8 @@ class DetailDialog (QDialog):
                 depth=depth,
                 amount=amount,
                 priority=priority,
-                direction_id=direction_id+1
+                direction_id=direction_id
             )
-
             if success:
                 QMessageBox.information(
                     self,
@@ -222,7 +228,7 @@ class DetailDialog (QDialog):
                     depth,
                     amount,
                     priority,
-                    self.ui.direction.currentText(),
+                    self.ui.directions.currentText(),
                     register_id
                 ])
             else:
@@ -274,8 +280,7 @@ class NewOrderDialog(QDialog):
 
         ingots_layout = QHBoxLayout()
         self.ingots = []
-        vacancy_ingots = IngotsDataService.vacancy_ingots()
-        for ingot in vacancy_ingots:
+        for ingot in IngotsDataService.vacancy_ingots():
             ingot_plate = Plate(ingot[0], ingot[1], ingot[2], ingot[3:],
                                 is_selected=False)
             ingot_plate.checked.connect(self.addIngot)
@@ -311,7 +316,7 @@ class NewOrderDialog(QDialog):
                     delete.triggered.connect(self.removeArticle)
         menu.exec_(self.mapToGlobal(point))
 
-    def addIngot(self, checked: bool) -> NoReturn:
+    def addIngot(self, checked: bool):
         choosen_plate = self.sender()
         id = choosen_plate.getID()
         if id in self.ingots:
@@ -319,7 +324,7 @@ class NewOrderDialog(QDialog):
         else:
             self.ingots.append(id)
 
-    def addArticle(self) -> NoReturn:
+    def addArticle(self):
 
         index = self.proxy_1.mapToSource(self.ui.treeView_1.currentIndex())
         parent = self.model.parent(index)
@@ -337,7 +342,7 @@ class NewOrderDialog(QDialog):
         for column in range(self.model.columnCount(QModelIndex())):
             self.ui.treeView_2.resizeColumnToContents(column)
 
-    def addDetail(self) -> NoReturn:
+    def addDetail(self):
 
         index = self.proxy_1.mapToSource(self.ui.treeView_1.currentIndex())
         parent = self.model.parent(index)
@@ -354,7 +359,7 @@ class NewOrderDialog(QDialog):
         for column in range(self.model.columnCount(QModelIndex())):
             self.ui.treeView_2.resizeColumnToContents(column)
 
-    def removeArticle(self) -> NoReturn:
+    def removeArticle(self):
 
         index = self.proxy_2.mapToSource(self.ui.treeView_2.currentIndex())
         parent = self.model.parent(index)
@@ -369,7 +374,7 @@ class NewOrderDialog(QDialog):
             child_state_index = self.model.index(row, 6, index)
             self.model.setData(child_state_index, False, Qt.EditRole)
 
-    def removeDetail(self) -> NoReturn:
+    def removeDetail(self):
 
         index = self.proxy_2.mapToSource(self.ui.treeView_2.currentIndex())
         parent = self.model.parent(index)
@@ -392,7 +397,7 @@ class NewOrderDialog(QDialog):
             rows_states.append(self.model.data(row_index, Qt.DisplayRole))
         return any(rows_states)
 
-    def addOrder(self) -> NoReturn:
+    def addOrder(self):
 
         name = self.ui.orderName.text()
         on_storage = int(self.ui.storage.isChecked())
@@ -514,7 +519,7 @@ class NewIngotDialog (QDialog):
         self.ui.add.clicked.connect(self.add)
         self.ui.cancel.clicked.connect(self.reject)
 
-    def setFusionsList(self, fusions: list) -> NoReturn:
+    def setFusionsList(self, fusions: list):
         self.fusions_id = []
         self.fusions_names = []
         for fusion in fusions:

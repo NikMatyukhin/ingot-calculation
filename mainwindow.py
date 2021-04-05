@@ -211,16 +211,18 @@ class MainWindow (QMainWindow):
         page = OrderPage()
 
         id = self.current_section.id
+        self.current_order.id = self.current_section.id
+        
         data = OrderDataService.get_by_id('orders', {'order_id': id})
         status, name, depth, efficiency, on_storage = data[1:]
         ingots = OrderDataService.ingots({'order_id': id})
         complects = OrderDataService.complects({'order_id': id})
 
         # Пока работаем только с одном слитком
-        main_ingot = ingots[0][-3:]
+        main_ingot = ingots[0][-4:]
 
         # TODO: Вторым аргументом нужно вставить плотность сплава
-        material = Material(main_ingot[1], 2.2, 1.)
+        material = Material(main_ingot[0], 2.2, 1.)
 
         # Выбор заготовок и удаление лишних значений
         details_info = map(
@@ -228,7 +230,7 @@ class MainWindow (QMainWindow):
         )
         details = self.getDetails(details_info, material)
 
-        self.createCut(main_ingot, details, material)
+        self.createCut(main_ingot[1:], details, material)
 
         page.hideForStatus(status)
         page.setPageTitle(name, on_storage)
@@ -245,10 +247,8 @@ class MainWindow (QMainWindow):
             self.current_order.tree, self.current_order.efficiency)
 
         # Заполнение данных сущности текущего заказа
-        self.current_order.id = self.current_section.id
         self.current_order.name = self.current_section.name
         self.current_order.status = self.current_section.status
-        self.current_order.efficiency = self.current_section.efficiency
         self.current_order.depth = self.current_section.depth
         self.current_order.ingots = ingots
         self.current_order.complects = complects
@@ -273,24 +273,23 @@ class MainWindow (QMainWindow):
             )
             amount = detail[0]
             size: Sizes = detail[1:4]
-            # если в Базе не будет нулевых размеров, можно убрать
+
+            # FIXME: Стоит оставить на всякий пожарный случай с нулевыми размерами
             if 0 in size:
                 continue
+
             priority: int = detail[4]
+
+            # FIXME: Оставить проверку на случай с аномальными направлениями
             direction: int = detail[5]
-            if direction >= 2:
-                direction = None
-            else:
-                direction = Direction(direction)
+            direction = Direction(3) if direction == 1 else Direction(2)
+            
             for _ in range(amount):
                 blank = Blank(
-                    *size, priority, direction=direction,
-                    material=material
+                    *size, priority, direction=direction, material=material
                 )
                 blank.name = detail[6]
                 details.append(blank)
-        print(details)
-        print(material)
         kit = Kit(details)
         kit.sort('width')
         return kit
@@ -326,7 +325,7 @@ class MainWindow (QMainWindow):
 
         # считаем эффективность со всего слитка (в долях!)
         # для отображения нужно округлить!
-        self.current_order.efficiency = solution_efficiency(
+        self.current_order.efficiency = 100 * solution_efficiency(
             self.current_order.tree, path, is_total=True
         )
 
@@ -517,6 +516,10 @@ class MainWindow (QMainWindow):
         последнего шага уведомит о завершении заказа.
         """
         if self.current_order.isLast():
+            window = CloseOrderDialog(self)
+            window.setWindowTitle(self.ui.closeOrder.text())
+            if window.exec_() == QDialog.Accepted:
+                pass
             QMessageBox.information(
                 self,
                 'Завершение заказа',
@@ -530,7 +533,8 @@ class MainWindow (QMainWindow):
             window = CloseOrderDialog(self)
             window.setWindowTitle(self.ui.closeOrder.text())
             if window.exec_() == QDialog.Accepted:
-                depth = self.current_order.toNextDepth()
+                self.current_order.toNextDepth()
+                depth = self.current_order.depth
                 # TODO: переключение вкладки после перехода на следующий шаг
                 self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
 
@@ -658,14 +662,11 @@ class OrderContext:
     @tree.setter
     def tree(self, value: BinNode):
         self.root = value
-        # self.root.update_size()
 
         leaves: list[CuttingChartNode] = self.root.cc_leaves
         leaves.sort(key=attrgetter('bin.height'), reverse=True)
-        print(leaves)
 
         self.__depth_list = [leave.bin.height for leave in leaves]
-        print(self.__depth_list)
 
     @property
     def efficiency(self):
@@ -674,12 +675,13 @@ class OrderContext:
     @efficiency.setter
     def efficiency(self, value: float):
         if value:
-            self.__efficiency = round(value, 2) * 100
-            StandardDataService.update_record(
+            self.__efficiency = round(value, 4)
+            success = StandardDataService.update_record(
                 'orders',
                 {'order_id': self.id},
                 efficiency=self.__efficiency
             )
+            print(StandardDataService.get_by_id('orders', {'order_id': self.id}))
         else:
             self.__efficiency = 0.0
 
@@ -709,7 +711,7 @@ class OrderContext:
         self.__depth_ptr = (self.__depth_ptr + 1) % len(self.__depth_list)
         StandardDataService.update_record(
             'orders',
-            {'order_id': self.order_id},
+            {'order_id': self.id},
             current_depth=self.depth
         )
 

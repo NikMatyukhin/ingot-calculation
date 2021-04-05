@@ -164,6 +164,8 @@ class Direction(Enum):
     """Класс направлений"""
     V = 0, 'вертикальное'
     H = 1, 'горизонтальное'
+    P = 2, 'перпендикулярно'
+    A = 3, 'любое'
 
     def __new__(cls, *args, **kwargs):
         obj = object.__new__(cls)
@@ -174,8 +176,12 @@ class Direction(Enum):
         self.code = code
         if code == 0:
             self._name_ = 'вертикальное'
-        else:
+        elif code == 1:
             self._name_ = 'горизонтальное'
+        elif code == 2:
+            self._name_ = 'перпендикулярно'
+        else:
+            self._name_ = 'любое'
 
 
 class Bin(BaseBin):
