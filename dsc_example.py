@@ -22,10 +22,11 @@ def example_1():
     return {
         'name': 'Пример 12ц',
         'kit': [
+            (77, 180, 3.3, 1), (77, 180, 3.3, 1),
             (160, 93, 3, 1), (160, 93, 3, 1), (160, 93, 3, 1), (160, 93, 3, 1),
-            (200, 100, 1, 1), (415, 170, 0.5, 1), (77, 180, 3.3, 1),
-            (77, 180, 3.3, 1), (82, 180, 2.2, 1), (82, 180, 2.2, 1),
-            (420, 165, 0.5, 1), (420, 170, 1., 1), (420, 170, 1., 1),
+            (200, 100, 1, 1), (420, 170, 1., 1), (420, 170, 1., 1),
+            (82, 180, 2.2, 1), (82, 180, 2.2, 1),
+            (415, 170, 0.5, 1), (420, 165, 0.5, 1),
         ],
         'L0': 180,
         'W0': 160,
@@ -247,7 +248,7 @@ def main(example, use_graphviz=False):
         )
         main_region = Estimator(main_rect, node.bin.height, node.bin.height)
         rectangles = chain.from_iterable(node.result.blanks.values())
-        print(f'Карта толщины: {node.bin.height}')
+        print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{len(kit[node.bin.height][1])}')
         print(f'Прокат: {node.bin.last_rolldir}')
         print(f'Bin ID: {node._id}')
         if hasattr(node, 'x_hem'):
