@@ -43,12 +43,16 @@ class OrderPage (QWidget):
         """Назначение списка изделий и деталей заказа"""
         for article, details in complects.items():
             article_item = QTreeWidgetItem(
-                self.ui.treeWidget, [article[1], None, None])
+                self.ui.treeWidget, [article[1], None, None, None, None, None])
             for detail in details:
                 detail_item = QTreeWidgetItem(
-                    article_item, [detail[1], str(detail[2]), str(detail[3])])
+                    article_item, [detail[1], str(detail[4]), str(detail[5]), str(detail[6]), str(detail[2]), str(detail[3])])
+                for column in range(1, 6):
+                    detail_item.setTextAlignment(column, Qt.AlignCenter)
             self.ui.treeWidget.addTopLevelItem(article_item)
-        self.ui.treeWidget.resizeColumnToContents(0)
+        self.ui.treeWidget.expandAll()
+        for column in range(6):
+            self.ui.treeWidget.resizeColumnToContents(column)
 
     def setIngots(self, ingots: list):
         """Назначение слитков заказа"""

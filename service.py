@@ -285,7 +285,8 @@ class OrderDataService (StandardDataService):
 
         sql = str('SELECT complects.article_id, articles.nomenclature, '
                   'complects.detail_id, details.name, complects.amount, '
-                  'complects.priority '
+                  'complects.priority, details.height, details.width, '
+                  'details.depth '
                   'FROM complects '
                   'LEFT JOIN details '
                   'ON details.detail_id = complects.detail_id '

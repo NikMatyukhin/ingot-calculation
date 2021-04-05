@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QRectF, QPointF, QLineF, QSizeF
 from PySide6.QtGui import (
     QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QTransform, QPixmap,
-    QPolygonF
+    QPolygonF, QIcon
 )
 from sequential_mh.bpp_dsc.tree import (
     Operations, CuttingChartNode, is_op_node, is_bin_node, is_cc_node
@@ -110,16 +110,17 @@ class OperationGraphicsItem (QGraphicsItem):
                             self.radius * 2, self.radius * 2)
 
         image = None
-        if self.type == Operations.rolling or \
-           self.type == Operations.v_rolling or \
-           self.type == Operations.h_rolling:
-            image = QPixmap(':/icons/roll.png')
+        if self.type == Operations.h_rolling:
+            image = QPixmap(':/icons/h-roll.png')
+        if self.type == Operations.v_rolling:
+            image = QPixmap(':/icons/v-roll.png')
         if self.type == Operations.cutting:
             image = QPixmap(':/icons/scissors.png')
         if self.type == Operations.packing:
             image = QPixmap(':/icons/blueprint.png')
-        painter.drawPixmap(self.x_pos + 15, self.y_pos + 15,
-                           self.radius, self.radius, image)
+        icon = QIcon(image)
+        icon.paint(painter, self.x_pos + 10, self.y_pos + 10,
+                   self.radius + 10, self.radius + 10)
 
 
 class Edge (QGraphicsItem):
@@ -181,6 +182,9 @@ class CuttingMapPainter:
         self.in_width = True
         self.skip = False
         for node in dfs(self.tree):
+            if is_op_node(node):
+                if node.operation == Operations.rolling:
+                    continue
             cur_item = self.createItem(node)
             self.scene.addItem(cur_item)
             if is_bin_node(node):
@@ -188,7 +192,7 @@ class CuttingMapPainter:
                     efficiency = self.scene.addText(
                         'Выход годного: ' + str(self.efficiency)
                     )
-                    efficiency.setX(self.x)
+                    efficiency.setX(self.x - 120)
                     efficiency.setY(self.y + 70)
             if is_op_node(node):
                 if not self.in_width:
@@ -266,10 +270,13 @@ class CuttingMapPainter:
             self.x += 80 if operation else 140
         else:
             self.y += 80
-        if residue:
-            self.source_point = self.cutting_nodes[-1].bottom
-            self.y = 80
-            self.x = self.cutting_nodes[-1].x_pos - 30
         if pop:
             self.skip = True
             self.cutting_nodes.pop()
+        if residue:
+            try:
+                self.source_point = self.cutting_nodes[-1].bottom
+                self.y = 80
+                self.x = self.cutting_nodes[-1].x_pos - 30
+            except IndexError:
+                pass

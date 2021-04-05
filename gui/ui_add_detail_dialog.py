@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_detail_dialogdwWkze.ui'
+## Form generated from reading UI file 'add_detail_dialogYfRXmM.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -17,7 +17,7 @@ class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
-        Dialog.resize(514, 322)
+        Dialog.resize(514, 324)
         self.verticalLayout = QVBoxLayout(Dialog)
         self.verticalLayout.setSpacing(10)
         self.verticalLayout.setObjectName(u"verticalLayout")
@@ -107,7 +107,7 @@ class Ui_Dialog(object):
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.sizes = QGroupBox(self.parameters_2)
         self.sizes.setObjectName(u"sizes")
-        self.sizes.setMaximumSize(QSize(180, 16777215))
+        self.sizes.setMaximumSize(QSize(250, 16777215))
         self.formLayout = QFormLayout(self.sizes)
         self.formLayout.setObjectName(u"formLayout")
         self.formLayout.setHorizontalSpacing(10)
@@ -158,13 +158,10 @@ class Ui_Dialog(object):
 
         self.formLayout_2.setWidget(0, QFormLayout.LabelRole, self.label_7)
 
-        self.direction = QComboBox(self.extra)
-        self.direction.addItem("")
-        self.direction.addItem("")
-        self.direction.addItem("")
-        self.direction.setObjectName(u"direction")
+        self.directions = QComboBox(self.extra)
+        self.directions.setObjectName(u"directions")
 
-        self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.direction)
+        self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.directions)
 
         self.label_8 = QLabel(self.extra)
         self.label_8.setObjectName(u"label_8")
@@ -256,10 +253,6 @@ class Ui_Dialog(object):
         self.depth.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.extra.setTitle(QCoreApplication.translate("Dialog", u"\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b", None))
         self.label_7.setText(QCoreApplication.translate("Dialog", u"\u041f\u043e\u0432\u043e\u0440\u043e\u0442:", None))
-        self.direction.setItemText(0, QCoreApplication.translate("Dialog", u"\u041b\u044e\u0431\u043e\u0439", None))
-        self.direction.setItemText(1, QCoreApplication.translate("Dialog", u"\u041f\u043e \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044e \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
-        self.direction.setItemText(2, QCoreApplication.translate("Dialog", u"\u041f\u0440\u043e\u0442\u0438\u0432 \u043d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
-
         self.label_8.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u0438\u043e\u0440\u0438\u0442\u0435\u0442:", None))
         self.label_9.setText(QCoreApplication.translate("Dialog", u"\u041a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e:", None))
         self.add.setText(QCoreApplication.translate("Dialog", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
