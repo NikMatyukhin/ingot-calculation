@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'full_screenTsdaGj.ui'
+## Form generated from reading UI file 'full_screenCDhPdw.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -45,10 +45,17 @@ class Ui_Dialog(object):
 
         self.horizontalLayout.addWidget(self.label_2)
 
+        self.line = QFrame(self.frame)
+        self.line.setObjectName(u"line")
+        self.line.setFrameShape(QFrame.VLine)
+        self.line.setFrameShadow(QFrame.Sunken)
+
+        self.horizontalLayout.addWidget(self.line)
+
         self.label_3 = QLabel(self.frame)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setMaximumSize(QSize(40, 40))
-        self.label_3.setPixmap(QPixmap(u":/icons/roll.png"))
+        self.label_3.setPixmap(QPixmap(u":/icons/h-roll.png"))
         self.label_3.setScaledContents(True)
 
         self.horizontalLayout.addWidget(self.label_3)
@@ -57,6 +64,34 @@ class Ui_Dialog(object):
         self.label_4.setObjectName(u"label_4")
 
         self.horizontalLayout.addWidget(self.label_4)
+
+        self.line_2 = QFrame(self.frame)
+        self.line_2.setObjectName(u"line_2")
+        self.line_2.setFrameShape(QFrame.VLine)
+        self.line_2.setFrameShadow(QFrame.Sunken)
+
+        self.horizontalLayout.addWidget(self.line_2)
+
+        self.label_7 = QLabel(self.frame)
+        self.label_7.setObjectName(u"label_7")
+        self.label_7.setMinimumSize(QSize(0, 0))
+        self.label_7.setMaximumSize(QSize(40, 40))
+        self.label_7.setPixmap(QPixmap(u":/icons/v-roll.png"))
+        self.label_7.setScaledContents(True)
+
+        self.horizontalLayout.addWidget(self.label_7)
+
+        self.label_8 = QLabel(self.frame)
+        self.label_8.setObjectName(u"label_8")
+
+        self.horizontalLayout.addWidget(self.label_8)
+
+        self.line_3 = QFrame(self.frame)
+        self.line_3.setObjectName(u"line_3")
+        self.line_3.setFrameShape(QFrame.VLine)
+        self.line_3.setFrameShadow(QFrame.Sunken)
+
+        self.horizontalLayout.addWidget(self.line_3)
 
         self.label_5 = QLabel(self.frame)
         self.label_5.setObjectName(u"label_5")
@@ -92,6 +127,11 @@ class Ui_Dialog(object):
 "\u0440\u0430\u0441\u043a\u0440\u043e\u044f", None))
         self.label_3.setText("")
         self.label_4.setText(QCoreApplication.translate("Dialog", u"\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u044f\n"
+"\u0433\u043e\u0440\u0438\u0437\u043e\u043d-\u0433\u043e\n"
+"\u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
+        self.label_7.setText("")
+        self.label_8.setText(QCoreApplication.translate("Dialog", u"\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u044f\n"
+"\u0432\u0435\u0440\u0442\u0438\u043a-\u0433\u043e\n"
 "\u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
         self.label_5.setText("")
         self.label_6.setText(QCoreApplication.translate("Dialog", u"\u041e\u043f\u0435\u0440\u0430\u0446\u0438\u044f\n"
