@@ -212,7 +212,7 @@ class MainWindow (QMainWindow):
 
         id = self.current_section.id
         self.current_order.id = self.current_section.id
-        
+
         data = OrderDataService.get_by_id('orders', {'order_id': id})
         status, name, depth, efficiency, on_storage = data[1:]
         ingots = OrderDataService.ingots({'order_id': id})
@@ -274,7 +274,7 @@ class MainWindow (QMainWindow):
             amount = detail[0]
             size: Sizes = detail[1:4]
 
-            # FIXME: Стоит оставить на всякий пожарный случай с нулевыми размерами
+            # FIXME: Стоит оставить на всякий случай с нулевыми размерами
             if 0 in size:
                 continue
 
@@ -283,7 +283,7 @@ class MainWindow (QMainWindow):
             # FIXME: Оставить проверку на случай с аномальными направлениями
             direction: int = detail[5]
             direction = Direction(3) if direction == 1 else Direction(2)
-            
+
             for _ in range(amount):
                 blank = Blank(
                     *size, priority, direction=direction, material=material
@@ -478,7 +478,7 @@ class MainWindow (QMainWindow):
 
         fusions_list = FusionDataService.fusions_list()
         window.setFusionsList(fusions_list)
-        
+
         window.exec_()
 
     def openNewOrder(self) -> NoReturn:
@@ -487,7 +487,7 @@ class MainWindow (QMainWindow):
         Открывается диалоговое окно и если пользователь нажал <Добавить>,
         то необходимо будет добавить секцию заказа в список заказов на
         первую позицию
-        """        
+        """
         if not IngotsDataService.vacancy_ingots():
             QMessageBox.critical(
                 self,
@@ -681,7 +681,6 @@ class OrderContext:
                 {'order_id': self.id},
                 efficiency=self.__efficiency
             )
-            print(StandardDataService.get_by_id('orders', {'order_id': self.id}))
         else:
             self.__efficiency = 0.0
 
