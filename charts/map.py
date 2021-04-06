@@ -80,11 +80,11 @@ class OperationGraphicsItem (QGraphicsItem):
     @property
     def right(self):
         return QPointF(self.x_pos + 60, self.y_pos + 30)
-        
+
     @property
     def top(self):
         return QPointF(self.x_pos + 30, self.y_pos)
-        
+
     @property
     def bottom(self):
         return QPointF(self.x_pos + 30, self.y_pos + 60)
@@ -123,8 +123,12 @@ class OperationGraphicsItem (QGraphicsItem):
                    self.radius + 10, self.radius + 10)
 
 
-class Edge (QGraphicsItem):
+class Edge(QGraphicsItem):
+    """Компонента отрисовки - ребро между двумя другими компонентами-блоками
 
+    :param QGraphicsItem: Родительский класс всех компонент отрисовки
+    :type QGraphicsItem: class
+    """
     def __init__(self, source: QPointF, dest: QPointF):
         super(Edge, self).__init__()
         self.sourcePoint: QPointF = source
@@ -136,7 +140,7 @@ class Edge (QGraphicsItem):
         extra = (penWidth + self.arrowSize) / 2.0
 
         return QRectF(
-            self.sourcePoint, 
+            self.sourcePoint,
             QSizeF(
                 self.destPoint.x() - self.sourcePoint.x(),
                 self.destPoint.y() - self.sourcePoint.y()
@@ -147,21 +151,32 @@ class Edge (QGraphicsItem):
               widget: QWidget):
         line = QLineF(self.sourcePoint, self.destPoint)
         painter.setPen(
-            QPen(Qt.black,1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+            QPen(Qt.black, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         )
         painter.drawLine(line)
         angle = atan2(-line.dy(), line.dx())
 
         M_PI = 3.14
-        destArrowP1: QPointF = self.destPoint + QPointF(sin(angle - M_PI / 3) * self.arrowSize, cos(angle - M_PI / 3) * self.arrowSize)
-        destArrowP2: QPointF = self.destPoint + QPointF(sin(angle - M_PI + M_PI / 3) * self.arrowSize, cos(angle - M_PI + M_PI / 3) * self.arrowSize);
+        destArrowP1 = self.destPoint + QPointF(
+            sin(angle - M_PI / 3) * self.arrowSize,
+            cos(angle - M_PI / 3) * self.arrowSize
+        )
+        destArrowP2 = self.destPoint + QPointF(
+            sin(angle - M_PI + M_PI / 3) * self.arrowSize,
+            cos(angle - M_PI + M_PI / 3) * self.arrowSize
+        )
 
         painter.setBrush(Qt.black)
         painter.drawPolygon(QPolygonF([line.p2(), destArrowP1, destArrowP2]))
 
 
 class CuttingMapPainter:
+    """Отрисовщик карты раскроя
 
+    На полученной сцене после получения всех необходимых параметров составляет
+    карту раскроя. Обход дерева раскроя осуществляется в глубину. Механика
+    вывода слишком сложна и не поддаётся разумному описанию.
+    """
     def __init__(self, scene: QGraphicsScene):
         self.scene = scene
         self.font = QFont('Segoe UI', 9)
@@ -201,7 +216,7 @@ class CuttingMapPainter:
                 if self.in_width:
                     self.scene.addItem(Edge(self.source_point, cur_item.left))
                 else:
-                    self.scene.addItem(Edge(self.source_point, cur_item.top))    
+                    self.scene.addItem(Edge(self.source_point, cur_item.top))
             self.prev_item = cur_item
             if not self.skip:
                 if self.in_width:
@@ -225,8 +240,9 @@ class CuttingMapPainter:
                     self.x, self.y, clr=QColor(200, 100, 100)
                 )
                 self.changePos()
-            elif type == BinType.leaf or type == BinType.semifinished or \
-                type == BinType.INTERMEDIATE:
+            elif type == BinType.leaf or \
+                    type == BinType.semifinished or\
+                    type == BinType.INTERMEDIATE:
                 if self.prev_type == BinType.adjacent:
                     self.in_width = False
                     self.changePos(residue=True)
@@ -266,6 +282,27 @@ class CuttingMapPainter:
         return item
 
     def changePos(self, operation=False, residue=False, pop=False):
+        """Смена позиции в зависимости от типа созданного блока.
+
+        Если `in_width` = True, т.е. всё ещё строится главная ветка, то блоки
+        располагаются горизонтально и меняется только координата по иксу.
+        Если `in_width` = False, т.е. строится одна из побочных веток, то
+        элемнеты располагаются горизонтально и меняется координата по игреку.
+        Если `residue` = True, т.е. только сменилось положение ветки, то нужно
+        поменять координату по иксу на координату родительского узла.
+        Если `pop` = True, т.е. нужно снять со стека один узел разреза, то мы
+        его удаляем и ставим пропуск `skip` = True для того, чтобы не рисовать
+        ребро из нижнего узла с упаковкой в узел с листом.
+        Если operation = True, то сейчас вставлен блок операции, а его ширина
+        меньше блока с контейнером.
+
+        :param operation: Флаг операции с меньшей шириной, defaults to False
+        :type operation: bool, optional
+        :param residue: Флаг перехода на новую ветку, defaults to False
+        :type residue: bool, optional
+        :param pop: Флаг удаления узла разреза из стека, defaults to False
+        :type pop: bool, optional
+        """
         if self.in_width:
             self.x += 80 if operation else 140
         else:
