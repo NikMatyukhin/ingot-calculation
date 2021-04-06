@@ -38,7 +38,8 @@ StateLayout = NamedTuple(
 )
 
 
-def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
+def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
+           first_priority=False,
            x_hem=(0, 0), y_hem=(0, 0), allowance=0, max_size=None,
            is_visualize=False):
     # rectangles - список прямоугольников
@@ -66,7 +67,7 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
             else:
                 for_packing = dict_to_list(rectangles)
             variant, _, best = get_best_fig(
-                for_packing, region, main_region.rectangle,
+                for_packing, region, main_region.rectangle, last_rolldir,
                 (y_hem[0], x_hem[0]), allowance, *region.start
             )
             if best is None:
@@ -271,7 +272,7 @@ def bpp_ts(length, width, height, g_height, rectangles, first_priority=False,
     return src_rect, main_region, min_rect, result, unplaced, all_tailings
 
 
-def get_best_fig(rectangles, estimator, src_rect,
+def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                  hem, allowance=0, x0=0, y0=0):
     priority, orientation, best = 16, None, None
     w_0 = estimator.min_width_lim
@@ -289,6 +290,9 @@ def get_best_fig(rectangles, estimator, src_rect,
     elif y0 in (0, hem[0]):
         x0 += allowance
     for rect in rectangles:
+        if last_rolldir is not None and not rect.is_rotatable:
+            if rect.direction != last_rolldir:
+                rect.rotate()
         size = rect.size[:-1]
         for j in range(1 + rect.is_rotatable):
             rect_w = size[(1 + j) % 2]
