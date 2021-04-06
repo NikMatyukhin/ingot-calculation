@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'catalogSulVmG.ui'
+## Form generated from reading UI file 'catalogEfEjPs.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -314,6 +314,8 @@ class Ui_Form(object):
 "}")
         self.detailsView.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.detailsView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.detailsView.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.detailsView.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.detailsView.horizontalHeader().setStretchLastSection(True)
         self.detailsView.verticalHeader().setVisible(False)
 
@@ -408,9 +410,9 @@ class Ui_Form(object):
         ___qtablewidgetitem1 = self.detailsView.horizontalHeaderItem(1)
         ___qtablewidgetitem1.setText(QCoreApplication.translate("Form", u"\u0421\u043f\u043b\u0430\u0432", None));
         ___qtablewidgetitem2 = self.detailsView.horizontalHeaderItem(2)
-        ___qtablewidgetitem2.setText(QCoreApplication.translate("Form", u"\u0428\u0438\u0440\u0438\u043d\u0430", None));
+        ___qtablewidgetitem2.setText(QCoreApplication.translate("Form", u"\u0414\u043b\u0438\u043d\u0430", None));
         ___qtablewidgetitem3 = self.detailsView.horizontalHeaderItem(3)
-        ___qtablewidgetitem3.setText(QCoreApplication.translate("Form", u"\u0414\u043b\u0438\u043d\u0430", None));
+        ___qtablewidgetitem3.setText(QCoreApplication.translate("Form", u"\u0428\u0438\u0440\u0438\u043d\u0430", None));
         ___qtablewidgetitem4 = self.detailsView.horizontalHeaderItem(4)
         ___qtablewidgetitem4.setText(QCoreApplication.translate("Form", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430", None));
         ___qtablewidgetitem5 = self.detailsView.horizontalHeaderItem(5)

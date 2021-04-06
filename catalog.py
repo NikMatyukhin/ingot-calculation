@@ -1,12 +1,13 @@
 import application_rc
 
 from typing import NoReturn, List, Any
+from operator import itemgetter
 
 from PySide6.QtCore import Qt, Signal, QPointF, QModelIndex
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (QApplication, QDialog, QAbstractItemView,
                                QTableWidgetItem, QCompleter, QMessageBox,
-                               QMenu)
+                               QMenu, QComboBox)
 
 from gui import (ui_catalog, ui_add_product_dialog, ui_add_article_dialog,
                  ui_add_detail_dialog)
@@ -14,6 +15,7 @@ from service import (ProductDataService, ArticleDataService,
                      StandardDataService, FusionDataService, DetailDataService)
 from models import CatalogModel, ProductInformationFilterProxyModel
 from dialogs import ProductDialog, ArticleDialog, DetailDialog
+from delegates import ListValuesDelegate
 
 
 class Catalog (QDialog):
@@ -28,6 +30,12 @@ class Catalog (QDialog):
         self.ui.type.addItems(
             ['Все изделия'] + ProductDataService.type_list()
         )
+        self.directions_list = StandardDataService.get_table('directions')
+        self.directions_id = list(map(itemgetter(0), self.directions_list))
+        self.directions_names = list(map(itemgetter(1), self.directions_list))
+        self.fusions_list = StandardDataService.get_table('fusions')
+        self.fusions_id = list(map(itemgetter(0), self.fusions_list))
+        self.fusions_names = list(map(itemgetter(1), self.fusions_list))
 
         self.model = CatalogModel(
             ['Ведомость', 'Тип', 'Название', 'Аренда', 'ID']
@@ -44,9 +52,8 @@ class Catalog (QDialog):
         self.ui.productsView.setColumnHidden(4, True)
         self.ui.productsView.clicked.connect(self.showDetailsList)
 
-        self.ui.detailsView.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.ui.detailsView.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.ui.detailsView.itemSelectionChanged.connect(self.showInformation)
+        self.ui.detailsView.itemChanged.connect(self.updateDetail)
 
         self.ui.register_number.textChanged.connect(self.proxy.setRegister)
         self.ui.designation.textChanged.connect(self.proxy.setDesignation)
@@ -60,12 +67,18 @@ class Catalog (QDialog):
         # TODO: дописать логику кнопки с новой картинкой для детали
         self.customContextMenuRequested.connect(self.showContextMenu)
 
-    def showDetailsList(self, current_index: QModelIndex) -> NoReturn:
-        self.ui.detailsView.clearContents()
-        self.ui.detailsView.setRowCount(0)
+    def showDetailsList(self, current_index: QModelIndex):
+        view: QTableWidget = self.ui.detailsView
+        view.clearContents()
+        view.setRowCount(0)
 
         index = self.proxy.mapToSource(current_index)
         parent = self.model.parent(index)
+
+        self.direction_delegate = ListValuesDelegate(self.directions_names)
+        self.fusion_delegate = ListValuesDelegate(self.fusions_names)
+        view.setItemDelegateForColumn(1, self.fusion_delegate)
+        view.setItemDelegateForColumn(7, self.direction_delegate)
 
         if not parent.isValid():
             register_index = self.model.index(index.row(), 0, parent)
@@ -73,19 +86,19 @@ class Catalog (QDialog):
             details_list = DetailDataService.details_list({'register_id': id})
 
             for detail in details_list:
-                self.ui.detailsView.insertRow(self.ui.detailsView.rowCount())
+                view.insertRow(view.rowCount())
 
                 for column, data in enumerate(detail):
                     data = str(data) if data else '-'
                     item = QTableWidgetItem(str(data))
-                    row = self.ui.detailsView.rowCount() - 1
-                    self.ui.detailsView.setItem(row, column, item)
+                    row = view.rowCount() - 1
+                    view.setItem(row, column, item)
 
-        for column in range(8):
-            self.ui.detailsView.resizeColumnToContents(column)
-        self.ui.detailsView.hideColumn(8)
+        for column in [0, 2, 3, 4, 5, 6]:
+            view.resizeColumnToContents(column)
+        view.hideColumn(8)
 
-    def showInformation(self) -> NoReturn:
+    def showInformation(self):
 
         selected_items = self.ui.detailsView.selectedItems()
 
@@ -107,7 +120,7 @@ class Catalog (QDialog):
                 f'<br><br><b>Направление проката детали</b>: {direction}')
             self.ui.detailInfo.setText(information)
 
-    def showContextMenu(self, point: QPointF) -> NoReturn:
+    def showContextMenu(self, point: QPointF):
         menu = QMenu()
 
         if self.ui.productsView.hasFocus():
@@ -128,13 +141,13 @@ class Catalog (QDialog):
 
         menu.exec_(self.mapToGlobal(point))
 
-    def openProductDialog(self) -> NoReturn:
+    def openProductDialog(self):
         window = ProductDialog(self)
         window.recordSavedSuccess.connect(self.addProduct)
 
         window.exec_()
 
-    def openArticleDialog(self) -> NoReturn:
+    def openArticleDialog(self):
         window = ArticleDialog(self)
         window.recordSavedSuccess.connect(self.addArticle)
 
@@ -156,7 +169,7 @@ class Catalog (QDialog):
 
         window.exec_()
 
-    def openDetailDialog(self) -> NoReturn:
+    def openDetailDialog(self):
         window = DetailDialog(self)
         window.recordSavedSuccess.connect(self.addDetail)
 
@@ -171,19 +184,17 @@ class Catalog (QDialog):
         register = self.model.data(register_index, Qt.DisplayRole)
         type = self.model.data(type_index, Qt.DisplayRole)
         designation = self.model.data(designation_index, Qt.DisplayRole)
-        directions_list = StandardDataService.get_table('directions')
-        fusions_list = StandardDataService.get_table('fusions')
 
         window.setRegister(register)
         window.setDesignation(designation)
-        window.setFusionsList(fusions_list)
-        window.setDirectionsList(directions_list)
+        window.setFusionsList(self.fusions_list)
+        window.setDirectionsList(self.directions_list)
         window.setType(type)
 
         window.exec_()
 
     def updateRecord(self, index: QModelIndex, temp: QModelIndex,
-                     roles: List[int]) -> NoReturn:
+                     roles: List[int]):
 
         parent = self.model.parent(index)
         if parent.isValid():
@@ -192,7 +203,7 @@ class Catalog (QDialog):
             self.updateProduct(index, index, roles)
 
     def updateProduct(self, index: QModelIndex, temp: QModelIndex,
-                      roles: List[int]) -> NoReturn:
+                      roles: List[int]):
 
         parent = self.model.parent(index)
         register_index = self.model.index(index.row(), 0, parent)
@@ -217,7 +228,7 @@ class Catalog (QDialog):
             )
 
     def updateArticle(self, index: QModelIndex, temp: QModelIndex,
-                      roles: List[int]) -> NoReturn:
+                      roles: List[int]):
 
         parent = self.model.parent(index)
         nomen_index = self.model.index(index.row(), 2, parent)
@@ -244,17 +255,67 @@ class Catalog (QDialog):
                 QMessageBox.Ok
             )
 
-    def updateDetail(self, index: QModelIndex, temp: QModelIndex,
-                     roles: List[int]) -> NoReturn:
-        # TODO: Есть проблемы. Оставлю до лучших времён рефакторинга, аминь.
-        pass
+    def updateDetail(self, it: QTableWidgetItem):
+        id_item = self.ui.detailsView.item(it.row(), 8)
+        if id_item:
+            row, column, data = it.row(), it.column(), it.data(Qt.DisplayRole)
+            id = id_item.data(Qt.DisplayRole)
+            if column == 0:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    name=data
+                )
+            elif column == 1:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    fusion_id=self.fusions_id[self.fusions_names.index(data)]
+                )
+            elif column == 2:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    height=int(data)
+                )
+            elif column == 3:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    width=int(data)
+                )
+            elif column == 4:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    depth=float(data)
+                )
+            elif column == 5:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    amount=int(data)
+                )
+            elif column == 6:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    priority=int(data)
+                )
+            elif column == 7:
+                success = StandardDataService.update_record(
+                    'details',
+                    {'detail_id': id},
+                    direction_id=self.directions_id[
+                        self.directions_names.index(data)]
+                )
 
-    def addProduct(self, data: List[Any]) -> NoReturn:
+    def addProduct(self, data: List[Any]):
 
         key, type, designation = data
         self.model.appendRow([key, type, designation]+[None]*2, QModelIndex())
 
-    def addArticle(self, data: List[Any]) -> NoReturn:
+    def addArticle(self, data: List[Any]):
 
         parent = self.proxy.mapToSource(self.ui.productsView.currentIndex())
 
@@ -269,7 +330,7 @@ class Catalog (QDialog):
         self.model.appendRow([None, type, nomenclature, rent, id], parent)
         self.proxy.invalidate()
 
-    def addDetail(self, data: List[Any]) -> NoReturn:
+    def addDetail(self, data: List[Any]):
 
         self.ui.detailsView.insertRow(self.ui.detailsView.rowCount())
 
@@ -279,7 +340,7 @@ class Catalog (QDialog):
             item = QTableWidgetItem(str(data))
             self.ui.detailsView.setItem(row, column, item)
 
-    def deleteProduct(self) -> NoReturn:
+    def deleteProduct(self):
         index = self.proxy.mapToSource(self.ui.productsView.currentIndex())
         id_index = self.model.index(index.row(), 0, QModelIndex())
         id = self.model.data(id_index, Qt.DisplayRole)
@@ -300,7 +361,7 @@ class Catalog (QDialog):
                 QMessageBox.Ok
             )
 
-    def deleteArticle(self) -> NoReturn:
+    def deleteArticle(self):
         index = self.proxy.mapToSource(self.ui.productsView.currentIndex())
         parent = self.model.parent(index)
         id_index = self.model.index(index.row(), 4, parent)
@@ -322,7 +383,7 @@ class Catalog (QDialog):
                 QMessageBox.Ok
             )
 
-    def deleteDetail(self) -> NoReturn:
+    def deleteDetail(self):
         row = self.ui.detailsView.currentRow()
         id = self.ui.detailsView.item(row, 8).data(Qt.DisplayRole)
 
