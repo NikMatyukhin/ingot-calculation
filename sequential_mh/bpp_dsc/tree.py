@@ -627,6 +627,8 @@ class BinNode(Node):
                 estimate = self.estimate_size()
                 width = estimate[WIDTH]
                 length = estimate[LENGTH]
+                # FIXME: косяк, если объединенная оценка выходит за границы,
+                # для подветок маленьких примеров (example_9)
                 dist = self.bin.estimator(width, length, last_deformations)
                 if last_rolldir == Direction.H:
                     width += dist[0]
@@ -1347,10 +1349,11 @@ class CuttingChartNode(Node):
                 self.y_hem = (y_hem, y_hem)
 
         if isinstance(self.bin, UnsizedBin):
+            bin_node.kit.rotate(self.bin.d_height, self.bin.rolldir)
             group = bin_node.kit[self.bin.d_height]
             _, main_region, min_rect, result, unplaced, tailings = bpp_ts(
                 bin_node.bin.length, bin_node.bin.width, bin_node.bin.height,
-                bin_node.bin.d_height, group, x_hem=self.x_hem, y_hem=self.y_hem,
+                bin_node.bin.d_height, group, self.bin.rolldir, x_hem=self.x_hem, y_hem=self.y_hem,
                 allowance=allowance, max_size=max_size,
                 is_visualize=False
             )
@@ -1704,10 +1707,12 @@ def delete_all_branch(root, max_size, without_root=False):
         is_locked = False
         if is_rolling_node(node.parent):
             if node.parent.operation == Operations.h_rolling:
-                is_locked = to_delete(node.bin.length, node.bin.width, max_size[node.bin.height >= 3])
+                if max_size:
+                    is_locked = to_delete(node.bin.length, node.bin.width, max_size[node.bin.height >= 3])
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             elif node.parent.operation == Operations.v_rolling:
-                is_locked = to_delete(node.bin.width, node.bin.length, max_size[node.bin.height >= 3])
+                if max_size:
+                    is_locked = to_delete(node.bin.width, node.bin.length, max_size[node.bin.height >= 3])
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             if not is_cutting_node(node.parent) and is_locked:
                 node.delete_branch()
