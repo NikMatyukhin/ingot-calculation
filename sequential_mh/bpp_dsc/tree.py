@@ -628,10 +628,10 @@ class BinNode(Node):
                 width = estimate[WIDTH]
                 length = estimate[LENGTH]
                 dist = self.bin.estimator(width, length, last_deformations)
-                # if last_rolldir == Direction.H:
-                #     width += dist[0]
-                # else:
-                #     length += dist[1]
+                if last_rolldir == Direction.H:
+                    width += dist[0]
+                else:
+                    length += dist[1]
                 bin_ = Bin(
                     length, width, self.bin.d_height,
                     last_rolldir, self.bin.material, self.bin.bin_type
@@ -680,38 +680,8 @@ class BinNode(Node):
                 height = self.bin.d_height
                 if last_rolldir == Direction.H:
                     width += dist[0]
-                    # if max_size and (length > max_size[WIDTH] or width > max_size[LENGTH]):
-                    #     self.locked = True
-                    #     node = self.delete_branch()
-                    #     if is_op_node(node):
-                    #         neighbour = node.parent.nearest_descendant_bins()
-                    #     else:
-                    #         neighbour = node.nearest_descendant_bins()
-                    #     neighbour = [is_bin_node(node) for node in neighbour]
-                    #     if all(neighbour):
-                    #         node.parent.fix_sizes(
-                    #             width, length, is_min=is_min,
-                    #             max_size=max_size, restrictions=restrictions
-                    #         )
-                    #     return
                 else:
                     length += dist[1]
-                    # if max_size and (width > max_size[WIDTH] or length > max_size[LENGTH]):
-                    #     self.locked = True
-                    #     node = self.delete_branch()
-                    #     if is_op_node(node):
-                    #         pp = node.parent
-                    #         neighbour = node.parent.nearest_descendant_bins()
-                    #     else:
-                    #         pp = node
-                    #         neighbour = node.nearest_descendant_bins()
-                    #     neighbour = [is_bin_node(node) for node in neighbour]
-                    #     if all(neighbour):
-                    #         pp.fix_sizes(
-                    #             width, length, is_min=is_min,
-                    #             max_size=max_size, restrictions=restrictions
-                    #         )
-                    #     return
                 bin_ = Bin(
                     length, width, height,
                     last_rolldir, self.bin.material, self.bin.bin_type
@@ -802,8 +772,14 @@ class BinNode(Node):
                     # устанавливаем минимальные размеры (у себя и у предка!!!)
                     if last_rolldir == Direction.H:
                         if length > p_cont.bin.length and width > p_cont.bin.width:
-                            current_height = p_cont.bin.width * height / width
-                            length = round(length * current_height / height, 4)
+                            # current_height = p_cont.bin.width * height / width
+                            # length = round(length * current_height / height, 4)
+                            if max_size and length > max_size[WIDTH]:
+                                current_height = p_cont.bin.width * height / width
+                                length = length * self.bin.d_height / current_height
+                            else:
+                                current_height = p_cont.bin.width * height / width
+                                length = round(length * current_height / height, 4)
                         elif length > p_cont.bin.length and width <= p_cont.bin.width:
                             current_height = length * self.bin.d_height / p_cont.bin.length
                             length = p_cont.bin.length
@@ -812,12 +788,19 @@ class BinNode(Node):
                             length = round(length * current_height / height, 4)
                         else:
                             current_height = height
+                            length = round(length * self.bin.d_height / height, 4)
 
                         is_locked = to_delete(length, width, max_size)
                     else:
                         if length > p_cont.bin.length and width > p_cont.bin.width:
-                            current_height = p_cont.bin.length * height / length
-                            width = width * self.bin.d_height / current_height
+                            # current_height = p_cont.bin.length * height / length
+                            if max_size and length > max_size[WIDTH]:
+                                # current_height = p_cont.bin.width * height / width
+                                current_height = p_cont.bin.width * height / width
+                                length = length * self.bin.d_height / current_height
+                            else:
+                                current_height = p_cont.bin.length * height / length
+                                width = width * self.bin.d_height / current_height
                         elif length > p_cont.bin.length and width <= p_cont.bin.width:
                             current_height = p_cont.bin.length * height / length
                             width = width * self.bin.d_height / current_height
@@ -826,6 +809,7 @@ class BinNode(Node):
                             width = p_cont.bin.width
                         else:
                             current_height = height
+                            width = round(width * self.bin.d_height / height, 4)
 
                         is_locked = to_delete(width, length, max_size)
 
@@ -1163,7 +1147,6 @@ class OperationNode(Node):
                 dst.bin.length = length
                 dst.bin.width = width
                 dst.bin.height = height
-                # TODO: Доделать перенос объема
             else:
                 # перенос только по разрезу
                 if self.direction is None:
@@ -1187,8 +1170,6 @@ class OperationNode(Node):
             dst.update_size(max_len=max_len)
 
     def set_cut(self, max_len=None):
-        if self._id == 30:
-            print(123123123)
         if self.operation == Operations.cutting:
             is_left = False
             parent_size = self.parent_bnode.bin.size
@@ -1714,8 +1695,12 @@ def to_delete(length, width, max_size):
     return max_size and (length > max_size[WIDTH] or width > max_size[LENGTH])
 
 
-def delete_all_branch(root, max_size):
+def delete_all_branch(root, max_size, without_root=False):
     for node in dfs(root):
+        if node not in list(dfs(root)):
+            continue
+        if without_root and node is root:
+            continue
         is_locked = False
         if is_rolling_node(node.parent):
             if node.parent.operation == Operations.h_rolling:
@@ -1726,3 +1711,30 @@ def delete_all_branch(root, max_size):
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             if not is_cutting_node(node.parent) and is_locked:
                 node.delete_branch()
+        elif is_cutting_node(node.parent):
+            parent = node.parent
+            children = parent.list_of_children()
+            if len(children) == 2:
+                left_size = children[0].bin.size[:2]
+                right_size = children[1].bin.size[:2]
+                if parent.direction == Direction.H:
+                    if left_size[0] < 0:
+                        is_locked = True
+                    size = (
+                        round(left_size[0] + right_size[0], 4),
+                        round(max(left_size[1], right_size[1]), 4)
+                    )
+                else:
+                    if left_size[1] < 0:
+                        is_locked = True
+                    size = (
+                        round(max(left_size[0], right_size[0]), 4),
+                        round(left_size[1] + right_size[1], 4)
+                    )
+            else:
+                size = children[0].bin.size[:2]
+            parent_bin = parent.parent.bin
+            if size[0] > round(parent_bin.size[0], 4) or size[1] > round(parent_bin.size[1], 4):
+                is_locked = True
+            if is_locked:
+                parent.delete_branch()

@@ -6,7 +6,6 @@
     - Воронов Владимир Сергеевич
 """
 
-import os
 from collections import deque
 from operator import itemgetter
 
@@ -17,7 +16,6 @@ from .tree import (
     solution_efficiency
 )
 
-os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 def is_zero_size(length, width, height):
     return length == 0 or width == 0 or height == 0
@@ -64,7 +62,7 @@ def stmh_idrd(tree, restrictions=None):
     efficiency = 0
     root = tree.root
     is_main = True
-    while True:
+    for _ in range(5):
         tree = Tree(root)
         tree = _stmh_idrd(tree, restrictions=restrictions, local=not is_main)
         tree.root.update_size()
@@ -156,6 +154,10 @@ def _pack(node, level, restrictions):
         # метода pack)
         node.pack(max_size=max_size, restrictions=restrictions)
         adj_cc_node.pack(max_size=max_size, restrictions=restrictions)
+        # adj_cc_node.update_size()
+        delete_all_branch(
+            rolling_node, restrictions['max_size'], without_root=True
+        )
 
         if len(rolling_node.list_of_children()) != 2:
             if adj_branch is rolling_node.children:

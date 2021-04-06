@@ -385,23 +385,12 @@ class Estimator:
         currency_h = self.height
         for h, group in groupby(self.bin.deformations, key=itemgetter(0)):
             group = [item for _, item in group]
-            if Direction.V in group:
-                y *= currency_h / h
-            else:
-                x *= currency_h / h
+            # if Direction.V in group:
+            y *= currency_h / h
+            # else:
+            #     x *= currency_h / h
             currency_h = h
         return Point(x, y)
-        # if len(self.bin.deformations) == 1:
-        #     deform = self.bin.deformations[0]
-        #     if deform == Direction.H:
-        #         x = self.parent.tlp.x * self.parent.d_height / self.d_height
-        #         y = self.parent.tlp.y
-        #     else:
-        #         x = self.parent.tlp.x
-        #         y = self.parent.tlp.y * self.parent.d_height / self.d_height
-        # else:
-        #     x = self.parent.tlp.x
-        #     y = self.parent.tlp.y * self.parent.d_height / self.d_height
 
     @property
     def trp(self):
@@ -414,27 +403,12 @@ class Estimator:
         currency_h = self.height
         for h, group in groupby(self.bin.deformations, key=itemgetter(0)):
             group = [item for _, item in group]
-            if Direction.H in group:
-                x *= currency_h / h
-            else:
-                y *= currency_h / h
+            # if Direction.H in group:
+            x *= currency_h / h
+            # else:
+            #     y *= currency_h / h
             currency_h = h
         return Point(x, y)
-
-        # if self.parent is None or not self.bin.deformations:
-        #     x, y = self.rectangle.blp
-        #     return Point(self.max_width + x, self.rectangle.length + y)
-        # if len(self.bin.deformations) == 1:
-        #     deform = self.bin.deformations[0]
-        #     if deform == Direction.H:
-        #         x = self.parent.trp.x * self.parent.d_height / self.d_height
-        #         y = self.parent.trp.y
-        #     else:
-        #         x = self.parent.trp.x
-        #         y = self.parent.trp.y * self.parent.d_height / self.d_height
-        # else:
-        #     x = self.parent.trp.x * self.parent.d_height / self.d_height
-        #     y = self.parent.trp.y
 
     @property
     def max_length(self):
