@@ -299,11 +299,11 @@ class MainWindow (QMainWindow):
 
             # FIXME: Оставить проверку на случай с аномальными направлениями
             direction: int = detail[5]
-            # direction = Direction(3) if direction == 1 else Direction(2)
+            direction = Direction(3) if direction == 1 else Direction(2)
 
             for _ in range(amount):
                 blank = Blank(
-                    *size, priority, direction=None, material=material
+                    *size, priority, direction=direction, material=material
                 )
                 blank.name = detail[6]
                 details.append(blank)
