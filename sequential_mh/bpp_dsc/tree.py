@@ -624,6 +624,25 @@ class BinNode(Node):
                 neighbour = [is_bin_node(node.children) for node in self.children.children]
                 if not all(neighbour):
                     return
+                if is_rolling_node(self.children):
+                    left, right = self.children.children
+                    max_size_ = [(), max_size] if self.bin.d_height > 3 else [max_size, ()]
+                    # delete_all_branch(left, max_size_, without_root=False)
+                    # delete_all_branch(right, max_size_, without_root=False)
+                    if len(self.children.list_of_children()) == 2:
+                        left_cc = left.cc_leaves[0]
+                        right_cc = right.cc_leaves[0]
+                        left_ef = left_cc.result.total_efficiency(*left_cc.parent_bnode.bin.size[:2])
+                        right_ef = right_cc.result.total_efficiency(*right_cc.parent_bnode.bin.size[:2])
+                        left_ef *= left_cc.result.qty() / self.kit.qty()
+                        right_ef *= right_cc.result.qty() / self.kit.qty()
+                        length, width, _ = right.estimate_size()
+                        right_dist = self.bin.estimator(width, length, last_deformations)
+                        if right_ef >= left_ef and right_dist is not None:
+                            self.children.delete(left)
+                        else:
+                            self.children.delete(right)
+                        
                 estimate = self.estimate_size()
                 width = estimate[WIDTH]
                 length = estimate[LENGTH]
@@ -770,7 +789,8 @@ class BinNode(Node):
                 )
             elif not is_ubin_node(p_cont) or self.in_right_branch():
                 childe = self.children.children
-                if p_cont.bin.bin_type == BinType.leaf:
+                if p_cont.bin.bin_type in (BinType.leaf, BinType.adjacent):
+                # if p_cont.bin.bin_type == BinType.leaf:
                     # устанавливаем минимальные размеры (у себя и у предка!!!)
                     if last_rolldir == Direction.H:
                         if length > p_cont.bin.length and width > p_cont.bin.width:
@@ -1093,8 +1113,10 @@ class OperationNode(Node):
                 right.bin.length = self.point[LENGTH]
                 left.bin.length = parent_size[LENGTH] - self.point[LENGTH]
                 left.bin.width = parent_size[WIDTH]
+                right.bin.width = parent_size[WIDTH]
             else:
                 right.bin.width = self.point[WIDTH]
+                right.bin.length = parent_size[LENGTH]
                 left.bin.length = parent_size[LENGTH]
                 left.bin.width = parent_size[WIDTH] - self.point[WIDTH]
             if is_ubin_node(right):
