@@ -47,7 +47,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     # rectangles.sort()
     src_rect = Rectangle((0, 0), (width, length))
     min_rect = Rectangle((0, 0), (0, 0))
-    if last_rolldir == Direction.H:
+    if last_rolldir == Direction.H and max_size:
         max_size = max_size[::-1]
     main_region = Estimator(
         src_rect, height, g_height, limits=max_size,
