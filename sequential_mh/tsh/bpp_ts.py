@@ -22,6 +22,7 @@ from .rect import (
 from .ph import ph_bpp, sort
 from .visualize import visualize
 from .est import Estimator
+from ..bpp_dsc.rectangle import Direction
 
 
 StateLayout = NamedTuple(
@@ -46,7 +47,8 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     # rectangles.sort()
     src_rect = Rectangle((0, 0), (width, length))
     min_rect = Rectangle((0, 0), (0, 0))
-
+    if last_rolldir == Direction.H:
+        max_size = max_size[::-1]
     main_region = Estimator(
         src_rect, height, g_height, limits=max_size,
         x_hem=x_hem, y_hem=y_hem
