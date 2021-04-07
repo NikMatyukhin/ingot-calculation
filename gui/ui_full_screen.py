@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'full_screenCDhPdw.ui'
+## Form generated from reading UI file 'full_screenXvvKyR.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -23,6 +23,7 @@ class Ui_Dialog(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.graphicsView = QGraphicsView(Dialog)
         self.graphicsView.setObjectName(u"graphicsView")
+        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
 
         self.verticalLayout.addWidget(self.graphicsView)
 
