@@ -10,7 +10,7 @@ from .support import is_subrectangle, deformation
 from .exception import DirectionError, SizeError, MaterialError
 from .base_rect import Point, RectangleXY
 
-from sequential_mh.tsh.rect import PackedRectangle
+from ..tsh.rect import PackedRectangle
 
 
 Number = Union[int, float]
@@ -182,6 +182,13 @@ class Direction(Enum):
             self._name_ = 'перпендикулярно'
         else:
             self._name_ = 'любое'
+
+
+# TODO: Как сделать ориентацию для заготовки:
+# любую и перпендикулярную прокату
+# class Orientation(Enum):
+#     P = 2, 'перпендикулярно'
+#     A = 3, 'любое'
 
 
 class Bin(BaseBin):
@@ -524,6 +531,15 @@ class Blank(BaseBin):
                  material: Optional[Material]=None) -> None:
         super().__init__(length, width, height, material=material)
         self.priority = priority
+        if direction is None:
+            direction = Direction.A
+        elif direction == Direction.P:
+            # если направление перпендикулярно прокату
+            # устанавливаем ориентацию относительно длинной стороны
+            if length >= width:
+                direction = Direction.H
+            else:
+                direction = Direction.V
         self.direction = direction
 
     def rotate(self) -> None:
@@ -533,7 +549,7 @@ class Blank(BaseBin):
         на противоположное.
         """
         self.length, self.width = self.width, self.length
-        if self.direction is not None:
+        if self.direction != Direction.A:
             if self.direction == Direction.H:
                 self.direction = Direction.V
             else:
@@ -542,59 +558,36 @@ class Blank(BaseBin):
     @property
     def is_rotatable(self) -> bool:
         """Возможность свободного вращения"""
-        return self.direction is None
+        # return self.direction is None
+        return self.direction == Direction.A
 
     def __eq__(self, o) -> bool:
         if not isinstance(o, self.__class__):
             return False
-        if self.direction and o.direction:
-            if self.direction != o.direction:
-                o.rotate()
-                condition = super().__eq__(o)
-                o.rotate()
-            else:
-                condition = super().__eq__(o)
-        elif self.direction is None and o.direction is None:
+        if self.direction == o.direction == Direction.A:
             condition = super().eq_rot(o)
+        elif self.direction != o.direction:
+            o.rotate()
+            condition = super().__eq__(o)
+            o.rotate()
+        elif self.direction == o.direction:
+            condition = super().__eq__(o)
+        # if self.direction and o.direction:
+        #     if self.direction != o.direction:
+        #         o.rotate()
+        #         condition = super().__eq__(o)
+        #         o.rotate()
+        #     else:
+        #         condition = super().__eq__(o)
+        # elif self.direction is None and o.direction is None:
+        #     condition = super().eq_rot(o)
         else:
             condition = False
         return self.priority == o.priority and condition
 
 
-# class PackedBlankProtocol(Protocol):
-#     rectangle: RectangleXY
-#     x: Number
-#     y: Number
-
-#     @property
-#     def coordinates(self) -> Vec2:
-#         """Координаты в виде кортежа"""
-#         raise NotImplementedError
-
-
 class PackedBlank(PackedRectangle):
     pass
-
-
-# @dataclass
-# class PackedBlank:
-#     """Упакованная заготовка
-
-#     :ivar blank: заготовка
-#     :vartype blank: Blank
-#     :ivar x: координата x
-#     :vartype x: int или float
-#     :ivar y: координата y
-#     :vartype y: int или float
-#     """
-#     blank: Blank
-#     x: Number
-#     y: Number
-
-#     @property
-#     def coordinates(self) -> Vec2:
-#         """Координаты в виде кортежа"""
-#         return self.x, self.y
 
 
 class ABCKit(ABC):
@@ -697,6 +690,12 @@ class Kit(ABCKit):
                 all_blanks = self.blanks[bin_item.height][priority]
             return [o for o in all_blanks if bin_item.is_suitable(o)]
         return []
+
+    def rotate(self, height, rolldir):
+        for priority, group in self.blanks[height].items():
+            for item in group:
+                if not item.is_rotatable and item.direction != rolldir:
+                    item.rotate()
 
     def delete_items(self, items, height):
         if isinstance(items, list):

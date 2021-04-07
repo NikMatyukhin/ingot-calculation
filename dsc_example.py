@@ -3,7 +3,7 @@
 import os
 from itertools import chain
 
-from sequential_mh.bpp_dsc.rectangle import Material, Blank, Kit, Bin, BinType
+from sequential_mh.bpp_dsc.rectangle import Direction, Material, Blank, Kit, Bin, BinType
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, optimal_configuration, solution_efficiency
 )
@@ -192,6 +192,58 @@ def example_8():
     }
 
 
+def example_9():
+    return {
+        'name': '',
+        'kit': [
+            (200, 100, 1.0, 1, Direction.P),
+            (200, 100, 1.0, 1, Direction.P),
+            (100, 200, 1.0, 1, Direction.P),
+            (100, 200, 1.0, 1, Direction.P),
+            (100, 100, 1.0, 1, Direction.A),
+            (100, 100, 1.0, 1, Direction.A),
+            # (100, 100, 1.0, 1, Direction.A),
+            # (100, 100, 1.0, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 15,
+        # 'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
+def example_10():
+    return {
+        'name': '',
+        'kit': [
+            (200, 170, 1.0, 1, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (415, 170, 0.5, 1, Direction.A),
+            (420, 165, 0.5, 1, Direction.A),
+            (420, 170, 1.0, 1, Direction.A),
+            (82, 180, 2.2, 1, Direction.A),
+            (77, 180, 3.3, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -201,6 +253,8 @@ EXAMPLES = [
     example_6,
     example_7,
     example_8,
+    example_9,
+    example_10,
 ]
 
 
@@ -224,7 +278,15 @@ def main(example, use_graphviz=False):
     }
     kit = []
     for item in data['kit']:
-        kit.append(Blank(*item, material=material))
+        # if item[0] == 300:
+        #     direction=Direction.P
+        # else:
+        #     direction=Direction.A
+        if len(item) == 5:
+            *item, direction = item
+        else:
+            direction = Direction.A
+        kit.append(Blank(*item, material=material, direction=direction))
     kit = Kit(kit)
     bin_ = Bin(
         data['L0'], data['W0'], data['H0'],
@@ -241,6 +303,11 @@ def main(example, use_graphviz=False):
 
     _, res, nodes = optimal_configuration(tree, nd=True)
     res.update_size()
+
+    if use_graphviz:
+        graph1, all_nodes1 = plot(res, 'pdf/graph3.gv')
+        create_edges(graph1, all_nodes1)
+        graph1.view()
 
     for node in res.cc_leaves:
         main_rect = rect.Rectangle.create_by_size(
@@ -263,13 +330,8 @@ def main(example, use_graphviz=False):
     print(f'По используемому объему: {solution_efficiency(res, nodes)}')
     print(f'Взвешенная: {solution_efficiency(res, nodes, nd=True)}')
 
-    if use_graphviz:
-        graph1, all_nodes1 = plot(res, 'pdf/graph3.gv')
-        create_edges(graph1, all_nodes1)
-        graph1.view()
-
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 5
+    NUMBER = 10
     main(NUMBER, USE_GRAPHVIZ)

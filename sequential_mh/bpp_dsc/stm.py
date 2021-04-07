@@ -6,6 +6,7 @@
     - Воронов Владимир Сергеевич
 """
 
+# import os
 from collections import deque
 from operator import itemgetter
 
@@ -15,6 +16,9 @@ from .tree import (
     is_ubin_node, is_imt_node, delete_all_branch, optimal_configuration,
     solution_efficiency
 )
+
+# os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+# from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 
 def is_zero_size(length, width, height):
@@ -66,6 +70,10 @@ def stmh_idrd(tree, restrictions=None):
         tree = Tree(root)
         tree = _stmh_idrd(tree, restrictions=restrictions, local=not is_main)
         tree.root.update_size()
+        # if is_main:
+        #     graph1, all_nodes1 = plot(tree.root, 'pdf/graph4.gv')
+        #     create_edges(graph1, all_nodes1)
+        #     graph1.view()
         if restrictions['max_size']:
             delete_all_branch(tree.root, restrictions['max_size'])
         _, root, nodes = optimal_configuration(tree, nd=True)
@@ -125,7 +133,7 @@ def _pack(node, level, restrictions):
         # максимальная длина реза
         max_len = restrictions.get('cutting_length')
         max_size = restrictions.get('max_size')
-        if is_ubin_node(node):
+        if is_ubin_node(node.parent_cont):
             height = node.bin.d_height
         else:
             height = node.bin.height
@@ -156,7 +164,7 @@ def _pack(node, level, restrictions):
         adj_cc_node.pack(max_size=max_size, restrictions=restrictions)
         # adj_cc_node.update_size()
         delete_all_branch(
-            rolling_node, restrictions['max_size'], without_root=True
+            rolling_node, restrictions.get('max_size'), without_root=True
         )
 
         if len(rolling_node.list_of_children()) != 2:
