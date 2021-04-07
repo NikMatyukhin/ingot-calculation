@@ -32,7 +32,7 @@ class OrderPage (QWidget):
             self.ui.label_6.hide()
             self.ui.scrollArea_3.hide()
         elif status == 4 or status == 5:
-            self.ui.detailedPlanFrame.hide()
+            self.ui.detailedPlan.hide()
 
     def setPageTitle(self, name: str, on_storage: bool = False):
         """Назначение названия заказа"""
