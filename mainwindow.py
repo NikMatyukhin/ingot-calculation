@@ -225,12 +225,29 @@ class MainWindow (QMainWindow):
         material = Material(main_ingot[0], 2.2, 1.)
 
         # Выбор заготовок и удаление лишних значений
-        details_info = map(
-            itemgetter(0), chain.from_iterable(complects.values())
-        )
-        details = self.getDetails(details_info, material)
-
-        self.createCut(main_ingot[1:], details, material)
+        try:
+            details_info = map(
+                itemgetter(0), chain.from_iterable(complects.values())
+            )
+            details = self.getDetails(details_info, material)
+        except Exception as e: 
+            QMessageBox.critical(
+                self,
+                'Ошибка сборки',
+                'Конфигурация заказа привела к сбою программы!\n'
+                f'{e}',
+                QMessageBox.Ok
+            )
+        try:
+            self.createCut(main_ingot[1:], details, material)
+        except Exception as e: 
+            QMessageBox.critical(
+                self,
+                'Ошибка разреза',
+                'Конфигурация заказа привела к сбою программы!\n'
+                f'{e}',
+                QMessageBox.Ok
+            )
 
         page.hideForStatus(status)
         page.setPageTitle(name, on_storage)
@@ -282,11 +299,11 @@ class MainWindow (QMainWindow):
 
             # FIXME: Оставить проверку на случай с аномальными направлениями
             direction: int = detail[5]
-            direction = Direction(3) if direction == 1 else Direction(2)
+            # direction = Direction(3) if direction == 1 else Direction(2)
 
             for _ in range(amount):
                 blank = Blank(
-                    *size, priority, direction=direction, material=material
+                    *size, priority, direction=None, material=material
                 )
                 blank.name = detail[6]
                 details.append(blank)
