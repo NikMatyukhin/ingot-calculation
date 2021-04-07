@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowgrdqJb.ui'
+## Form generated from reading UI file 'mainwindowFkNcSm.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -580,6 +580,7 @@ class Ui_MainWindow(object):
         self.graphicsView = QGraphicsView(self.chartArea)
         self.graphicsView.setObjectName(u"graphicsView")
         self.graphicsView.setFrameShape(QFrame.NoFrame)
+        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
 
         self.verticalLayout_6.addWidget(self.graphicsView)
 
