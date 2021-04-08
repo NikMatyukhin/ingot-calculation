@@ -70,9 +70,10 @@ def example_3():
             (420, 165, 0.5, 1), (420, 170, 1.0, 1), (82, 180, 2.2, 1),
             (77, 180, 3.3, 1)
         ],
-        'L0': 300,
-        'W0': 200,
-        'H0': 30,
+        'L0': 180,
+        'W0': 160,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
         'cutting_thickness': 4.2,  # толщина реза
         'hem_until_3': 4,  # кромка > 3 мм
         'hem_after_3': 2,  # кромка <= 3 мм
@@ -139,7 +140,8 @@ def example_6():
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
         'cutting_length': 1200,  # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
+        'cutting_thickness': 3.0,  # толщина реза
+        # 'cutting_thickness': 4.2,  # толщина реза
         'hem_until_3': 4,  # кромка > 3 мм
         'hem_after_3': 2,  # кромка <= 3 мм
         'allowance': 2,  # припуски на разрез
@@ -162,7 +164,8 @@ def example_7():
         'H0': 23,
         'max_size': ((1200, 380), (1200, 400)),
         'cutting_length': 1200,  # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
+        # 'cutting_thickness': 4.2,  # толщина реза
+        'cutting_thickness': 3.0,  # толщина реза
         'hem_until_3': 4,  # кромка > 3 мм
         'hem_after_3': 2,  # кромка <= 3 мм
         'allowance': 2,  # припуски на разрез
@@ -172,7 +175,7 @@ def example_7():
 
 def example_8():
     return {
-        'name': 'Реальный пример 3',
+        'name': '',
         'kit': [
             (100, 200, 1.0, 1), (100, 200, 1.0, 1),
             (200, 100, 1.0, 1), (200, 100, 1.0, 1), (200, 100, 1.0, 1),
@@ -244,6 +247,54 @@ def example_10():
     }
 
 
+def example_11():
+    return {
+        'name': '',
+        'kit': [
+            (50, 180, 3.0, 1, Direction.A),
+            (122, 417, 0.5, 1, Direction.A),
+            (122, 417, 0.5, 1, Direction.A),
+            (103, 417, 0.5, 1, Direction.A),
+            (103, 417, 0.5, 1, Direction.A),
+            (32, 350, 0.7, 1, Direction.A),
+            (32, 350, 0.7, 1, Direction.A),
+            (32, 350, 0.7, 1, Direction.A),
+            (32, 350, 0.7, 1, Direction.A),
+            (86, 220, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+            (76, 110, 3.0, 1, Direction.A),
+
+            (100, 200, 2.0, 1, Direction.A),
+            (100, 200, 2.0, 1, Direction.A),
+            (100, 200, 2.0, 1, Direction.A),
+            (100, 200, 2.0, 1, Direction.A),
+
+            (420, 180, 2.0, 1, Direction.A),
+            (420, 180, 2.0, 1, Direction.A),
+        ],
+        'L0': 100,
+        'W0': 160,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -255,6 +306,7 @@ EXAMPLES = [
     example_8,
     example_9,
     example_10,
+    example_11,
 ]
 
 
