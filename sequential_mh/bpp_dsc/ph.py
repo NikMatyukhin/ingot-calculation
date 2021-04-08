@@ -26,8 +26,8 @@ def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False):
     if result:
         total_l, total_w = [], []
         for _, list_r in result.items():
-            total_l.append(max([r.y + r.blank.length for r in list_r]))
-            total_w.append(max([r.x + r.blank.width for r in list_r]))
+            total_l.append(max([r.y + r.rectangle.length for r in list_r]))
+            total_w.append(max([r.x + r.rectangle.width for r in list_r]))
         total_l = max(total_l)
         total_w = max(total_w)
         s_1 = total_w * (length - total_l)
@@ -42,53 +42,6 @@ def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False):
         total_len, total_width = 0., 0.
 
     return result, total_len - y0, total_width - x0, tailings
-
-
-# def ph_bpp_(length, width, rectangles, x0=0., y0=0., first_priority=False):
-#     result = {}
-#     total_len = y0
-
-#     if first_priority:
-#         priority_list = [p for p, group in rectangles.items() if group]
-#         if not priority_list:
-#             return {}, 0
-#         max_priority = min(priority_list)
-#         group = rectangles[max_priority]
-#         x, y, _len, _width = x0, y0, 0, 0
-#         i = 0
-#         while i < len(group):
-#             # TODO: добавить возможность вертикального разреза (пока не ясно как)
-#             # FIXME: здесь косяк с длиной, она не контролируется и не изменяется
-#             if not rectangle_fits((group[i].length, group[i].width),
-#                                   (length, width), with_rotate=True):
-#                 i += 1
-#                 continue
-#             # FIXME: выбирать лучшую фигуру через get_best_fig
-#             rect = group.pop(i)
-
-#             if max_priority not in result:
-#                 result[max_priority] = []
-
-#             # if rect.length <= width:
-#             if rect.length > length or rect.width > width:
-#                 rect.rotate()
-
-#             result[max_priority].append(PackedBlank(rect, x, y))
-#             x, y = rect.width, total_len
-#             _len, _width = rect.length, width - rect.width
-#             total_len += rect.length
-#             if _width > 0:
-#                 recursive_packing(x, y, _len, _width, rectangles, result)
-#             x, y = 0, total_len
-#     else:
-#         recursive_packing(x0, y0, length, width, rectangles, result)
-#         if result:
-#             total_len = max(
-#                 [max([r.y + r.blank.length for r in group])
-#                  for _, group in result.items()]
-#             )
-
-#     return result, total_len - y0
 
 
 def recursive_packing(x, y, length, width, rectangles, result, tailings,

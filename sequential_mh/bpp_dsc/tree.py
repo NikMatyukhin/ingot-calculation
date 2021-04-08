@@ -320,11 +320,13 @@ class BinNode(Node):
             height = self.bin.d_height
         else:
             height = self.bin.height
-        if not cut_thickness or (cut_thickness and height <= cut_thickness):
+        # if not cut_thickness or (cut_thickness and height <= cut_thickness):
+        if not cut_thickness or height == cut_thickness:
             left = OperationNode(Operations.cutting)
             right = OperationNode(Operations.rolling)
             return left, right
-
+        if cut_thickness == max(self.kit.blanks.keys()):
+            return OperationNode(Operations.rolling)
         return OperationNode(Operations.rolling)
 
     def _create_nodes_leaf(self, **kwargs):
@@ -543,6 +545,30 @@ class BinNode(Node):
         neighbour = self.get_bin_neighbors(troot)
         neighbour = [is_bin_node(node) for node in neighbour]
         if all(neighbour):
+            rolling_node = self.parent.parent
+            if len(rolling_node.list_of_children()) == 2:
+                # выбираем одну из веток проката сразу!!!
+                left, right = rolling_node.children
+                max_size_ = [(), max_size] if self.bin.d_height > 3 else [max_size, ()]
+                delete_left = to_delete_branch(left, max_size_, without_root=False)
+                delete_right = to_delete_branch(right, max_size_, without_root=False)
+                if delete_left:
+                    delete_all_branch(left, max_size_, without_root=False)
+                elif delete_right:
+                    delete_all_branch(right, max_size_, without_root=False)
+                if len(rolling_node.list_of_children()) == 2:
+                    left_cc = left.cc_leaves[0]
+                    right_cc = right.cc_leaves[0]
+                    left_ef = left_cc.result.total_efficiency(*left_cc.parent_bnode.bin.size[:2])
+                    right_ef = right_cc.result.total_efficiency(*right_cc.parent_bnode.bin.size[:2])
+                    left_ef *= left_cc.result.qty() / self.kit.qty()
+                    right_ef *= right_cc.result.qty() / self.kit.qty()
+                    length, width, _ = right.estimate_size()
+                    # right_dist = self.bin.estimator(width, length, last_deformations)
+                    if right_ef >= left_ef:
+                        rolling_node.delete(left)
+                    else:
+                        rolling_node.delete(right)
             troot.fix_sizes(width, length, max_size=max_size, **kwargs)
 
     def _fix_node_one_def(self, width, length, max_size=None, **kwargs):
@@ -621,14 +647,14 @@ class BinNode(Node):
         elif len(last_deformations) == 2:
             # print('Фиксация бина с двумя деформациями')
             if is_cutting_node(self.parent):
-                neighbour = [is_bin_node(node.children) for node in self.children.children]
+                neighbour = [is_bin_node(node.children) for node in self.children.list_of_children()]
                 if not all(neighbour):
                     return
                 if is_rolling_node(self.children):
                     left, right = self.children.children
                     max_size_ = [(), max_size] if self.bin.d_height > 3 else [max_size, ()]
-                    # delete_all_branch(left, max_size_, without_root=False)
-                    # delete_all_branch(right, max_size_, without_root=False)
+                    delete_all_branch(left, max_size_, without_root=False)
+                    delete_all_branch(right, max_size_, without_root=False)
                     if len(self.children.list_of_children()) == 2:
                         left_cc = left.cc_leaves[0]
                         right_cc = right.cc_leaves[0]
@@ -836,9 +862,6 @@ class BinNode(Node):
                         is_locked = to_delete(width, length, max_size)
 
                     self.locked = is_locked  # для отладки
-                    # if not is_cutting_node(self.parent) and is_locked:
-                    #     node = self.delete_branch()
-                    #     return
                 else:
                     # здесь фиксируются бины между промежуточным и корнем
                     if last_rolldir == Direction.H:
@@ -987,7 +1010,8 @@ class OperationNode(Node):
             height = parent_bn.bin.height
         is_intermediate = bool(cut_thickness)
 
-        if is_intermediate and not is_op_node(self.parent):
+        max_h = max(self.parent_bnode.kit.blanks.keys())
+        if is_intermediate and not is_op_node(self.parent) and max_h != cut_thickness:
             bin_type = BinType.INTERMEDIATE
 
         if double_sided:
@@ -1113,10 +1137,12 @@ class OperationNode(Node):
                 right.bin.length = self.point[LENGTH]
                 left.bin.length = parent_size[LENGTH] - self.point[LENGTH]
                 left.bin.width = parent_size[WIDTH]
+                # left.bin.width = self.point[WIDTH]
                 right.bin.width = parent_size[WIDTH]
             else:
                 right.bin.width = self.point[WIDTH]
                 right.bin.length = parent_size[LENGTH]
+                # right.bin.length = self.point[LENGTH]
                 left.bin.length = parent_size[LENGTH]
                 left.bin.width = parent_size[WIDTH] - self.point[WIDTH]
             if is_ubin_node(right):
@@ -1252,6 +1278,7 @@ class OperationNode(Node):
                 else:
                     raise SizeError('Невозможно разрезать лист')
             else:
+                # if abs(s_1) >= abs(s_2):
                 if s_1 >= s_2:
                     self.direction = Direction.H
                     if is_left:
@@ -1384,7 +1411,7 @@ class CuttingChartNode(Node):
                 length, width, bin_node.bin.d_height,
                 self.bin.last_rolldir, self.bin.material, self.bin.bin_type
             )
-            self.result.update(result, tailings=tailings)
+            self.result.update(result, tailings=tailings, unplaced=unplaced)
             bin_node.fix_sizes(
                 width, length, max_size=max_size, restrictions=restrictions
             )
@@ -1441,18 +1468,18 @@ class CuttingChartNode(Node):
 
     def available_size(self, *, start=None):
         cutting_node, _ = self.parent_cnode()
-        estimate = self.estimate_size()
+        estimate = cutting_node.estimate_size()
         if estimate[LENGTH] == 0 or estimate[WIDTH] == 0:
             length, width, height = cutting_node.parent_bnode.bin.size
             if self.bin.height != height:
                 if self.last_rolldir == Direction.H:
                     width = deformation(
-                        width, height, self.bin.height, 
+                        width, height, self.bin.height,
                         self.bin.material.extension
                     )
                 else:
                     length = deformation(
-                        length, height, self.bin.height, 
+                        length, height, self.bin.height,
                         self.bin.material.extension
                     )
             esize = self.e_size()
@@ -1765,3 +1792,50 @@ def delete_all_branch(root, max_size, without_root=False):
                 is_locked = True
             if is_locked:
                 parent.delete_branch()
+
+
+def to_delete_branch(root, max_size, without_root=False):
+    for node in dfs(root):
+        if node not in list(dfs(root)):
+            continue
+        if without_root and node is root:
+            continue
+        is_locked = False
+        if is_rolling_node(node.parent):
+            if node.parent.operation == Operations.h_rolling:
+                if max_size:
+                    is_locked = to_delete(node.bin.length, node.bin.width, max_size[node.bin.height >= 3])
+                is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
+            elif node.parent.operation == Operations.v_rolling:
+                if max_size:
+                    is_locked = to_delete(node.bin.width, node.bin.length, max_size[node.bin.height >= 3])
+                is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
+            if not is_cutting_node(node.parent) and is_locked:
+                return True
+        elif is_cutting_node(node.parent):
+            parent = node.parent
+            children = parent.list_of_children()
+            if len(children) == 2:
+                left_size = children[0].bin.size[:2]
+                right_size = children[1].bin.size[:2]
+                if parent.direction == Direction.H:
+                    if left_size[0] < 0:
+                        is_locked = True
+                    size = (
+                        round(left_size[0] + right_size[0], 4),
+                        round(max(left_size[1], right_size[1]), 4)
+                    )
+                else:
+                    if left_size[1] < 0:
+                        is_locked = True
+                    size = (
+                        round(max(left_size[0], right_size[0]), 4),
+                        round(left_size[1] + right_size[1], 4)
+                    )
+            else:
+                size = children[0].bin.size[:2]
+            parent_bin = parent.parent.bin
+            if size[0] > round(parent_bin.size[0], 4) or size[1] > round(parent_bin.size[1], 4):
+                is_locked = True
+            return is_locked
+    return False

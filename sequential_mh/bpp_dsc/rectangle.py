@@ -230,6 +230,8 @@ class Bin(BaseBin):
         super().__init__(length, width, height, material)
         self.last_rolldir = rolldir
         self.bin_type = bin_type or BinType.ingot
+        self.d_height = height
+        self.deformations = []
 
     def is_suitable(self, blank, with_def=False) -> Union[bool, Type[Exception]]:
         """Проверка заготовки на возможность размещения в контейнере
@@ -825,11 +827,16 @@ class Result(ABCKit):
         self.length = packing_len
         self.width = packing_width
         self.tailings = tailings
+        self.unplaced = []
         # self.hem = (0, 0)
 
-    def update(self, blanks, tailings=None, hem=(0, 0)):
+    def update(self, blanks, tailings=None, unplaced=None, hem=(0, 0)):
         if not blanks:
             return
+        if tailings is None:
+            tailings = []
+        if unplaced is None:
+            unplaced = []
         if isinstance(blanks, list):
             # key = 'blank.priority'
             key = 'rectangle.priority'
@@ -852,6 +859,7 @@ class Result(ABCKit):
         self.length = max(total_l)  # + hem[1]
         self.width = max(total_w)   # + hem[0]
         self.tailings.extend(tailings)
+        self.unplaced.extend(unplaced)
         # self.hem = hem
 
     def qty(self):  # кол-во

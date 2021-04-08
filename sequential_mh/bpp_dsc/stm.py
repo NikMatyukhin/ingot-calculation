@@ -9,6 +9,7 @@
 # import os
 from collections import deque
 from operator import itemgetter
+from sequential_mh.bpp_dsc.rectangle import BinType
 
 from .tree import (
     Operations, Tree, is_cc_node, is_cutting_node, is_ingot_node, is_op_node,
@@ -95,9 +96,7 @@ def _stmh_idrd(tree, local=False, restrictions=None):
     if local:
         level = deque(tree.root.leaves())
         for node in tree.root.cc_leaves:
-            parent = node.parent_bnode.parent_bnode
-            add_detail = get_unpacked_item(parent, node)
-            node.kit.update(add_detail)
+            node.kit.update(node.result.unplaced)
     else:
         level = deque([tree.root])
 
@@ -228,7 +227,7 @@ def _create_insert_template(node, level, tree, local, restrictions):
             node_height = new_parent.bin.d_height
         else:
             node_height = new_parent.bin.height
-        if new_parent is tree.root and is_ingot_node(new_parent) and cut_thickness > max_heigh and cut_thickness < node_height:
+        if new_parent is tree.root and is_ingot_node(new_parent) and cut_thickness >= max_heigh and cut_thickness < node_height:
             height = cut_thickness
         else:
             cut_thickness = None
@@ -254,7 +253,7 @@ def _create_insert_template(node, level, tree, local, restrictions):
         # 5.6) обновление наборов у нижестоящих узлов
         # (Может перенести в метод вставки???)
         for item in new_parent.template_leaves(new_parent):
-            if is_adj_node(item):
+            if is_adj_node(item) and item.bin.bin_type != BinType.INTERMEDIATE:
                 item.update_kit(height)
         # 5.7) обновление уровня новыми узлами
         for item in new_parent.leaves():
