@@ -3,7 +3,8 @@ from typing import NoReturn
 from PySide6.QtCore import Qt, Signal, QPointF, QModelIndex
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
-    QDialog, QCompleter, QMessageBox, QHBoxLayout, QMenu
+    QDialog, QCompleter, QMessageBox, QHBoxLayout, QMenu,
+    QGraphicsDropShadowEffect
 )
 
 from gui import (
@@ -256,8 +257,8 @@ class NewOrderDialog(QDialog):
         self.ui.setupUi(self)
 
         self.model = ComplectsModel([
-                'Ведомость', 'Название', 'Аренда', 'Количество',
-                'Приоритет', 'ID', 'ADDED'
+                'Ведомость', 'Название', 'Аренда', 'Длина', 'Ширина',
+                'Толщина', 'Количество', 'Приоритет', 'ID', 'ADDED'
         ])
         self.proxy_1 = ArticleInformationFilterProxyModel()
         self.proxy_1.setSourceModel(self.model)
@@ -274,9 +275,12 @@ class NewOrderDialog(QDialog):
         self.ui.treeView_1.setColumnHidden(4, True)
         self.ui.treeView_1.setColumnHidden(5, True)
         self.ui.treeView_1.setColumnHidden(6, True)
+        self.ui.treeView_1.setColumnHidden(7, True)
+        self.ui.treeView_1.setColumnHidden(8, True)
+        self.ui.treeView_1.setColumnHidden(9, True)
 
-        self.ui.treeView_2.setColumnHidden(5, True)
-        self.ui.treeView_2.setColumnHidden(6, True)
+        self.ui.treeView_2.setColumnHidden(8, True)
+        self.ui.treeView_2.setColumnHidden(9, True)
 
         ingots_layout = QHBoxLayout()
         self.ingots = []
@@ -294,6 +298,13 @@ class NewOrderDialog(QDialog):
         self.ui.searchName.textChanged.connect(self.proxy_1.setNomenclature)
         self.ui.add.clicked.connect(self.addOrder)
         self.ui.cancel.clicked.connect(self.reject)
+
+        self.shadow_effect = QGraphicsDropShadowEffect()
+        self.shadow_effect.setColor(Qt.gray)
+        self.shadow_effect.setYOffset(0)
+        self.shadow_effect.setXOffset(6)
+        self.shadow_effect.setBlurRadius(13)
+        self.ui.splitter.handle(1).setGraphicsEffect(self.shadow_effect)
 
     def show_context_menu(self, point: QPointF):
 
@@ -332,11 +343,11 @@ class NewOrderDialog(QDialog):
         # TODO: если не перенести индекс на первую колонку, работать не будет
         index = self.model.index(index.row(), 0, parent)
 
-        parent_state_index = self.model.index(index.row(), 6, parent)
+        parent_state_index = self.model.index(index.row(), 9, parent)
         self.model.setData(parent_state_index, True, Qt.EditRole)
 
         for row in range(self.model.rowCount(index)):
-            child_state_index = self.model.index(row, 6, index)
+            child_state_index = self.model.index(row, 9, index)
             self.model.setData(child_state_index, True, Qt.EditRole)
 
         for column in range(self.model.columnCount(QModelIndex())):
@@ -350,10 +361,10 @@ class NewOrderDialog(QDialog):
         # TODO: если не перенести индекс на первую колонку, работать не будет
         index = self.model.index(index.row(), 0, parent)
 
-        child_state_index = self.model.index(index.row(), 6, parent)
+        child_state_index = self.model.index(index.row(), 9, parent)
         self.model.setData(child_state_index, True, Qt.EditRole)
 
-        parent_state_index = self.model.index(parent.row(), 6, QModelIndex())
+        parent_state_index = self.model.index(parent.row(), 9, QModelIndex())
         self.model.setData(parent_state_index, True, Qt.EditRole)
 
         for column in range(self.model.columnCount(QModelIndex())):
@@ -367,11 +378,11 @@ class NewOrderDialog(QDialog):
         # TODO: если не перенести индекс на первую колонку, работать не будет
         index = self.model.index(index.row(), 0, parent)
 
-        parent_state_index = self.model.index(index.row(), 6, parent)
+        parent_state_index = self.model.index(index.row(), 9, parent)
         self.model.setData(parent_state_index, False, Qt.EditRole)
 
         for row in range(self.model.rowCount(index)):
-            child_state_index = self.model.index(row, 6, index)
+            child_state_index = self.model.index(row, 9, index)
             self.model.setData(child_state_index, False, Qt.EditRole)
 
     def removeDetail(self):
@@ -382,18 +393,18 @@ class NewOrderDialog(QDialog):
         # TODO: если не перенести индекс на первую колонку, работать не будет
         index = self.model.index(index.row(), 0, parent)
 
-        child_state_index = self.model.index(index.row(), 6, parent)
+        child_state_index = self.model.index(index.row(), 9, parent)
         self.model.setData(child_state_index, False, Qt.EditRole)
         if not self.haveAcceptedRows(parent):
             row = parent.row()
-            parent_state_index = self.model.index(row, 6, QModelIndex())
+            parent_state_index = self.model.index(row, 9, QModelIndex())
             self.model.setData(parent_state_index, False, Qt.EditRole)
 
     def haveAcceptedRows(self, index: QModelIndex) -> bool:
 
         rows_states = []
         for row in range(self.model.rowCount(index)):
-            row_index = self.model.index(row, 6, index)
+            row_index = self.model.index(row, 9, index)
             rows_states.append(self.model.data(row_index, Qt.DisplayRole))
         return any(rows_states)
 
@@ -402,7 +413,7 @@ class NewOrderDialog(QDialog):
         name = self.ui.orderName.text()
         on_storage = int(self.ui.storage.isChecked())
 
-        if name:
+        if name and self.ingots and self.proxy_2.rowCount(QModelIndex()):
             success = StandardDataService.save_record(
                 'orders',
                 status_id=1,
@@ -423,7 +434,7 @@ class NewOrderDialog(QDialog):
                     proxy_index = self.proxy_2.index(row, 0, QModelIndex())
                     index = self.proxy_2.mapToSource(proxy_index)
 
-                    id_index = self.model.index(index.row(), 5, QModelIndex())
+                    id_index = self.model.index(index.row(), 8, QModelIndex())
                     id_1 = self.model.data(id_index, Qt.DisplayRole)
                     order_amount += 1
 
@@ -431,14 +442,14 @@ class NewOrderDialog(QDialog):
                     index = self.model.index(index.row(), 0, QModelIndex())
 
                     for row in range(self.model.rowCount(index)):
-                        id_index = self.model.index(row, 6, index)
+                        id_index = self.model.index(row, 9, index)
 
                         if self.model.data(id_index, Qt.DisplayRole):
-                            index_1 = self.model.index(row, 3, index)
+                            index_1 = self.model.index(row, 6, index)
                             amount = self.model.data(index_1, Qt.DisplayRole)
-                            index_2 = self.model.index(row, 4, index)
+                            index_2 = self.model.index(row, 7, index)
                             priority = self.model.data(index_2, Qt.DisplayRole)
-                            index_3 = self.model.index(row, 5, index)
+                            index_3 = self.model.index(row, 8, index)
                             id_2 = self.model.data(index_3, Qt.DisplayRole)
 
                             max_depth = max(DetailDataService.detail_depth(
@@ -490,7 +501,9 @@ class NewOrderDialog(QDialog):
             QMessageBox.critical(
                 self,
                 'Ошибка добавления',
-                'Поле названия заказа обязательно должно быть заполнено!',
+                'Поле названия заказа обязательно должно быть заполнено!\n'
+                'Должен быть выбран хотя бы один слиток!\n'
+                'Должно быть добавлено хотя бы одно изделие!',
                 QMessageBox.Ok
             )
 

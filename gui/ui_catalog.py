@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'catalogEfEjPs.ui'
+## Form generated from reading UI file 'catalogjDhFbr.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -18,7 +18,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(1156, 630)
+        Form.resize(1156, 692)
         Form.setMouseTracking(True)
         Form.setContextMenuPolicy(Qt.CustomContextMenu)
         self.verticalLayout_4 = QVBoxLayout(Form)
@@ -27,8 +27,8 @@ class Ui_Form(object):
         self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
         self.topBar = QFrame(Form)
         self.topBar.setObjectName(u"topBar")
-        self.topBar.setMinimumSize(QSize(0, 50))
-        self.topBar.setMaximumSize(QSize(16777215, 50))
+        self.topBar.setMinimumSize(QSize(0, 80))
+        self.topBar.setMaximumSize(QSize(16777215, 80))
         self.topBar.setStyleSheet(u"background-color: rgb(225, 225, 225);")
         self.topBar.setFrameShape(QFrame.NoFrame)
         self.topBar.setFrameShadow(QFrame.Sunken)
@@ -49,6 +49,7 @@ class Ui_Form(object):
 "	padding-top: 2px;\n"
 "	color: black;\n"
 "	border: none;\n"
+"	font-size: 11px;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -64,6 +65,7 @@ class Ui_Form(object):
         icon.addFile(u":/icons/manufacture.png", QSize(), QIcon.Normal, QIcon.Off)
         self.newProduct.setIcon(icon)
         self.newProduct.setIconSize(QSize(40, 40))
+        self.newProduct.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
 
         self.horizontalLayout.addWidget(self.newProduct)
 
@@ -92,7 +94,7 @@ class Ui_Form(object):
         icon1.addFile(u":/icons/conveyor.png", QSize(), QIcon.Normal, QIcon.Off)
         self.newArticle.setIcon(icon1)
         self.newArticle.setIconSize(QSize(40, 40))
-        self.newArticle.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.newArticle.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
 
         self.horizontalLayout.addWidget(self.newArticle)
 
@@ -121,6 +123,7 @@ class Ui_Form(object):
         icon2.addFile(u":/icons/beam.png", QSize(), QIcon.Normal, QIcon.Off)
         self.newDetail.setIcon(icon2)
         self.newDetail.setIconSize(QSize(40, 40))
+        self.newDetail.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
 
         self.horizontalLayout.addWidget(self.newDetail)
 
@@ -390,20 +393,23 @@ class Ui_Form(object):
 #if QT_CONFIG(tooltip)
         self.newProduct.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u0432\u0443\u044e \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u044e", None))
 #endif // QT_CONFIG(tooltip)
-        self.newProduct.setText(QCoreApplication.translate("Form", u"+ 1", None))
+        self.newProduct.setText(QCoreApplication.translate("Form", u"\u041d\u043e\u0432\u0430\u044f\n"
+"\u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u044f", None))
 #if QT_CONFIG(tooltip)
         self.newArticle.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u0432\u043e\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u0435", None))
 #endif // QT_CONFIG(tooltip)
-        self.newArticle.setText(QCoreApplication.translate("Form", u"+ 2", None))
+        self.newArticle.setText(QCoreApplication.translate("Form", u"\u041d\u043e\u0432\u043e\u0435\n"
+"\u0438\u0437\u0434\u0435\u043b\u0438\u0435", None))
 #if QT_CONFIG(tooltip)
         self.newDetail.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u0432\u0443\u044e \u0434\u0435\u0442\u0430\u043b\u044c", None))
 #endif // QT_CONFIG(tooltip)
-        self.newDetail.setText(QCoreApplication.translate("Form", u"+ 3", None))
+        self.newDetail.setText(QCoreApplication.translate("Form", u"\u041d\u043e\u0432\u0430\u044f\n"
+"\u0437\u0430\u0433\u043e\u0442\u043e\u0432\u043a\u0430", None))
         self.newImage.setText(QCoreApplication.translate("Form", u"+ 4", None))
         self.searchParameters.setTitle(QCoreApplication.translate("Form", u"\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b \u043f\u043e\u0438\u0441\u043a\u0430", None))
-        self.register_number.setPlaceholderText(QCoreApplication.translate("Form", u"\u041d\u043e\u043c\u0435\u0440 \u0432\u0435\u0434\u043e\u043c\u043e\u0441\u0442\u0438...", None))
-        self.designation.setPlaceholderText(QCoreApplication.translate("Form", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438...", None))
-        self.nomenclature.setPlaceholderText(QCoreApplication.translate("Form", u"\u041d\u043e\u043c\u0435\u043d\u043a\u043b\u0430\u0442\u0443\u0440\u0430...", None))
+        self.register_number.setPlaceholderText(QCoreApplication.translate("Form", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u043e\u043c\u0435\u0440 \u0432\u0435\u0434\u043e\u043c\u043e\u0441\u0442\u0438...", None))
+        self.designation.setPlaceholderText(QCoreApplication.translate("Form", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438...", None))
+        self.nomenclature.setPlaceholderText(QCoreApplication.translate("Form", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u043e\u043c\u0435\u043d\u043a\u043b\u0430\u0442\u0443\u0440\u0443...", None))
         self.rent.setText(QCoreApplication.translate("Form", u"\u0412 \u0430\u0440\u0435\u043d\u0434\u0443", None))
         ___qtablewidgetitem = self.detailsView.horizontalHeaderItem(0)
         ___qtablewidgetitem.setText(QCoreApplication.translate("Form", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435", None));

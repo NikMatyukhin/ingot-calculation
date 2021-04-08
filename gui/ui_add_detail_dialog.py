@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_detail_dialogYfRXmM.ui'
+## Form generated from reading UI file 'add_detail_dialogUPeVUB.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.0
 ##
@@ -170,6 +170,7 @@ class Ui_Dialog(object):
 
         self.priority = QSpinBox(self.extra)
         self.priority.setObjectName(u"priority")
+        self.priority.setMinimum(1)
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.priority)
 
@@ -180,6 +181,7 @@ class Ui_Dialog(object):
 
         self.amount = QSpinBox(self.extra)
         self.amount.setObjectName(u"amount")
+        self.amount.setMinimum(1)
 
         self.formLayout_2.setWidget(2, QFormLayout.FieldRole, self.amount)
 
@@ -243,7 +245,7 @@ class Ui_Dialog(object):
         self.label_3.setText(QCoreApplication.translate("Dialog", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438:", None))
         self.label_2.setText(QCoreApplication.translate("Dialog", u"\u0422\u0438\u043f \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438:", None))
         self.product_type.setText(QCoreApplication.translate("Dialog", u"...", None))
-        self.name.setPlaceholderText(QCoreApplication.translate("Dialog", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0434\u0435\u0442\u0430\u043b\u0438...", None))
+        self.name.setPlaceholderText(QCoreApplication.translate("Dialog", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0434\u0435\u0442\u0430\u043b\u0438...", None))
         self.sizes.setTitle(QCoreApplication.translate("Dialog", u"\u0413\u0430\u0431\u0430\u0440\u0438\u0442\u043d\u044b\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u044b", None))
         self.label_4.setText(QCoreApplication.translate("Dialog", u"\u0414\u043b\u0438\u043d\u0430:", None))
         self.height.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))

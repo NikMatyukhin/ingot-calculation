@@ -4,7 +4,7 @@ from itertools import chain
 from operator import itemgetter, attrgetter
 
 from PySide6.QtCore import (
-    Qt, QSettings, Signal
+    Qt, QSettings, Signal, QRectF
 )
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
@@ -97,6 +97,10 @@ class MainWindow (QMainWindow):
 
         # Сигнал перехода на следующий шаг заказа
         self.ui.closeOrder.clicked.connect(self.openCloseOrder)
+        # HACK: Пока без фактического режима эта кнопка не нужна. 
+        self.ui.closeOrder.hide()
+        self.ui.searchNumber.hide()
+        self.ui.searchType.hide()
 
         # Сигнал возврата на исходную страницу с информацией о заказах
         self.ui.information.clicked.connect(
@@ -161,8 +165,8 @@ class MainWindow (QMainWindow):
         }
         if efficiency:
             data['Выход годного'] = str(efficiency) + '%'
-        if depth:
-            data['Текущая толщина'] = str(depth) + ' мм'
+        # if depth:
+        #    data['Текущая толщина'] = str(depth) + ' мм'
         table = QTableWidget(len(data), 2)
         table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -369,6 +373,10 @@ class MainWindow (QMainWindow):
         """Просмотр другой толщины и подгрузка нового списка деталей"""
         button = self.sender()
         self.plan_painter.clearCanvas()
+        self.ui.graphicsView.viewport().update()
+        self.ui.graphicsView.verticalScrollBar().setValue(
+            self.ui.graphicsView.verticalScrollBar().minimum()
+        )
         if button is self.ui.sourcePlate:
             self.sourcePage()
         else:

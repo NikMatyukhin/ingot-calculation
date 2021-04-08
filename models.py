@@ -317,7 +317,7 @@ class ComplectsModel (TreeModel):
 
         if not index.isValid():
             return Qt.NoItemFlags
-        if index.column() == 3 or index.column() == 4:
+        if index.column() == 6 or index.column() == 7:
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
         return QAbstractItemModel.flags(self, index)
 
@@ -327,15 +327,19 @@ class ComplectsModel (TreeModel):
             id, key, nomen, rent = line
             rent = ['Нет', 'Да'][rent]
             self.appendRow(
-                [key, nomen, rent, None, None, id, False], QModelIndex())
+                [key, nomen, rent, None, None, None, None, None, id, False],
+                QModelIndex()
+            )
 
             sub = StandardDataService.get_by_field('details', register_id=key)
             parent = self.index(0, 0, QModelIndex())
 
             for sub_line in sub:
-                id, _, _, name, _, _, _, amount, priority, _ = sub_line
+                id, _, _, name, l, w, d, amount, priority, _ = sub_line
                 self.appendRow(
-                    [key, name, None, amount, priority, id, False], parent)
+                    [key, name, None, l, w, d, amount, priority, id, False],
+                    parent
+                )
 
 
 class ProductInformationFilterProxyModel (QSortFilterProxyModel):
@@ -443,12 +447,12 @@ class NewOrderFilterProxyModel (QSortFilterProxyModel):
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.parent().isValid():
             return self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 6, QModelIndex()),
+                self.sourceModel().index(sourceRow, 9, QModelIndex()),
                 Qt.DisplayRole
             )
         else:
             return self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 6, index.parent()),
+                self.sourceModel().index(sourceRow, 9, index.parent()),
                 Qt.DisplayRole
             )
         return False

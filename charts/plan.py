@@ -101,7 +101,6 @@ class CuttingPlanPainter:
             item = DetailGraphicsItem(*blank, clr=color)
             item.setAcceptHoverEvents(True)
             self.scene.addItem(item)
-        self.drawCoords()
 
     def drawBin(self):
         pen = QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 1.0,
