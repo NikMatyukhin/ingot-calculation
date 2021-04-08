@@ -205,10 +205,10 @@ class CuttingMapPainter:
             if is_bin_node(node):
                 if node.bin.bin_type == BinType.ingot:
                     efficiency = self.scene.addText(
-                        'Выход годного: ' + str(self.efficiency)
+                        'Выход годного:\n' + str(self.efficiency) + '%'
                     )
-                    efficiency.setX(self.x - 120)
-                    efficiency.setY(self.y + 70)
+                    efficiency.setX(self.x - 140)
+                    efficiency.setY(self.y - 60)
             if is_op_node(node):
                 if not self.in_width:
                     cur_item.x_pos += 30
