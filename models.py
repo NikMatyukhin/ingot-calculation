@@ -332,6 +332,9 @@ class ComplectsModel (TreeModel):
             )
 
             sub = StandardDataService.get_by_field('details', register_id=key)
+            if not sub:
+                self.removeRows(0, 1, QModelIndex())
+
             parent = self.index(0, 0, QModelIndex())
 
             for sub_line in sub:
