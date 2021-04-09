@@ -203,6 +203,7 @@ class CuttingMapPainter:
             cur_item = self.createItem(node)
             self.scene.addItem(cur_item)
             if is_bin_node(node):
+                print(node.bin.bin_type)
                 if node.bin.bin_type == BinType.ingot:
                     efficiency = self.scene.addText(
                         'Выход годного:\n' + str(self.efficiency) + '%'
@@ -210,6 +211,7 @@ class CuttingMapPainter:
                     efficiency.setX(self.x - 140)
                     efficiency.setY(self.y - 60)
             if is_op_node(node):
+                print(node.operation)
                 if not self.in_width:
                     cur_item.x_pos += 30
             if self.prev_item and not self.skip:
@@ -233,7 +235,6 @@ class CuttingMapPainter:
             h, w, d = node.bin.size
             size = f'{round(h, 1)}x{round(w, 1)}x{round(d, 1)}'
             type = node.bin.bin_type
-
             if type == BinType.ingot:
                 item = PlateGraphicsItem(
                     'Слиток\n' + size,
@@ -243,7 +244,7 @@ class CuttingMapPainter:
             elif type == BinType.leaf or \
                     type == BinType.semifinished or\
                     type == BinType.INTERMEDIATE:
-                if self.prev_type == BinType.adjacent:
+                if is_op_node(node.parent) and node.parent.operation == Operations.cutting:
                     self.in_width = False
                     self.changePos(residue=True)
                 item = PlateGraphicsItem(
