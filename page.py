@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QApplication, QWidget, QHBoxLayout, QTreeWidgetItem, QGraphicsScene,
     QGraphicsView, QDialog
@@ -14,6 +15,13 @@ class OrderPage (QWidget):
         super(OrderPage, self).__init__()
         self.ui = ui_order_page.Ui_Form()
         self.ui.setupUi(self)
+
+        self.statuses = {
+            "is_spoiled": ("Забракована", QColor(255, 150, 150)),
+            "is_carved": ("Вырезана", QColor(100, 255, 150)),
+            "is_not_packed": ("Не упакована", QColor(255, 255, 150)),
+            "default": ("Ожидает", QColor(255, 255, 255))
+        }
 
         self.scene = QGraphicsScene()
         self.map_painter = CuttingMapPainter(self.scene)
@@ -43,12 +51,23 @@ class OrderPage (QWidget):
         """Назначение списка изделий и деталей заказа"""
         for article, details in complects.items():
             article_item = QTreeWidgetItem(
-                self.ui.treeWidget, [article[1], None, None, None, None, None])
+                self.ui.treeWidget, [article[1], None, None, None, None, None, None])
             for detail in details:
+                status = None
+                if detail[-1]:
+                    status = self.statuses["is_not_packed"]
+                elif detail[-2]:
+                    status = self.statuses["is_carved"]
+                elif detail[-3]:
+                    status = self.statuses["is_spoiled"]
+                else:
+                    status = self.statuses["default"]
                 detail_item = QTreeWidgetItem(
-                    article_item, [detail[1], str(detail[4]), str(detail[5]), str(detail[6]), str(detail[2]), str(detail[3])])
-                for column in range(1, 6):
+                    article_item, [detail[1], str(detail[4]), str(detail[5]), str(detail[6]), str(detail[2]), str(detail[3]), status[0]])
+                for column in range(1, 7):
                     detail_item.setTextAlignment(column, Qt.AlignCenter)
+                for column in range(0, 7):
+                    detail_item.setBackground(column, status[1])
             self.ui.treeWidget.addTopLevelItem(article_item)
         self.ui.treeWidget.expandAll()
         for column in range(6):

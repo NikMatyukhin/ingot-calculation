@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'order_pageWBejXr.ui'
+## Form generated from reading UI file 'order_pagebZBRSO.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.0.0
+## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -298,6 +298,7 @@ class Ui_Form(object):
         self.label.setText(QCoreApplication.translate("Form", u"\u041d\u043e\u043c\u0435\u0440 \u0437\u0430\u043a\u0430\u0437\u0430", None))
         self.label_2.setText(QCoreApplication.translate("Form", u"\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438", None))
         ___qtreewidgetitem = self.treeWidget.headerItem()
+        ___qtreewidgetitem.setText(6, QCoreApplication.translate("Form", u"\u0421\u0442\u0430\u0442\u0443\u0441", None));
         ___qtreewidgetitem.setText(5, QCoreApplication.translate("Form", u"\u041f\u0440\u0438\u043e\u0440\u0438\u0442\u0435\u0442", None));
         ___qtreewidgetitem.setText(4, QCoreApplication.translate("Form", u"\u041a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e", None));
         ___qtreewidgetitem.setText(3, QCoreApplication.translate("Form", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430", None));

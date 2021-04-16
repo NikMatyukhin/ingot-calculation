@@ -255,6 +255,7 @@ class MainWindow (QMainWindow):
             )
 
         page.hideForStatus(status)
+        
         page.setPageTitle(name, on_storage)
         page.setComplects(complects)
         page.setIngots(ingots)
