@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowFkNcSm.ui'
+## Form generated from reading UI file 'mainwindowXfZYjr.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.0.0
+## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -576,13 +576,6 @@ class Ui_MainWindow(object):
         self.depthLine.setWidget(self.scrollAreaWidgetContents_3)
 
         self.verticalLayout_6.addWidget(self.depthLine)
-
-        self.graphicsView = QGraphicsView(self.chartArea)
-        self.graphicsView.setObjectName(u"graphicsView")
-        self.graphicsView.setFrameShape(QFrame.NoFrame)
-        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
-
-        self.verticalLayout_6.addWidget(self.graphicsView)
 
 
         self.horizontalLayout_4.addWidget(self.chartArea)

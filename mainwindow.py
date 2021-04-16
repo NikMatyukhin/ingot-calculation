@@ -19,7 +19,7 @@ from plate import Plate
 from page import OrderPage
 from section import Section
 from button import ExclusiveButton
-from charts.plan import CuttingPlanPainter
+from charts.plan import CuttingPlanPainter, MyQGraphicsView
 
 from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
@@ -81,9 +81,10 @@ class MainWindow (QMainWindow):
 
         # Сцены для отрисовки
         self.plan_scene = QGraphicsScene()
-        self.ui.graphicsView.setScene(self.plan_scene)
-        self.ui.graphicsView.scale(1.9, 1.9)
-        self.ui.graphicsView.setAlignment(Qt.AlignCenter)
+        self.graphicsView = MyQGraphicsView()
+        self.graphicsView.setScene(self.plan_scene)
+        self.graphicsView.setAlignment(Qt.AlignCenter)
+        self.ui.chartArea.layout().addWidget(self.graphicsView)
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
 
         # Заполняем список заказов из базы
@@ -369,13 +370,13 @@ class MainWindow (QMainWindow):
         depth = self.current_order.depth
         self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
 
-    def depthLineChanged(self) -> NoReturn:
+    def depthLineChanged(self): # pylint: disable=invalid-name
         """Просмотр другой толщины и подгрузка нового списка деталей"""
         button = self.sender()
         self.plan_painter.clearCanvas()
-        self.ui.graphicsView.viewport().update()
-        self.ui.graphicsView.verticalScrollBar().setValue(
-            self.ui.graphicsView.verticalScrollBar().minimum()
+        self.graphicsView.viewport().update()
+        self.graphicsView.verticalScrollBar().setValue(
+            self.graphicsView.verticalScrollBar().minimum()
         )
         if button is self.ui.sourcePlate:
             self.sourcePage()
@@ -383,13 +384,14 @@ class MainWindow (QMainWindow):
             depth = button.depth
             self.stepPage(depth)
 
-    def sourcePage(self):
+    def sourcePage(self): # pylint: disable=invalid-name
+        """Переход на страницу с исходным слитком"""
         self.loadDetailList(depth=0.0)
-        bin = self.current_order.root.bin
+        bin_ = self.current_order.root.bin
         self.plan_painter.setBin(
-            round(bin.length, 1),
-            round(bin.width, 1),
-            round(bin.height, 1)
+            round(bin_.length, 1),
+            round(bin_.width, 1),
+            round(bin_.height, 1)
         )
         self.plan_painter.drawBin()
 

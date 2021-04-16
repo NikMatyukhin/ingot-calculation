@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsrnLYAl.ui'
+## Form generated from reading UI file 'settingsTxBfhe.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.0.0
+## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -88,6 +88,7 @@ class Ui_Dialog(object):
         self.cutting.setIcon(icon)
         self.cutting.setIconSize(QSize(20, 20))
         self.cutting.setCheckable(True)
+        self.cutting.setChecked(True)
         self.cutting.setAutoExclusive(True)
 
         self.verticalLayout_5.addWidget(self.cutting)
@@ -122,11 +123,10 @@ class Ui_Dialog(object):
 "    padding-left: 0px;\n"
 "}")
         icon1 = QIcon()
-        icon1.addFile(u":/icons/roll.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon1.addFile(u":/icons/h-roll.png", QSize(), QIcon.Normal, QIcon.Off)
         self.rolling.setIcon(icon1)
-        self.rolling.setIconSize(QSize(20, 20))
+        self.rolling.setIconSize(QSize(25, 25))
         self.rolling.setCheckable(True)
-        self.rolling.setChecked(True)
         self.rolling.setAutoExclusive(True)
 
         self.verticalLayout_5.addWidget(self.rolling)
@@ -497,7 +497,7 @@ class Ui_Dialog(object):
 
         self.retranslateUi(Dialog)
 
-        self.stackedWidget.setCurrentIndex(1)
+        self.stackedWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(Dialog)
