@@ -12,7 +12,7 @@ from collections.abc import Iterable
 from copy import copy, deepcopy
 from enum import Enum
 from functools import partial
-from itertools import chain, product
+from itertools import chain, product, count
 
 
 from .ph import ph_bpp
@@ -33,7 +33,33 @@ WIDTH = 1
 HEIGHT = 2
 
 
-cur_id = 0  # FIXME: удалить
+class WithID:
+    """Добавление инкрементального ID в класс
+    :ivar _current_id: Счетчик инкрементального ID
+    :vartype _current_id: itertools.count
+    :ivar _id: Инкрементальный ID
+    :vartype _id: int
+    """
+    _current_id = count()
+
+    def __init__(self) -> None:
+        self._id = next(self.__class__._current_id)
+
+    # работа с ID ------------------------------------------------------
+    @classmethod
+    def reset_id(cls) -> None:
+        """Сброс ID"""
+        cls._current_id = count()
+
+    @classmethod
+    def set_id(cls, value: int) -> None:
+        """Установить начальное значение ID"""
+        cls._current_id = count(value)
+
+    @property
+    def current_id(self) -> int:
+        """Получить текущее значение ID"""
+        return self._id
 
 
 class Operations(Enum):
@@ -45,12 +71,12 @@ class Operations(Enum):
     packing = 'Упаковка'
 
 
-class BaseNode:
+class BaseNode(WithID):
     def __init__(self, children=None, parent=None) -> None:
+        super().__init__()
         self.parent = parent
         self._children = children
 
-        self._id = cur_id  # TODO: удалить
         self.locked = False
 
     # работа с потомками (создание, добавление, удаление, вставка) -----
@@ -161,6 +187,13 @@ class BaseNode:
         return None
 
     # свойства ---------------------------------------------------------
+    @property
+    def root(self):
+        if self.parent is None:
+            return self
+        else:
+            return self.parent.root
+
     @property
     def children(self):
         return self._children
@@ -294,15 +327,6 @@ class BinNode(Node):
         if self.bin.bin_type:
             spawn_func = bin_spawn_func[self.bin.bin_type.name]
             node = spawn_func(**kwargs)
-            
-            global cur_id  # TODO: УДАЛИТЬ
-            if isinstance(node, tuple):
-                for i in node:
-                    cur_id += 1
-                    i._id = cur_id
-            else:
-                cur_id += 1
-                node._id = cur_id
 
             return node
 
@@ -480,7 +504,9 @@ class BinNode(Node):
         while parent.parent is not None and not parent.is_troot():
             node = parent
             parent = node.parent
-        return node is parent.list_of_children()[1]
+        if len(parent.list_of_children()) == 2:
+            return node is parent.list_of_children()[1]
+        return False
 
     def _fix_semifinished(self, width, length, max_size=None, **kwargs):
         # print('Фиксация бина полуфабриката')
@@ -651,23 +677,24 @@ class BinNode(Node):
                 if not all(neighbour):
                     return
                 if is_rolling_node(self.children):
-                    left, right = self.children.children
-                    max_size_ = [(), max_size] if self.bin.d_height > 3 else [max_size, ()]
-                    delete_all_branch(left, max_size_, without_root=False)
-                    delete_all_branch(right, max_size_, without_root=False)
                     if len(self.children.list_of_children()) == 2:
-                        left_cc = left.cc_leaves[0]
-                        right_cc = right.cc_leaves[0]
-                        left_ef = left_cc.result.total_efficiency(*left_cc.parent_bnode.bin.size[:2])
-                        right_ef = right_cc.result.total_efficiency(*right_cc.parent_bnode.bin.size[:2])
-                        left_ef *= left_cc.result.qty() / self.kit.qty()
-                        right_ef *= right_cc.result.qty() / self.kit.qty()
-                        length, width, _ = right.estimate_size()
-                        right_dist = self.bin.estimator(width, length, last_deformations)
-                        if right_ef >= left_ef and right_dist is not None:
-                            self.children.delete(left)
-                        else:
-                            self.children.delete(right)
+                        left, right = self.children.children
+                        max_size_ = [(), max_size] if self.bin.d_height > 3 else [max_size, ()]
+                        delete_all_branch(left, max_size_, without_root=False)
+                        delete_all_branch(right, max_size_, without_root=False)
+                        if len(self.children.list_of_children()) == 2:
+                            left_cc = left.cc_leaves[0]
+                            right_cc = right.cc_leaves[0]
+                            left_ef = left_cc.result.total_efficiency(*left_cc.parent_bnode.bin.size[:2])
+                            right_ef = right_cc.result.total_efficiency(*right_cc.parent_bnode.bin.size[:2])
+                            left_ef *= left_cc.result.qty() / self.kit.qty()
+                            right_ef *= right_cc.result.qty() / self.kit.qty()
+                            length, width, _ = right.estimate_size()
+                            right_dist = self.bin.estimator(width, length, last_deformations)
+                            if right_ef >= left_ef and right_dist is not None:
+                                self.children.delete(left)
+                            else:
+                                self.children.delete(right)
                         
                 estimate = self.estimate_size()
                 width = estimate[WIDTH]
@@ -675,6 +702,8 @@ class BinNode(Node):
                 # FIXME: косяк, если объединенная оценка выходит за границы,
                 # для подветок маленьких примеров (example_9)
                 dist = self.bin.estimator(width, length, last_deformations)
+                if dist is None:
+                    dist = (0, 0)
                 if last_rolldir == Direction.H:
                     width += dist[0]
                 else:
@@ -701,6 +730,10 @@ class BinNode(Node):
                         childe.bin.width, childe.bin.length, is_min=is_min,
                         miss_bins=True, restrictions=restrictions
                     )
+                p_cont.fix_sizes(
+                    width, length, is_min=is_min, max_size=max_size,
+                    restrictions=restrictions
+                )
             elif is_ubin_node(self) and self.bin.bin_type == BinType.INTERMEDIATE:
                 size = self.estimate_size()
                 used_width = max(self.bin.width, size[WIDTH])
@@ -765,16 +798,22 @@ class BinNode(Node):
                         new_length = max_size[WIDTH]
                         if length >= new_length:
                             current_height = length * self.bin.d_height / new_length
+                            alternative_height = p_cont.bin.width * p_cont.bin.d_height / width
                             if current_height > p_cont.bin.d_height:
                                 current_height = p_cont.bin.d_height
+                            elif alternative_height > current_height:
+                                current_height = alternative_height
                     length = length * self.bin.d_height / current_height
                 else:
                     if max_size:
                         new_width = max_size[WIDTH]
                         if width >= new_width:
                             current_height = width * self.bin.d_height / new_width
+                            alternative_height = p_cont.bin.length * p_cont.bin.d_height / length
                             if current_height > p_cont.bin.d_height:
                                 current_height = p_cont.bin.d_height
+                            elif alternative_height > current_height:
+                                current_height = alternative_height
                     width = width * self.bin.d_height / current_height
                 bin_ = Bin(
                     length, width, current_height,
@@ -948,15 +987,6 @@ class OperationNode(Node):
         }
         spawn_func = operations_spawn_func[self.operation.name]
         node = spawn_func(**kwargs)
-
-        global cur_id  # FIXME: УДАЛИТЬ
-        if isinstance(node, tuple):
-            for i in node:
-                cur_id += 1
-                i._id = cur_id
-        else:
-            cur_id += 1
-            node._id = cur_id
 
         return node
 
@@ -1278,8 +1308,8 @@ class OperationNode(Node):
                 else:
                     raise SizeError('Невозможно разрезать лист')
             else:
-                # if abs(s_1) >= abs(s_2):
-                if s_1 >= s_2:
+                if abs(s_1) >= abs(s_2):
+                # if s_1 >= s_2:
                     self.direction = Direction.H
                     if is_left:
                         self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
@@ -1427,9 +1457,6 @@ class CuttingChartNode(Node):
             )
             self.result.update(result, tailings=None)
 
-        if self.result.is_empty:
-            self.delete_branch()
-
         return self.result
 
     # работа с размерами (оценка, обновление) --------------------------
@@ -1573,6 +1600,45 @@ class Tree:
             else:
                 nodes.append(children)
         return parent_children
+
+    def create_template_branches(self, parent: BinNode, height, cut_thickness=None):
+        children = self.__class__.create_template(parent, height, cut_thickness=cut_thickness)
+        if not isinstance(children, (list, tuple)):
+            children = [children]
+        trees = []
+        for childe in children:
+            branches = all_branches(childe)
+            for i, branch in enumerate(branches):
+                new_tree = deepcopy(self)
+                new_parent = new_tree.node_by_id(parent._id)
+                trees.append((new_tree, new_parent, branch))
+        return trees
+
+    def node_by_id(self, id_):
+        for node in dfs(self.root):
+            if node._id == id_:
+                return node
+        return None
+
+
+def all_branches(root):
+    branches = []
+    if not root.cc_leaves:
+        leaves = root.adj_leaves
+    else:
+        leaves = root.cc_leaves
+    for node in leaves:
+        path = []
+        while node:
+            if is_op_node(node) and node.operation == Operations.cutting:
+                children = node.list_of_children()
+                if len(children) == 2:
+                    left, _ = children
+                    path.append(left)
+            path.append(node)
+            node = node.parent
+        branches.append(copy_tree(root, path))
+    return branches
 
 
 def all_solutions(tree):
@@ -1799,6 +1865,52 @@ def to_delete_branch(root, max_size, without_root=False):
         if node not in list(dfs(root)):
             continue
         if without_root and node is root:
+            continue
+        is_locked = False
+        if is_rolling_node(node.parent):
+            if node.parent.operation == Operations.h_rolling:
+                if max_size:
+                    is_locked = to_delete(node.bin.length, node.bin.width, max_size[node.bin.height >= 3])
+                is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
+            elif node.parent.operation == Operations.v_rolling:
+                if max_size:
+                    is_locked = to_delete(node.bin.width, node.bin.length, max_size[node.bin.height >= 3])
+                is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
+            if not is_cutting_node(node.parent) and is_locked:
+                return True
+        elif is_cutting_node(node.parent):
+            parent = node.parent
+            children = parent.list_of_children()
+            if len(children) == 2:
+                left_size = children[0].bin.size[:2]
+                right_size = children[1].bin.size[:2]
+                if parent.direction == Direction.H:
+                    if left_size[0] < 0:
+                        is_locked = True
+                    size = (
+                        round(left_size[0] + right_size[0], 4),
+                        round(max(left_size[1], right_size[1]), 4)
+                    )
+                else:
+                    if left_size[1] < 0:
+                        is_locked = True
+                    size = (
+                        round(max(left_size[0], right_size[0]), 4),
+                        round(left_size[1] + right_size[1], 4)
+                    )
+            else:
+                size = children[0].bin.size[:2]
+            parent_bin = parent.parent.bin
+            if size[0] > round(parent_bin.size[0], 4) or size[1] > round(parent_bin.size[1], 4):
+                is_locked = True
+            return is_locked
+    return False
+
+
+def is_defective_tree(tree, max_size):
+    root = tree.root
+    for node in dfs(root):
+        if node not in list(dfs(root)):
             continue
         is_locked = False
         if is_rolling_node(node.parent):
