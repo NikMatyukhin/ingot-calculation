@@ -2,10 +2,11 @@
 
 import os
 from itertools import chain
+from sequential_mh.bpp_dsc.support import dfs
 
 from sequential_mh.bpp_dsc.rectangle import Direction, Material, Blank, Kit, Bin, BinType
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Tree, optimal_configuration, solution_efficiency
+    BinNode, Tree, solution_efficiency
 )
 from sequential_mh.bpp_dsc.stm import stmh_idrd
 from sequential_mh.bpp_dsc.graph import plot, create_edges
@@ -86,10 +87,11 @@ def example_4():
     return {
         'name': 'Синтетический пример 3',
         'kit': [
-            # TODO: Алгоритм работает не правиль из-за ограничений
-            (160, 93, 3.0, 1), (128, 180, 3.2, 1), (150, 180, 2.0, 1),
-            (430, 100, 1.0, 1), (430, 100, 1.0, 1), (850, 120, 0.5, 1),
-            (430, 180, 0.5, 1), (160, 100, 0.5, 1), (260, 180, 1.0, 1)
+            (128, 180, 3.2, 1),
+            (160, 93, 3.0, 1),
+            (150, 180, 2.0, 1),
+            (430, 100, 1.0, 1), (430, 100, 1.0, 1), (260, 180, 1.0, 1),
+            (850, 120, 0.5, 1), (430, 180, 0.5, 1), (160, 100, 0.5, 1),
         ],
         'L0': 180,
         'W0': 160,
@@ -348,20 +350,20 @@ def main(example, use_graphviz=False):
     tree = Tree(root)
     tree = stmh_idrd(tree, restrictions=restrictions)
 
+    # if use_graphviz:
+    #     graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
+    #     create_edges(graph1, all_nodes1)
+    #     graph1.view()
+
+    # _, res, nodes = optimal_configuration(tree, nd=True)
+    # res.update_size()
+
     if use_graphviz:
-        graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
+        graph1, all_nodes1 = plot(tree.root, 'pdf/graph3.gv')
         create_edges(graph1, all_nodes1)
         graph1.view()
 
-    _, res, nodes = optimal_configuration(tree, nd=True)
-    res.update_size()
-
-    if use_graphviz:
-        graph1, all_nodes1 = plot(res, 'pdf/graph3.gv')
-        create_edges(graph1, all_nodes1)
-        graph1.view()
-
-    for node in res.cc_leaves:
+    for node in tree.root.cc_leaves:
         main_rect = rect.Rectangle.create_by_size(
             (0, 0), node.bin.length, node.bin.width
         )
@@ -376,14 +378,14 @@ def main(example, use_graphviz=False):
             main_region, rectangles, node.result.tailings,
             xlim=node.bin.width + 50, ylim=node.bin.length + 50
         )
-
-    print(f'Всего деталей: {res.kit.qty()}')
-    print(f'По всему объему: {solution_efficiency(res, nodes, is_total=True)}')
-    print(f'По используемому объему: {solution_efficiency(res, nodes)}')
-    print(f'Взвешенная: {solution_efficiency(res, nodes, nd=True)}')
+    nodes = list(dfs(tree.root))
+    print(f'Всего деталей: {tree.root.kit.qty()}')
+    print(f'По всему объему: {solution_efficiency(tree.root, nodes, is_total=True)}')
+    print(f'По используемому объему: {solution_efficiency(tree.root, nodes)}')
+    print(f'Взвешенная: {solution_efficiency(tree.root, nodes, nd=True)}')
 
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 10
+    NUMBER = 2
     main(NUMBER, USE_GRAPHVIZ)
