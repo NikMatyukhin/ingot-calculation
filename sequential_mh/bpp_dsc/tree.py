@@ -1949,5 +1949,6 @@ def is_defective_tree(tree, max_size):
             parent_bin = parent.parent.bin
             if size[0] > round(parent_bin.size[0], 4) or size[1] > round(parent_bin.size[1], 4):
                 is_locked = True
-            return is_locked
+            if is_locked:
+                return True
     return False
