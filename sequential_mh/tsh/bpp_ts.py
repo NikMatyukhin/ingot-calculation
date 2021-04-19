@@ -196,7 +196,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                         empty_rect.length, empty_rect.width,
                         deepcopy(exclude_from_dict(best, rectangles)),
                         *empty_rect.blp, allowance, first_priority=False,
-                        sorting='length', soft_type=v, k=0.2
+                        sorting='length', soft_type=v, k=0.8
                     )
                     placed_blanks = list(chain.from_iterable(res.values()))
                     if placed_blanks:
@@ -369,7 +369,27 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                 intersection_square = rect.intersection_square(src_rect)
                 variants.append((intersection_square, j))
         _, orientation = max(variants, key=itemgetter(0))
+        if priority == 14:
+            best_intersection, _ = max(variants, key=itemgetter(0))
+            orientation_by_intersection = [v[1] for v in variants if v[0] == best_intersection]
+            orientation_by_min_area = best_orientation(best, src_rect, x0, y0)
+            if orientation_by_min_area not in orientation_by_intersection:
+                orientation = orientation_by_intersection[0]
+            else:
+                orientation = orientation_by_min_area
         if best and orientation == 1 and best.is_rotatable:
             best.rotate()
 
     return priority, orientation, best
+
+
+def best_orientation(rectangle, container, x, y):
+    size = rectangle.size[:-1]
+    variants = []
+    for j in range(1 + rectangle.is_rotatable):
+        rect_w = size[(1 + j) % 2]
+        rect_l = size[(0 + j) % 2]
+        area_1 = (x + rect_w) * container.length
+        area_2 = (y + rect_l) * container.width
+        variants.append((min(area_1, area_2), j))
+    return min(variants, key=itemgetter(0))[1]

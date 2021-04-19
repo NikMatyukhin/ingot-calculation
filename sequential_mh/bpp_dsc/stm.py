@@ -15,8 +15,9 @@ from .tree import (
     Operations, Tree, is_cc_node, is_cutting_node, is_ingot_node, is_op_node,
     is_adj_node, is_rolling_node,
     is_ubin_node, is_imt_node, delete_all_branch, optimal_configuration,
-    solution_efficiency
+    solution_efficiency, is_defective_tree
 )
+from .support import dfs
 
 # os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 # from sequential_mh.bpp_dsc.graph import plot, create_edges
@@ -34,6 +35,13 @@ def is_empty_node(node):
     if is_adj_node(node):
         return node.kit.is_empty()
     return True
+
+
+def is_empty_tree(tree):
+    is_empty_flags = []
+    for node in tree.root.leaves():
+        is_empty_flags.append(is_empty_node(node))
+    return all(is_empty_flags)
 
 
 def predicate(node):
@@ -67,64 +75,81 @@ def stmh_idrd(tree, restrictions=None):
     efficiency = 0
     root = tree.root
     is_main = True
-    for _ in range(5):
-        tree = Tree(root)
-        tree = _stmh_idrd(tree, restrictions=restrictions, local=not is_main)
-        tree.root.update_size()
-        # if is_main:
-        #     graph1, all_nodes1 = plot(tree.root, 'pdf/graph4.gv')
-        #     create_edges(graph1, all_nodes1)
-        #     graph1.view()
-        if restrictions['max_size']:
-            delete_all_branch(tree.root, restrictions['max_size'])
-        _, root, nodes = optimal_configuration(tree, nd=True)
-        root.update_size()
-        new_efficiency = solution_efficiency(root, nodes, nd=True)
-        if new_efficiency <= efficiency:
-            break
-        efficiency = new_efficiency
-        is_main = False
-    total_efficiency = solution_efficiency(root, nodes, is_total=True)
+    trees = _stmh_idrd(tree, restrictions=restrictions, local=not is_main)
+
+    if restrictions:
+        max_size = restrictions.get('max_size')
+    else:
+        max_size = None
+    trees = [item for item in trees if not is_defective_tree(item, max_size)]
+    # efficiency = [
+    #     solution_efficiency(item.root, list(dfs(item.root)), nd=True) for item in trees
+    # ]
+    # bests = [
+    #     item for item in trees if solution_efficiency(item.root, list(dfs(item.root))) == max(efficiency)
+    # ]
+    best = max(trees, key=lambda item: solution_efficiency(item.root, list(dfs(item.root)), nd=True))
+    total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
     print('Построение дерева завершено')
     print(f'Общая эффективность: {total_efficiency:.4f}')
-    print(f'Взвешенная эффективность: {efficiency:.4f}')
+    # print(f'Взвешенная эффективность: {efficiency:.4f}')
     print('-' * 50)
-    return tree
+    return best
 
 
 def _stmh_idrd(tree, local=False, restrictions=None):
-    if local:
-        level = deque(tree.root.leaves())
-        for node in tree.root.cc_leaves:
-            node.kit.update(node.result.unplaced)
-    else:
-        level = deque([tree.root])
+    # if local:
+    #     level = deque(tree.root.leaves())
+    #     for node in tree.root.cc_leaves:
+    #         node.kit.update(node.result.unplaced)
+    # else:
+    #     level = deque([tree.root])
+
+    level = deque([tree])
+    result = []
 
     while level:
         # 1) Фильтрация узлов (пустой набор для бинов и карт; проверка
         #       размеров для бинов и карт (если у карт не хватает места
         #       - удаление группы толщины))
-        level = [
-            node for node in level
-            if not is_empty_node(node) and node in tree.root.leaves()
-        ]
+        # level = [
+        #     node for node in level
+        #     if not is_empty_node(node) and node in tree.root.leaves()
+        # ]
+        new_level = deque([])
+        for tree_ in level:
+            if is_empty_tree(tree_):
+                result.append(tree_)
+            else:
+                new_level.append(tree_)
+        # level = deque([t for t in level if not is_empty_tree(t)])
+        level = new_level
         if not level:
             break
         # 2) Сортировка по приоритету, толщине и типу (узлы карт должны
         #       идти перед бинами, но приоритет и толщина должны иметь
         #       первостепенное влияние)
-        level = deque(sorted(level, key=predicate))
+        # level = deque(sorted(level, key=predicate))
         # 3) получить первую ноду (без удаления)
         # 4) если она типа 'карта раскроя':
-        if is_cc_node(level[0]):
-            _pack(level[0], level, restrictions)
+
+        tree = level.popleft()
+        nodes = [node for node in tree.root.leaves() if not is_empty_node(node)]
+        nodes = deque(sorted(nodes, key=predicate))
+        node = nodes[0]
+        if is_cc_node(node):
+            _pack(node, level, restrictions)
+            if is_empty_tree(tree):
+                result.append(tree)
+            else:
+                level.append(tree)
         else:
             # 5) иначе (нужна вставка шаблона):
             # 5.1) получить первую ноду (с удалением из уровня)
-            node = level.popleft()
+            # node = level.popleft()
             _create_insert_template(node, level, tree, local, restrictions)
 
-    return tree
+    return result
 
 
 def _pack(node, level, restrictions):
@@ -231,31 +256,33 @@ def _create_insert_template(node, level, tree, local, restrictions):
             height = cut_thickness
         else:
             cut_thickness = None
-        children = tree.create_template(
-            new_parent, height, cut_thickness=cut_thickness
-        )
-        if local:
-            if is_cutting_node(new_parent.children):
-                # доупаковка при дочернем разреза
-                children[1].parent = None
-                children = children[0]
-            elif is_rolling_node(new_parent.children):
-                children[0].parent = None
-                children = children[1]
-                if new_parent.children.children.operation == Operations.h_rolling:
-                    # доупаковка при дочернем горизонтальном прокате
-                    children.delete(children.children[0])
-                else:
-                    # доупаковка при дочернем вертикальном прокате
-                    children.delete(children.children[1])
+        # children = tree.create_template(
+        #     new_parent, height, cut_thickness=cut_thickness
+        # )
+        res = tree.create_template_branches(new_parent, height, cut_thickness=cut_thickness)
+        # if local:
+        #     if is_cutting_node(new_parent.children):
+        #         # доупаковка при дочернем разреза
+        #         children[1].parent = None
+        #         children = children[0]
+        #     elif is_rolling_node(new_parent.children):
+        #         children[0].parent = None
+        #         children = children[1]
+        #         if new_parent.children.children.operation == Operations.h_rolling:
+        #             # доупаковка при дочернем горизонтальном прокате
+        #             children.delete(children.children[0])
+        #         else:
+        #             # доупаковка при дочернем вертикальном прокате
+        #             children.delete(children.children[1])
         # 5.5) вставка шаблона с копированием нижестоящих узлов
-        new_parent.insert(children, max_len=max_len)
-        # 5.6) обновление наборов у нижестоящих узлов
-        # (Может перенести в метод вставки???)
-        for item in new_parent.template_leaves(new_parent):
-            if is_adj_node(item) and item.bin.bin_type != BinType.INTERMEDIATE:
-                item.update_kit(height)
-        # 5.7) обновление уровня новыми узлами
-        for item in new_parent.leaves():
-            if item not in level:
-                level.append(item)
+        for new_tree, new_parent, branch in res:
+            new_parent.insert(branch[0], max_len=max_len)
+            # 5.6) обновление наборов у нижестоящих узлов
+            # (Может перенести в метод вставки???)
+            for item in new_parent.template_leaves(new_parent):
+                if is_adj_node(item) and item.bin.bin_type != BinType.INTERMEDIATE:
+                    item.update_kit(height)
+            # 5.7) обновление уровня новыми узлами
+            # for item in new_parent.leaves():
+            #     if item not in level:
+            level.append(new_tree)

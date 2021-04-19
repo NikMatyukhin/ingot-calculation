@@ -831,8 +831,8 @@ class Result(ABCKit):
         # self.hem = (0, 0)
 
     def update(self, blanks, tailings=None, unplaced=None, hem=(0, 0)):
-        if not blanks:
-            return
+        # if not blanks:
+        #     return
         if tailings is None:
             tailings = []
         if unplaced is None:
@@ -856,8 +856,14 @@ class Result(ABCKit):
         if tailings:
             total_l.append(max([r.y + r.length for r in tailings]))
             total_w.append(max([r.x + r.width for r in tailings]))
-        self.length = max(total_l)  # + hem[1]
-        self.width = max(total_w)   # + hem[0]
+        if total_l:
+            self.length = max(total_l)  # + hem[1]
+        else:
+            self.length = 0
+        if total_w:
+            self.width = max(total_w)   # + hem[0]
+        else:
+            self.width = 0
         self.tailings.extend(tailings)
         self.unplaced.extend(unplaced)
         # self.hem = hem
