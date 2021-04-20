@@ -297,6 +297,37 @@ def example_11():
     }
 
 
+def example_12():
+    return {
+        'name': '',
+        'kit': [
+            (200, 170, 1.0, 1, Direction.A),
+            (200, 170, 1.0, 1, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (415, 170, 0.5, 1, Direction.A),
+            (415, 170, 0.5, 1, Direction.A),
+            (420, 165, 0.5, 1, Direction.A),
+            (420, 170, 1.0, 1, Direction.A),
+            (82, 180, 2.2, 1, Direction.A),
+            (77, 180, 3.3, 1, Direction.A),
+            (77, 180, 3.3, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -309,6 +340,7 @@ EXAMPLES = [
     example_9,
     example_10,
     example_11,
+    example_12,
 ]
 
 
