@@ -1912,6 +1912,8 @@ def is_defective_tree(tree, max_size):
     for node in dfs(root):
         if node not in list(dfs(root)):
             continue
+        if is_ubin_node(node):
+            return False
         is_locked = False
         if is_rolling_node(node.parent):
             if node.parent.operation == Operations.h_rolling:

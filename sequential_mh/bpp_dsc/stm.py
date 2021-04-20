@@ -81,6 +81,7 @@ def stmh_idrd(tree, restrictions=None):
         max_size = restrictions.get('max_size')
     else:
         max_size = None
+    print(f'Количество деревьев: {len(trees)}')
     trees = [item for item in trees if not is_defective_tree(item, max_size)]
     # efficiency = [
     #     solution_efficiency(item.root, list(dfs(item.root)), nd=True) for item in trees
@@ -108,6 +109,11 @@ def _stmh_idrd(tree, local=False, restrictions=None):
     level = deque([tree])
     result = []
 
+    if restrictions:
+        max_size = restrictions.get('max_size')
+    else:
+        max_size = None
+
     while level:
         # 1) Фильтрация узлов (пустой набор для бинов и карт; проверка
         #       размеров для бинов и карт (если у карт не хватает места
@@ -118,6 +124,8 @@ def _stmh_idrd(tree, local=False, restrictions=None):
         # ]
         new_level = deque([])
         for tree_ in level:
+            if is_defective_tree(tree_, max_size=max_size):
+                continue
             if is_empty_tree(tree_):
                 result.append(tree_)
             else:
