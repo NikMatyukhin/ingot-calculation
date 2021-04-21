@@ -201,6 +201,8 @@ class CuttingMapPainter:
                 if node.operation == Operations.rolling:
                     continue
             cur_item = self.createItem(node)
+            if not cur_item:
+                continue
             self.scene.addItem(cur_item)
             if is_bin_node(node):
                 if node.bin.bin_type == BinType.ingot:

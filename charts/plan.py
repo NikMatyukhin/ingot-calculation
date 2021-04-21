@@ -5,7 +5,8 @@ from PySide6.QtWidgets import (
     QGraphicsSceneHoverEvent, QMenu, QGraphicsView
 )
 from PySide6.QtGui import (
-    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QTransform
+    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QPolygonF, QTransform,
+    QPolygonF
 )
 
 
@@ -39,6 +40,38 @@ class MyQGraphicsView(QGraphicsView):
 
         delta = new_pos - old_pos
         self.translate(delta.x(), delta.y())
+
+
+class ButtEdgeGraphicsItem(QGraphicsItem):
+
+    def __init__(self, x, y, w, h, parent=None):
+        super(ButtEdgeGraphicsItem, self).__init__(parent)
+        self.x_pos = x
+        self.y_pos = y
+        self.width = w
+        self.height = h
+
+    def boundingRect(self) -> QRectF:
+        pen_width = 0.5
+        return QRectF(self.x_pos - pen_width / 2,
+                      self.y_pos - pen_width / 2,
+                      self.width + pen_width,
+                      self.height + pen_width)
+    
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
+              widget: QWidget) -> None:
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        pen = QPen(QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.SolidPattern), 0.5,
+                   Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                   Qt.PenJoinStyle.RoundJoin)
+        brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
+        
+        rect = QRectF(self.x_pos, self.y_pos, self.width, self.height)
+        
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawChord(rect, 15 * 16, 145 * 16)
 
 
 class DetailGraphicsItem(QGraphicsItem):
@@ -155,19 +188,24 @@ class CuttingPlanPainter:
         self.drawCoords()
 
     def drawBin(self):
-        pen = QPen(QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.SolidPattern), 1.0,
+        pen = QPen(QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.SolidPattern), 0.5,
                    Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                    Qt.PenJoinStyle.RoundJoin)
         brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
-        self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght,
-                           pen, brush)
+        
         label_text = ''
         if self.blanks:
             label_text = f'Пластина с торцами и кромками {self.bin_lenght} на {self.bin_width}'
+            self.scene.addRect(self.vl_point.x() - 5,
+                               self.vl_point.y() - 5,
+                               self.vr_point.x() - self.vl_point.x() + 10,
+                               self.lb_point.y() - self.vl_point.y() + 10,
+                               pen, brush)
         else:
             label_text = f'Слиток {self.bin_lenght} на {self.bin_width} толщиной {self.bin_depth}'
+            self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght, pen, brush)
         label = self.scene.addText(label_text)
-        label.setPos(0, self.bin_lenght + 10)
+        label.setPos(0, self.bin_lenght + 30)
 
     def drawCoords(self):
         self.scene.addLine(self.vl_point.x(), -10,

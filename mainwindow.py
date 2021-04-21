@@ -9,7 +9,7 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
     QMessageBox, QDialog, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton,
-    QLayout, QGraphicsScene, QSpacerItem
+    QLayout, QGraphicsScene, QSpacerItem, QProgressDialog
 )
 
 from gui import ui_mainwindow
@@ -28,6 +28,7 @@ from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, optimal_configuration, solution_efficiency,
     CuttingChartNode
 )
+from sequential_mh.bpp_dsc.support import dfs 
 from sequential_mh.bpp_dsc.stm import stmh_idrd
 
 from service import (
@@ -232,7 +233,14 @@ class MainWindow (QMainWindow):
         material = Material(main_ingot[0], 2.2, 1.)
 
         # Выбор заготовок и удаление лишних значений
+        progress = QProgressDialog('Раскрой', 'Закрыть', 0, 100, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowTitle('Раскрой')
+        progress.forceShow()
         try:
+            progress.setLabelText('Сбор заготовок заказа...')
+            for i in range(0, 30):
+                progress.setValue(i)
             details_info = map(
                 itemgetter(0), chain.from_iterable(complects.values())
             )
@@ -245,8 +253,13 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+            progress.close()
         try:
+            progress.setLabelText('Разбор деревьев раскроя...')
+            progress.setValue(50)
             self.createCut(main_ingot[1:], details, material)
+            progress.setLabelText('Завершение раскроя...')
+            progress.setValue(80)
         except Exception as e: 
             QMessageBox.critical(
                 self,
@@ -255,6 +268,10 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+            progress.close()
+        for i in range(80, 100):
+            progress.setValue(i)
+        progress.setValue(100)
 
         page.hideForStatus(status)
         
@@ -268,8 +285,8 @@ class MainWindow (QMainWindow):
                 self.chartPagePreparation()
             )
         )
-        page.drawCuttingMap(
-            self.current_order.tree, self.current_order.efficiency)
+        # page.drawCuttingMap(
+        #     self.current_order.tree, self.current_order.efficiency)
 
         # Заполнение данных сущности текущего заказа
         self.current_order.name = self.current_section.name
@@ -346,12 +363,16 @@ class MainWindow (QMainWindow):
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
         tree = stmh_idrd(tree, restrictions=settings)
-        _, self.current_order.tree, path = optimal_configuration(tree, nd=True)
+        self.current_order.tree = tree.root
+        # _, self.current_order.tree, path = optimal_configuration(tree, nd=True)
 
         # считаем эффективность со всего слитка (в долях!)
         # для отображения нужно округлить!
+        # self.current_order.efficiency = 100 * solution_efficiency(
+        #     self.current_order.tree, path, is_total=True
+        # )
         self.current_order.efficiency = 100 * solution_efficiency(
-            self.current_order.tree, path, is_total=True
+            tree, list(dfs(tree.root)), is_total=True
         )
 
     def chartPagePreparation(self) -> NoReturn:
@@ -390,7 +411,7 @@ class MainWindow (QMainWindow):
     def sourcePage(self): # pylint: disable=invalid-name
         """Переход на страницу с исходным слитком"""
         self.loadDetailList(depth=0.0)
-        bin_ = self.current_order.root.bin
+        bin_ = self.current_order.tree.bin
         self.plan_painter.setBin(
             round(bin_.length, 1),
             round(bin_.width, 1),
@@ -697,6 +718,9 @@ class OrderContext:
         leaves.sort(key=attrgetter('bin.height'), reverse=True)
 
         self.__depth_list = [leave.bin.height for leave in leaves]
+        self.__unplaced = list(chain.from_iterable([leave.result.unplaced for leave in leaves]))
+        print('Количество неразмещенных заготовок:', len(self.__unplaced))
+        print(f'{self.__unplaced = }')
 
     @property
     def efficiency(self):
