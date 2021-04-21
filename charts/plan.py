@@ -1,5 +1,5 @@
 import random
-from PySide6.QtCore import Qt, QRectF, QPointF
+from PySide6.QtCore import QPoint, Qt, QRectF, QPointF
 from PySide6.QtWidgets import (
     QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QWidget,
     QGraphicsSceneHoverEvent, QMenu, QGraphicsView
@@ -56,6 +56,7 @@ class DetailGraphicsItem(QGraphicsItem):
         self.visible_text = txt
 
         self.font = QFont('Century Gothic', 9)
+        self.small_font = QFont('Century Gothic', 9)
         self.metr = QFontMetrics(self.font)
 
     def boundingRect(self):
@@ -76,19 +77,23 @@ class DetailGraphicsItem(QGraphicsItem):
                    Qt.BrushStyle.SolidPattern))
         painter.drawRect(self.x_pos, self.y_pos,
                          self.width, self.height)
-        painter.setFont(self.font)
 
+        painter.setFont(self.small_font)
+        painter.drawText(self.x_pos + 5, self.y_pos,
+                         self.width, self.height - 5,
+                         Qt.AlignLeft | Qt.AlignBottom,
+                         f'{self.width}x{self.height}')
         if self.metr.horizontalAdvance(self.visible_text) > self.width:
-            self.setToolTip(self.visible_text)
+            self.setToolTip(self.visible_text + f' {self.width}x{self.height}')
             return
-
+        painter.setFont(self.font)
         painter.drawText(self.x_pos, self.y_pos,
                          self.width, self.height,
                          Qt.AlignCenter,
                          self.visible_text)
 
     def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent):
-        self.draw_color = self.color.darker(190)
+        self.draw_color = self.color.darker(110)
         self.update()
 
     def hoverLeaveEvent(self, event: QGraphicsSceneHoverEvent):
@@ -100,31 +105,45 @@ class CuttingPlanPainter:
 
     def __init__(self, scene: QGraphicsScene):
         self.scene = scene
-        self.font = QFont('Segoe UI', 6)
+        self.font = QFont('Century Gothic', 6)
         self.bin_lenght = 0
         self.bin_width = 0
         self.bin_depth = 0
-        self.x_coords = set([0])
-        self.y_coords = set([0])
+        # self.x_coords = set([0])
+        # self.y_coords = set([0])
+        self.vl_point = QPointF(1200, 1200)
+        self.vr_point = QPointF(0, 0)
+        self.lv_point = QPointF(1200, 1200)
+        self.lb_point = QPointF(0, 0)
         self.blanks = []
         self.blanks_colors = {}
 
     def setBin(self, length: float, width: float, depth: float):
         self.bin_lenght = length
-        self.y_coords.add(length)
         self.bin_width = width
-        self.x_coords.add(width)
         self.bin_depth = depth
 
     def addBlank(self, h: float, w: float, depth: float, x: float, y: float,
                  name: str):
         self.blanks.append([x, y, w, h, name])
         if name not in self.blanks_colors:
-            self.blanks_colors[name] = self.randomColor()
-        self.x_coords.add(x)
-        self.x_coords.add(x + w)
-        self.y_coords.add(y)
-        self.y_coords.add(y + h)
+            self.blanks_colors[name] = self.randomColor().lighter(130)
+        if x < self.vl_point.x():
+            self.vl_point.setX(x)
+            self.vl_point.setY(y)
+        if y < self.lv_point.y():
+            self.lv_point.setX(x)
+            self.lv_point.setY(y)
+        if x+w > self.vr_point.x():
+            self.vr_point.setX(x+w)
+            self.vr_point.setY(y)
+        if y+h > self.lb_point.y():
+            self.lb_point.setX(x)
+            self.lb_point.setY(y+h)
+        # self.x_coords.add(x)
+        # self.x_coords.add(x + w)
+        # self.y_coords.add(y)
+        # self.y_coords.add(y + h)
 
     def drawPlan(self):
         self.drawBin()
@@ -133,40 +152,49 @@ class CuttingPlanPainter:
             item = DetailGraphicsItem(*blank, clr=color)
             item.setAcceptHoverEvents(True)
             self.scene.addItem(item)
-
-    def drawBin(self):
-        pen = QPen(QBrush(Qt.black, Qt.BrushStyle.SolidPattern), 1.0,
-                   Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                   Qt.PenJoinStyle.RoundJoin)
-        brush = QBrush(QColor(0, 0, 0), Qt.BrushStyle.DiagCrossPattern)
-        self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght,
-                           pen, brush)
         self.drawCoords()
 
+    def drawBin(self):
+        pen = QPen(QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.SolidPattern), 1.0,
+                   Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                   Qt.PenJoinStyle.RoundJoin)
+        brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
+        self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght,
+                           pen, brush)
+        label_text = ''
+        if self.blanks:
+            label_text = f'Пластина с торцами и кромками {self.bin_lenght} на {self.bin_width}'
+        else:
+            label_text = f'Слиток {self.bin_lenght} на {self.bin_width} толщиной {self.bin_depth}'
+        label = self.scene.addText(label_text)
+        label.setPos(0, self.bin_lenght + 10)
+
     def drawCoords(self):
-        self.scene.addLine(0, -10, self.bin_width, -10, QPen(QColor(0, 0, 0)))
-        self.scene.addLine(-10, 0, -10, self.bin_lenght, QPen(QColor(0, 0, 0)))
-        prev = None
-        for x in sorted(list(self.x_coords)):
-            x_t = self.scene.addText(str(x))
-            x_t.setFont(self.font)
-            w_t = x_t.boundingRect().width()
-            x_t.setPos(x - w_t // 2, -30)
-            if prev:
-                h_p = prev.boundingRect().height()
-                if x_t.collidesWithItem(prev):
-                    x_t.setPos(x - w_t // 2, -30 - h_p // 2)
-            prev = x_t
-        for y in sorted(list(self.y_coords)):
-            y_t = self.scene.addText(str(y))
-            y_t.setFont(self.font)
-            w_t = y_t.boundingRect().width()
-            y_t.setPos(-w_t - 10, y - 12)
-            if prev:
-                w_p = prev.boundingRect().width()
-                if y_t.collidesWithItem(prev):
-                    y_t.setPos(-w_t - w_p - 10, y - 12)
-            prev = y_t
+        self.scene.addLine(self.vl_point.x(), -10,
+                           self.vr_point.x(), -10,
+                           QPen(QColor(0, 0, 0)))
+        self.scene.addLine(-10, self.lv_point.y(),
+                           -10, self.lb_point.y(),
+                           QPen(QColor(0, 0, 0)))
+        dashed_pen = QPen(QBrush(QColor(0, 0, 0), Qt.BrushStyle.SolidPattern), 0.5,
+                          Qt.DashLine, Qt.RoundCap, Qt.RoundJoin)
+        self.scene.addLine(self.vl_point.x(), -20,
+                           self.vl_point.x(), self.vl_point.y(),
+                           dashed_pen)
+        self.scene.addLine(self.vr_point.x(), -20,
+                           self.vr_point.x(), self.vr_point.y(),
+                           dashed_pen)
+        self.scene.addLine(-20, self.lv_point.y(),
+                           self.lv_point.x(), self.lv_point.y(),
+                           dashed_pen)
+        self.scene.addLine(-20, self.lb_point.y(),
+                           self.lb_point.x(), self.lb_point.y(),
+                           dashed_pen)
+        top_label = self.scene.addText(str(self.vr_point.x() - self.vl_point.x()))
+        top_label.setPos((self.vl_point.x() + self.vr_point.x())/2, -30)
+        bottom_label = self.scene.addText(str(self.lb_point.y() - self.lv_point.y()))
+        bottom_label.setPos(-30, (self.lv_point.y() + self.lb_point.y())/2)
+        bottom_label.setRotation(-90)
 
     def randomColor(self):
         color = QColor()
@@ -185,5 +213,9 @@ class CuttingPlanPainter:
         self.bin_width = 0
         self.bin_depth = 0
         self.blanks = []
-        self.x_coords = set([0])
-        self.y_coords = set([0])
+        self.vl_point = QPointF(1200, 1200)
+        self.vr_point = QPointF(0, 0)
+        self.lv_point = QPointF(1200, 1200)
+        self.lb_point = QPointF(0, 0)
+        # self.x_coords = set([0])
+        # self.y_coords = set([0])

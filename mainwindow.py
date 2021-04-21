@@ -7,7 +7,7 @@ from PySide6.QtCore import (
     Qt, QSettings, Signal, QRectF
 )
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
+    QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
     QMessageBox, QDialog, QHBoxLayout, QSizePolicy, QVBoxLayout, QPushButton,
     QLayout, QGraphicsScene, QSpacerItem
 )
@@ -81,9 +81,11 @@ class MainWindow (QMainWindow):
 
         # Сцены для отрисовки
         self.plan_scene = QGraphicsScene()
+        #self.plan_scene.setSceneRect(-1200, -1200, 1200, 1200)
         self.graphicsView = MyQGraphicsView()
         self.graphicsView.setScene(self.plan_scene)
         self.graphicsView.setAlignment(Qt.AlignCenter)
+        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
         self.ui.chartArea.layout().addWidget(self.graphicsView)
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
 

@@ -529,6 +529,7 @@ class NewIngotDialog (QDialog):
         self.ui = ui_add_ingot_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
+        self.setWindowTitle('Добавление слитка')
         self.ui.add.clicked.connect(self.add)
         self.ui.cancel.clicked.connect(self.reject)
 
