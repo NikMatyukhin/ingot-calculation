@@ -6,7 +6,7 @@
     - Воронов Владимир Сергеевич
 """
 
-# import os
+import os
 from collections import deque
 from operator import itemgetter
 from sequential_mh.bpp_dsc.rectangle import BinType
@@ -19,8 +19,8 @@ from .tree import (
 )
 from .support import dfs
 
-# os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
-# from sequential_mh.bpp_dsc.graph import plot, create_edges
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 
 def is_zero_size(length, width, height):
@@ -284,6 +284,8 @@ def _create_insert_template(node, level, tree, local, restrictions):
         #             children.delete(children.children[1])
         # 5.5) вставка шаблона с копированием нижестоящих узлов
         for new_tree, new_parent, branch in res:
+            if new_parent.list_of_children() and not is_cutting_node(branch[0]):
+                continue
             new_parent.insert(branch[0], max_len=max_len)
             # 5.6) обновление наборов у нижестоящих узлов
             # (Может перенести в метод вставки???)
@@ -294,3 +296,6 @@ def _create_insert_template(node, level, tree, local, restrictions):
             # for item in new_parent.leaves():
             #     if item not in level:
             level.append(new_tree)
+    else:
+        node.kit.delete_height(height)
+        level.append(tree)

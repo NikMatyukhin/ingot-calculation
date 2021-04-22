@@ -281,8 +281,8 @@ def example_11():
             (100, 200, 2.0, 1, Direction.A),
             (100, 200, 2.0, 1, Direction.A),
 
-            (420, 180, 2.0, 1, Direction.A),
-            (420, 180, 2.0, 1, Direction.A),
+            # (420, 180, 2.0, 1, Direction.A),
+            # (420, 180, 2.0, 1, Direction.A),
         ],
         'L0': 100,
         'W0': 160,
@@ -328,6 +328,77 @@ def example_12():
     }
 
 
+def example_13():
+    return {
+        'name': '',
+        'kit': [
+            (200, 170, 1.0, 4, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (415, 170, 0.5, 6, Direction.A),
+            (420, 165, 0.5, 5, Direction.A),
+            (420, 170, 1.0, 4, Direction.A),
+            (82, 180, 2.2, 3, Direction.A),
+            (130, 40, 0.5, 4, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 120,
+        'H0': 30,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
+def example_14():
+    return {
+        'name': '',
+        'kit': [
+            (160, 93, 3.0, 1, Direction.A),
+            (160, 93, 3.0, 2, Direction.A),
+            (160, 93, 3.0, 2, Direction.A),
+            (160, 93, 3.0, 3, Direction.A),
+            (160, 93, 3.0, 3, Direction.A),
+            (160, 93, 3.0, 3, Direction.A),
+            (160, 93, 3.0, 3, Direction.A),
+            (160, 93, 3.0, 3, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+            # (160, 93, 3.0, 1, Direction.A),
+
+            (77, 180, 3.3, 2, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 120,
+        'H0': 30,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -341,6 +412,8 @@ EXAMPLES = [
     example_10,
     example_11,
     example_12,
+    example_13,
+    example_14,
 ]
 
 
@@ -401,7 +474,9 @@ def main(example, use_graphviz=False):
         )
         main_region = Estimator(main_rect, node.bin.height, node.bin.height)
         rectangles = chain.from_iterable(node.result.blanks.values())
-        print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{len(kit[node.bin.height][1])}')
+        print(f'{kit[node.bin.height] = }')
+        l = sum(len(group) for _, group in kit[node.bin.height].items())
+        print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{l}')
         print(f'Прокат: {node.bin.last_rolldir}')
         print(f'Bin ID: {node._id}')
         if hasattr(node, 'x_hem'):
@@ -419,5 +494,5 @@ def main(example, use_graphviz=False):
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 2
+    NUMBER = 14
     main(NUMBER, USE_GRAPHVIZ)
