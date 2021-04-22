@@ -2,6 +2,7 @@ import sys
 from typing import Iterable, Union, NoReturn
 from itertools import chain
 from operator import itemgetter, attrgetter
+from collections import Counter
 
 from PySide6.QtCore import (
     Qt, QSettings, Signal, QRectF
@@ -272,6 +273,7 @@ class MainWindow (QMainWindow):
         for i in range(80, 100):
             progress.setValue(i)
         progress.setValue(100)
+        progress.close()
 
         page.hideForStatus(status)
         
@@ -285,8 +287,8 @@ class MainWindow (QMainWindow):
                 self.chartPagePreparation()
             )
         )
-        # page.drawCuttingMap(
-        #     self.current_order.tree, self.current_order.efficiency)
+        page.drawCuttingMap(
+            self.current_order.tree, self.current_order.efficiency)
 
         # Заполнение данных сущности текущего заказа
         self.current_order.name = self.current_section.name
@@ -363,16 +365,11 @@ class MainWindow (QMainWindow):
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
         tree = stmh_idrd(tree, restrictions=settings)
-        self.current_order.tree = tree.root
-        # _, self.current_order.tree, path = optimal_configuration(tree, nd=True)
-
+        _, self.current_order.tree, path = optimal_configuration(tree, nd=True)
         # считаем эффективность со всего слитка (в долях!)
         # для отображения нужно округлить!
-        # self.current_order.efficiency = 100 * solution_efficiency(
-        #     self.current_order.tree, path, is_total=True
-        # )
         self.current_order.efficiency = 100 * solution_efficiency(
-            tree, list(dfs(tree.root)), is_total=True
+            self.current_order.tree, path, is_total=True
         )
 
     def chartPagePreparation(self) -> NoReturn:
@@ -719,8 +716,9 @@ class OrderContext:
 
         self.__depth_list = [leave.bin.height for leave in leaves]
         self.__unplaced = list(chain.from_iterable([leave.result.unplaced for leave in leaves]))
-        print('Количество неразмещенных заготовок:', len(self.__unplaced))
-        print(f'{self.__unplaced = }')
+        print(f'Количество неразмещённых заготовок: {len(self.__unplaced)}')
+        print([blank.name for blank in self.__unplaced])
+        print(Counter([blank.name for blank in self.__unplaced]))
 
     @property
     def efficiency(self):

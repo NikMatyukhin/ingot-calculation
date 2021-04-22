@@ -263,6 +263,11 @@ class CuttingMapPainter:
                     self.x, self.y, clr=QColor(200, 200, 100)
                 )
                 self.changePos()
+            else:
+                item = PlateGraphicsItem(
+                    'Лист\n' + size, self.x, self.y
+                )
+                self.changePos()
         elif is_op_node(node):
             item = OperationGraphicsItem(
                 self.x, self.y, node.operation
@@ -280,6 +285,11 @@ class CuttingMapPainter:
             )
             self.scene.addItem(Edge(self.source_point, item.top))
             self.changePos(residue=True, pop=True)
+        else:
+            item = PlateGraphicsItem(
+                'Лист\n' + 'Ошибка раскроя!', self.x, self.y
+            )
+            self.changePos()
         return item
 
     def changePos(self, operation=False, residue=False, pop=False):
