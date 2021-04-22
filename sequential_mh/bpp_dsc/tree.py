@@ -1457,8 +1457,11 @@ class CuttingChartNode(Node):
             )
             self.result.update(result, tailings=None)
 
-        # if self.result.is_empty:
-        #     self.delete_branch()
+        if self.result.is_empty:
+            troot = self.get_troot()
+            troot.kit.delete_height(self.bin.d_height)
+            self.delete_branch()
+
 
         return self.result
 
