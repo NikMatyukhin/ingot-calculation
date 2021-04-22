@@ -287,7 +287,7 @@ class OrderDataService (StandardDataService):
                   'complects.detail_id, details.name, complects.amount, '
                   'complects.priority, details.height, details.width, '
                   'details.depth, complects.is_spoiled, complects.is_carved, '
-                  'complects.is_not_packed '
+                  'complects.is_not_packed, complects.is_partially_packed '
                   'FROM complects '
                   'LEFT JOIN details '
                   'ON details.detail_id = complects.detail_id '
@@ -316,7 +316,7 @@ class OrderDataService (StandardDataService):
                   'details.width, details.depth '
                   'FROM complects '
                   'INNER JOIN details '
-                  'ON details.detail_id=complects.detail_id '
+                  'ON details.detail_id=complects.detail_id AND complects.is_not_packed=0 '
                   f'{f"AND details.depth={d}" if d > 0 else ""} '
                   'LEFT JOIN fusions ON fusions.fusion_id=details.fusion_id '
                   f'WHERE complects.{field}={value}')
