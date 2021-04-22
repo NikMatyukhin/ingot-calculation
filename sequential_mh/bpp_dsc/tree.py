@@ -1457,6 +1457,9 @@ class CuttingChartNode(Node):
             )
             self.result.update(result, tailings=None)
 
+        # if self.result.is_empty:
+        #     self.delete_branch()
+
         return self.result
 
     # работа с размерами (оценка, обновление) --------------------------
@@ -1933,14 +1936,14 @@ def is_defective_tree(tree, max_size):
                 left_size = children[0].bin.size[:2]
                 right_size = children[1].bin.size[:2]
                 if parent.direction == Direction.H:
-                    if left_size[0] < 0:
+                    if round(left_size[0], 4) < 0:
                         is_locked = True
                     size = (
                         round(left_size[0] + right_size[0], 4),
                         round(max(left_size[1], right_size[1]), 4)
                     )
                 else:
-                    if left_size[1] < 0:
+                    if round(left_size[1], 4) < 0:
                         is_locked = True
                     size = (
                         round(max(left_size[0], right_size[0]), 4),
