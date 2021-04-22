@@ -6,7 +6,7 @@
     - Воронов Владимир Сергеевич
 """
 
-import os
+# import os
 from collections import deque
 from operator import itemgetter
 from sequential_mh.bpp_dsc.rectangle import BinType
@@ -19,8 +19,8 @@ from .tree import (
 )
 from .support import dfs
 
-os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
-from sequential_mh.bpp_dsc.graph import plot, create_edges
+# os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+# from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 
 def is_zero_size(length, width, height):
@@ -89,10 +89,13 @@ def stmh_idrd(tree, restrictions=None):
     # bests = [
     #     item for item in trees if solution_efficiency(item.root, list(dfs(item.root))) == max(efficiency)
     # ]
-    best = max(trees, key=lambda item: solution_efficiency(item.root, list(dfs(item.root)), nd=True))
+    print(f'Годных деревьев: {len(trees)}')
+    best = max(trees, key=lambda item: solution_efficiency(item.root, list(dfs(item.root)), nd=True, is_p=True))
     total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
     print('Построение дерева завершено')
     print(f'Общая эффективность: {total_efficiency:.4f}')
+    print(f'Взвешенная эффективность: {solution_efficiency(best.root, list(dfs(best.root)), nd=True):.4f}')
+    print(f'Эффективность с приоритетами: {solution_efficiency(best.root, list(dfs(best.root)), is_p=True):.4f}')
     # print(f'Взвешенная эффективность: {efficiency:.4f}')
     print('-' * 50)
     return best
@@ -123,7 +126,7 @@ def _stmh_idrd(tree, local=False, restrictions=None):
         #     if not is_empty_node(node) and node in tree.root.leaves()
         # ]
         new_level = deque([])
-        for tree_ in level:
+        for _, tree_ in enumerate(level):
             if is_defective_tree(tree_, max_size=max_size):
                 continue
             if is_empty_tree(tree_):
