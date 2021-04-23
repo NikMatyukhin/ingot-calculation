@@ -307,6 +307,21 @@ class OrderDataService (StandardDataService):
 
     @staticmethod
     @db_connector
+    def update_status(connection, order_id: TableField, detail_id: TableField,
+                      status: str, status_value: int) -> Dict:
+
+        field, value = parse_field(order_id)
+        field_2, value_2 = parse_field(detail_id)
+
+        sql = str(f'UPDATE complects SET {status}={status_value} '
+                  f'WHERE {field}={value} AND {field_2}={value_2}')
+
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return True
+
+    @staticmethod
+    @db_connector
     def cut_blanks(connection, order_id: TableField, d: float = 0) -> Dict:
 
         field, value = parse_field(order_id)

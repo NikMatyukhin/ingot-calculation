@@ -226,6 +226,13 @@ class MainWindow (QMainWindow):
         status, name, depth, efficiency, on_storage = data[1:]
         ingots = OrderDataService.ingots({'order_id': id})
         complects = OrderDataService.complects({'order_id': id})
+        
+        # Заполнение данных сущности текущего заказа
+        self.current_order.name = self.current_section.name
+        self.current_order.status = self.current_section.status
+        self.current_order.depth = self.current_section.depth
+        self.current_order.ingots = ingots
+        self.current_order.complects = complects
 
         # Пока работаем только с одном слитком
         main_ingot = ingots[0][-4:]
@@ -276,6 +283,8 @@ class MainWindow (QMainWindow):
         progress.close()
 
         page.hideForStatus(status)
+        complects = OrderDataService.complects({'order_id': id})
+        self.current_order.complects = complects
         
         page.setPageTitle(name, on_storage)
         page.setComplects(complects)
@@ -289,13 +298,6 @@ class MainWindow (QMainWindow):
         )
         page.drawCuttingMap(
             self.current_order.tree, self.current_order.efficiency)
-
-        # Заполнение данных сущности текущего заказа
-        self.current_order.name = self.current_section.name
-        self.current_order.status = self.current_section.status
-        self.current_order.depth = self.current_section.depth
-        self.current_order.ingots = ingots
-        self.current_order.complects = complects
 
         return page
 
@@ -699,7 +701,7 @@ class OrderContext:
         return self.__complects
 
     @complects.setter
-    def complects(self, value: dict) -> NoReturn:
+    def complects(self, value: dict):
         self.__complects = value
         self.amount = len(value)
 
@@ -716,9 +718,37 @@ class OrderContext:
 
         self.__depth_list = [leave.bin.height for leave in leaves]
         self.__unplaced = list(chain.from_iterable([leave.result.unplaced for leave in leaves]))
-        print(f'Количество неразмещённых заготовок: {len(self.__unplaced)}')
-        print([blank.name for blank in self.__unplaced])
-        print(Counter([blank.name for blank in self.__unplaced]))
+        unplaced_counter = Counter([blank.name for blank in self.__unplaced])
+        complect_counter = {blank[1]: (blank[0], blank[2], blank[6]) for blank in chain.from_iterable(self.__complects.values())}
+        try:
+            for name in unplaced_counter:
+                detail_id = complect_counter[name][0]
+                amount = complect_counter[name][1]
+                depth = complect_counter[name][2]
+                surplus = unplaced_counter[name]
+                if amount == surplus:
+                    OrderDataService.update_status(
+                        {'order_id': self.id},
+                        {'detail_id': detail_id},
+                        'is_not_packed', 1
+                    )
+                else:
+                    OrderDataService.update_status(
+                        {'order_id': self.id},
+                        {'detail_id': detail_id},
+                        'is_partially_packed', 1
+                    )
+            for name in complect_counter:
+                detail_id = complect_counter[name][0]
+                depth = complect_counter[name][2]
+                if depth not in self.__depth_list:
+                    OrderDataService.update_status(
+                        {'order_id': self.id},
+                        {'detail_id': detail_id},
+                        'is_not_packed', 1
+                    )
+        except Exception:
+            pass
 
     @property
     def efficiency(self):

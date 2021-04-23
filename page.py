@@ -20,6 +20,7 @@ class OrderPage (QWidget):
             "is_spoiled": ("Забракована", QColor(255, 150, 150)),
             "is_carved": ("Вырезана", QColor(100, 255, 150)),
             "is_not_packed": ("Не упакована", QColor(255, 255, 150)),
+            "is_partially_packed": ("Частично упакована", QColor(255, 100, 0)),
             "default": ("Ожидает", QColor(255, 255, 255))
         }
 
@@ -54,12 +55,14 @@ class OrderPage (QWidget):
                 self.ui.treeWidget, [article[1], None, None, None, None, None, None])
             for detail in details:
                 status = None
-                if detail[-1]:
+                if detail[-2]:
                     status = self.statuses["is_not_packed"]
-                elif detail[-2]:
-                    status = self.statuses["is_carved"]
                 elif detail[-3]:
+                    status = self.statuses["is_carved"]
+                elif detail[-4]:
                     status = self.statuses["is_spoiled"]
+                elif detail[-1]:
+                    status = self.statuses["is_partially_packed"]
                 else:
                     status = self.statuses["default"]
                 detail_item = QTreeWidgetItem(
