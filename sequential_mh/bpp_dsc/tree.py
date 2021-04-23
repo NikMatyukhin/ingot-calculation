@@ -892,8 +892,10 @@ class BinNode(Node):
                             current_height = p_cont.bin.length * height / length
                             width = width * self.bin.d_height / current_height
                         elif length <= p_cont.bin.length and width > p_cont.bin.width:
-                            current_height = width * self.bin.d_height / p_cont.bin.width
-                            width = p_cont.bin.width
+                            # current_height = width * self.bin.d_height / p_cont.bin.width
+                            current_height = p_cont.bin.height
+                            # width = p_cont.bin.width
+                            width = width * self.bin.d_height / p_cont.bin.height
                         else:
                             current_height = height
                             width = round(width * self.bin.d_height / height, 4)
@@ -1688,16 +1690,21 @@ def top_down_traversal(start):
     return result
 
 
-def solution_efficiency(root, path, nd=False, is_total=False):
+def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
     # is_total - Учитывая весь бин
     # nd - взвешенная на количество деталей
     used_total_volume = 0.
     used_volume = 0.
     number_detail = 0
+    priorities = []
+    all_priorities = []
     for node in path:
         if is_cc_node(node):
             used_total_volume += node.bin.volume
             used_volume += node.result.total_volume
+            priorities.extend([1/blank.rectangle.priority for blank in node.result])
+            all_priorities.extend([1/blank.rectangle.priority for blank in node.result])
+            all_priorities.extend([1/blank.priority for blank in node.result.unplaced])
             number_detail += node.result.qty()
     if is_total:
         efficiency = used_volume / root.bin.volume
@@ -1706,8 +1713,13 @@ def solution_efficiency(root, path, nd=False, is_total=False):
             efficiency = 0
         else:
             efficiency = used_volume / used_total_volume
-    if nd and number_detail:
-        efficiency *= number_detail / root.kit.qty()
+    if len(set(all_priorities)) == 1:
+        if nd and number_detail:
+            efficiency *= number_detail / root.kit.qty()
+    elif is_p:
+        sp = sum(all_priorities)
+        priorities = [p / sp for p in priorities]
+        efficiency = (efficiency + sum(priorities)) / 2
     return efficiency
 
 

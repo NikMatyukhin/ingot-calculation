@@ -399,6 +399,35 @@ def example_14():
     }
 
 
+def example_15():
+    return {
+        'name': '',
+        'kit': [
+            (200, 170, 1.0, 4, Direction.A),
+            (160, 93, 3.0, 1, Direction.A),
+            (415, 170, 0.5, 6, Direction.A),
+            (420, 165, 0.5, 5, Direction.A),
+            (420, 170, 1.0, 1, Direction.A),
+            (82, 180, 2.2, 3, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
+            (130, 40, 0.5, 5, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 120,
+        'H0': 30,
+        # 'L0': 180,
+        # 'W0': 1000,
+        # 'H0': 3,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -414,6 +443,7 @@ EXAMPLES = [
     example_12,
     example_13,
     example_14,
+    example_15,
 ]
 
 
@@ -494,5 +524,5 @@ def main(example, use_graphviz=False):
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 14
+    NUMBER = 15
     main(NUMBER, USE_GRAPHVIZ)
