@@ -1697,14 +1697,14 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
     used_volume = 0.
     number_detail = 0
     priorities = []
-    all_priorities = []
+    all_priorities = [1/blank.priority for blank in root.kit]
     for node in path:
         if is_cc_node(node):
             used_total_volume += node.bin.volume
             used_volume += node.result.total_volume
-            priorities.extend([1/blank.rectangle.priority for blank in node.result])
-            all_priorities.extend([1/blank.rectangle.priority for blank in node.result])
-            all_priorities.extend([1/blank.priority for blank in node.result.unplaced])
+            priorities.extend(
+                [1/blank.rectangle.priority for blank in node.result]
+            )
             number_detail += node.result.qty()
     if is_total:
         efficiency = used_volume / root.bin.volume
@@ -1713,10 +1713,10 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
             efficiency = 0
         else:
             efficiency = used_volume / used_total_volume
-    if len(set(all_priorities)) == 1:
+    if not is_p or len(set(all_priorities)) == 1:
         if nd and number_detail:
             efficiency *= number_detail / root.kit.qty()
-    elif is_p:
+    else:
         sp = sum(all_priorities)
         priorities = [p / sp for p in priorities]
         efficiency = (efficiency + sum(priorities)) / 2
