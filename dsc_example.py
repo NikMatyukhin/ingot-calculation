@@ -428,6 +428,37 @@ def example_15():
     }
 
 
+def example_16():
+    return {
+        'name': '',
+        'kit': [
+            (65, 180, 3.2, 1, Direction.A),
+            (160, 54, 3.0, 1, Direction.A),
+            (160, 54, 3.0, 2, Direction.A),
+
+            (120, 180, 2.2, 1, Direction.A),
+
+            (460, 180, 1.0, 1, Direction.A),
+            (460, 180, 1.0, 1, Direction.A),
+
+            (460, 180, 0.5, 1, Direction.A),
+            (460, 180, 0.5, 1, Direction.A),
+            (130, 90, 0.5, 1, Direction.A),
+            (480, 180, 0.5, 3, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 120,
+        'H0': 20,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -444,6 +475,7 @@ EXAMPLES = [
     example_13,
     example_14,
     example_15,
+    example_16,
 ]
 
 
@@ -504,7 +536,6 @@ def main(example, use_graphviz=False):
         )
         main_region = Estimator(main_rect, node.bin.height, node.bin.height)
         rectangles = chain.from_iterable(node.result.blanks.values())
-        print(f'{kit[node.bin.height] = }')
         l = sum(len(group) for _, group in kit[node.bin.height].items())
         print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{l}')
         print(f'Прокат: {node.bin.last_rolldir}')
