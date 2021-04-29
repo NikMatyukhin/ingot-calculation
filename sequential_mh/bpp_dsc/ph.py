@@ -137,6 +137,14 @@ def get_best_fig(length, width, rectangles):
                 priority, orientation, best = 3, j, rect
             elif priority > 4 and rect_l < length and rect_w < width:
                 priority, orientation, best = 4, j, rect
+            elif priority == 4 and best is rect:
+                s_1 = min((length - size[0]) * rect_w, (width - size[1]) * rect_l)
+                s_2 = min((length - rect_l) * rect_w, (width - rect_w) * rect_l)
+                if s_1 > 0 and s_2 > 0:
+                    if s_1 < s_2:
+                        priority, orientation, best = 4, 0, rect
+                    else:
+                        priority, orientation, best = 4, 1, rect
             elif priority > 5:
                 priority, orientation, best = 5, j, rect
     if best and orientation != 0 and best.is_rotatable:
