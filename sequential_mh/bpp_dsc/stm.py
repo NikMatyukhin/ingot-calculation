@@ -12,9 +12,8 @@ from operator import itemgetter
 from sequential_mh.bpp_dsc.rectangle import BinType
 
 from .tree import (
-    Operations, Tree, is_cc_node, is_cutting_node, is_ingot_node, is_op_node,
-    is_adj_node, is_rolling_node,
-    is_ubin_node, is_imt_node, delete_all_branch, optimal_configuration,
+    is_cc_node, is_cutting_node, is_ingot_node, is_op_node, is_adj_node,
+    is_ubin_node, is_imt_node, delete_all_branch,
     solution_efficiency, is_defective_tree
 )
 from .support import dfs
@@ -72,8 +71,6 @@ def get_unpacked_item(parent, node):
 
 
 def stmh_idrd(tree, restrictions=None):
-    efficiency = 0
-    root = tree.root
     is_main = True
     trees = _stmh_idrd(tree, restrictions=restrictions, local=not is_main)
 
