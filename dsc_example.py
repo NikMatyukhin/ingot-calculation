@@ -403,13 +403,13 @@ def example_15():
     return {
         'name': '',
         'kit': [
-            (200, 170, 1.0, 4, Direction.A),
+            (77, 180, 3.3, 2, Direction.A),
             (160, 93, 3.0, 1, Direction.A),
+            (82, 180, 2.2, 3, Direction.A),
+            (420, 170, 1.0, 1, Direction.A),
+            (200, 170, 1.0, 4, Direction.A),
             (415, 170, 0.5, 6, Direction.A),
             (420, 165, 0.5, 5, Direction.A),
-            (420, 170, 1.0, 1, Direction.A),
-            (82, 180, 2.2, 3, Direction.A),
-            (77, 180, 3.3, 2, Direction.A),
             (130, 40, 0.5, 5, Direction.A),
         ],
         'L0': 180,
@@ -432,19 +432,22 @@ def example_16():
     return {
         'name': '',
         'kit': [
-            (65, 180, 3.2, 1, Direction.A),
+            # (65, 180, 3.2, 1, Direction.A),
+            (160, 54, 3.0, 1, Direction.A),
+            (160, 54, 3.0, 1, Direction.A),
+            (160, 54, 3.0, 1, Direction.A),
             (160, 54, 3.0, 1, Direction.A),
             (160, 54, 3.0, 2, Direction.A),
-
-            (120, 180, 2.2, 1, Direction.A),
-
-            (460, 180, 1.0, 1, Direction.A),
-            (460, 180, 1.0, 1, Direction.A),
-
-            (460, 180, 0.5, 1, Direction.A),
+            (160, 54, 3.0, 3, Direction.A),
+            # (160, 54, 3.0, 1, Direction.A),
+            (160, 70, 3.0, 2, Direction.A),
+            # (120, 180, 2.2, 1, Direction.A),
+            # (460, 180, 1.0, 1, Direction.A),
+            # (460, 180, 1.0, 1, Direction.A),
+            # (460, 180, 0.5, 1, Direction.A),
             (460, 180, 0.5, 1, Direction.A),
             (130, 90, 0.5, 1, Direction.A),
-            (480, 180, 0.5, 3, Direction.A),
+            (480, 180, 0.5, 2, Direction.A),
         ],
         'L0': 180,
         'W0': 120,
@@ -555,5 +558,5 @@ def main(example, use_graphviz=False):
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 15
+    NUMBER = 16
     main(NUMBER, USE_GRAPHVIZ)
