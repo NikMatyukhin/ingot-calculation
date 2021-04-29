@@ -13,7 +13,7 @@ from typing import NamedTuple
 
 from .protocols import Number, RectangleProtocol
 from .support import (
-    delete_from_dict, dict_to_list, exclude_from_dict, is_empty_dict
+    delete_from_dict, dict_to_list, exclude_from_dict
 )
 from .rect import (
     Point, Rectangle, RectangleType, PackedRectangle,
@@ -56,7 +56,13 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     all_regions = [main_region]
     result, unplaced, all_tailings = [], [], []
     # rotate_all(rectangles)
-    while not is_empty_dict(rectangles):
+    if first_priority:
+        for_packing = rectangles[first_priority]
+    else:
+        for_packing = dict_to_list(rectangles)
+        # for_packing = rectangles
+    # while not is_empty_dict(for_packing):
+    while for_packing:
         layout_options = []
         if not all_regions:
             unplaced.extend(dict_to_list(rectangles))
@@ -64,10 +70,6 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
         for _, region in enumerate(all_regions):
             sort(rectangles, sorting='width')
             tailings = []
-            if first_priority:
-                for_packing = rectangles[first_priority]
-            else:
-                for_packing = dict_to_list(rectangles)
             variant, _, best = get_best_fig(
                 for_packing, region, main_region.rectangle, last_rolldir,
                 (y_hem[0], x_hem[0]), allowance, *region.start
@@ -246,6 +248,11 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             main_region.update(min_rect)
         # обновить регионы
         all_regions = main_region.cut(point=min_rect.trp)
+
+        if first_priority:
+            for_packing = rectangles[first_priority]
+        else:
+            for_packing = dict_to_list(rectangles)
 
         if is_visualize:
             l_max = length * height / g_height
