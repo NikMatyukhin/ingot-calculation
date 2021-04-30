@@ -39,6 +39,15 @@ StateLayout = NamedTuple(
 )
 
 
+def rotate_all(rectangles, rolldir):
+    for _, group in rectangles.items():
+        for blank in group:
+            if not blank.is_rotatable and blank.direction != rolldir:
+                blank.rotate()
+            elif blank.is_rotatable and blank.length > blank.width:
+                blank.rotate()
+
+
 def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
            first_priority=False,
            x_hem=(0, 0), y_hem=(0, 0), allowance=0, max_size=None,
@@ -49,6 +58,9 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     min_rect = Rectangle((0, 0), (0, 0))
     if last_rolldir == Direction.H and max_size:
         max_size = max_size[::-1]
+    sort(rectangles, sorting='width')
+    if last_rolldir:
+        rotate_all(rectangles, last_rolldir)
     main_region = Estimator(
         src_rect, height, g_height, limits=max_size,
         x_hem=x_hem, y_hem=y_hem
@@ -68,7 +80,6 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             unplaced.extend(dict_to_list(rectangles))
             break
         for _, region in enumerate(all_regions):
-            sort(rectangles, sorting='width')
             tailings = []
             variant, _, best = get_best_fig(
                 for_packing, region, main_region.rectangle, last_rolldir,
