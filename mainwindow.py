@@ -357,21 +357,21 @@ class MainWindow (QMainWindow):
                 (self.maximum_plate_height, self.rough_roll_plate_width)
             ),
             'cutting_length': self.guillotine_width,
-            'cutting_thickness': self.cutting_thickness,
+            'cutting_thickness': round(self.cutting_thickness, 4),
             'hem_until_3': self.rough_roll_edge_loss,
             'hem_after_3': self.clean_roll_edge_loss,
             'allowance': self.cut_allowance,
-            'end': self.end_face_loss,
+            'end': round(self.end_face_loss, 4),
         }
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
         tree = stmh_idrd(tree, restrictions=settings)
-        _, self.current_order.tree, path = optimal_configuration(tree, nd=True)
+        self.current_order.tree = tree.root
         # считаем эффективность со всего слитка (в долях!)
         # для отображения нужно округлить!
         self.current_order.efficiency = 100 * solution_efficiency(
-            self.current_order.tree, path, is_total=True
+            self.current_order.tree, list(dfs(tree.root)), is_total=True
         )
 
     def chartPagePreparation(self) -> NoReturn:
