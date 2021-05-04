@@ -13,7 +13,7 @@ from typing import NamedTuple
 
 from .protocols import Number, RectangleProtocol
 from .support import (
-    delete_from_dict, dict_to_list, exclude_from_dict, is_empty_dict
+    delete_from_dict, dict_to_list, exclude_from_dict
 )
 from .rect import (
     Point, Rectangle, RectangleType, PackedRectangle,
@@ -39,6 +39,15 @@ StateLayout = NamedTuple(
 )
 
 
+def rotate_all(rectangles, rolldir):
+    for _, group in rectangles.items():
+        for blank in group:
+            if not blank.is_rotatable and blank.direction != rolldir:
+                blank.rotate()
+            elif blank.is_rotatable and blank.length > blank.width:
+                blank.rotate()
+
+
 def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
            first_priority=False,
            x_hem=(0, 0), y_hem=(0, 0), allowance=0, max_size=None,
@@ -49,6 +58,9 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     min_rect = Rectangle((0, 0), (0, 0))
     if last_rolldir == Direction.H and max_size:
         max_size = max_size[::-1]
+    sort(rectangles, sorting='width')
+    if last_rolldir:
+        rotate_all(rectangles, last_rolldir)
     main_region = Estimator(
         src_rect, height, g_height, limits=max_size,
         x_hem=x_hem, y_hem=y_hem
@@ -56,18 +68,19 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     all_regions = [main_region]
     result, unplaced, all_tailings = [], [], []
     # rotate_all(rectangles)
-    while not is_empty_dict(rectangles):
+    if first_priority:
+        for_packing = rectangles[first_priority]
+    else:
+        for_packing = dict_to_list(rectangles)
+        # for_packing = rectangles
+    # while not is_empty_dict(for_packing):
+    while for_packing:
         layout_options = []
         if not all_regions:
             unplaced.extend(dict_to_list(rectangles))
             break
         for _, region in enumerate(all_regions):
-            sort(rectangles, sorting='width')
             tailings = []
-            if first_priority:
-                for_packing = rectangles[first_priority]
-            else:
-                for_packing = dict_to_list(rectangles)
             variant, _, best = get_best_fig(
                 for_packing, region, main_region.rectangle, last_rolldir,
                 (y_hem[0], x_hem[0]), allowance, *region.start
@@ -246,6 +259,11 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             main_region.update(min_rect)
         # обновить регионы
         all_regions = main_region.cut(point=min_rect.trp)
+
+        if first_priority:
+            for_packing = rectangles[first_priority]
+        else:
+            for_packing = dict_to_list(rectangles)
 
         if is_visualize:
             l_max = length * height / g_height

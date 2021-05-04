@@ -51,7 +51,7 @@ def sort(rectangles, sorting: str='width'):
 
     for _, group in rectangles.items():
         for blank in group:
-            if blank.length > blank.width:
+            if blank.length > blank.width and blank.is_rotatable:
                 blank.rotate()
         group.sort(key=attrgetter(sorting), reverse=True)
 

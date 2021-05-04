@@ -3,4 +3,5 @@ graphviz    ; только для отладки
 
 pylint
 pytest
+pytest-cov
 PySide6

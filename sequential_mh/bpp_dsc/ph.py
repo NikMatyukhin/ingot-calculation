@@ -7,7 +7,8 @@ from .rectangle import PackedBlank
 Tailing = namedtuple('Tailing', ('x', 'y', 'length', 'width'))
 
 
-def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False):
+def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False,
+           allowance=0):
     result = {}
     tailings = []
     max_priority= None
@@ -20,7 +21,7 @@ def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False):
 
     recursive_packing(
         x0, y0, length, width, rectangles, result, tailings,
-        first_priority=max_priority
+        first_priority=max_priority, allowance=allowance
     )
 
     if result:
@@ -45,7 +46,7 @@ def ph_bpp(length, width, rectangles, x0=0., y0=0., first_priority=False):
 
 
 def recursive_packing(x, y, length, width, rectangles, result, tailings,
-                      first_priority=False):
+                      first_priority=False, allowance=0):
     variant, best, priorities = [], [], []
     if first_priority:
         priorities.append(first_priority)
@@ -73,7 +74,8 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
                 )
             elif variant[i] == 3:
                 recursive_packing(
-                    x + omega, y, length, width - omega, rectangles, result,
+                    x + omega + allowance, y, length,
+                    width - omega - allowance, rectangles, result,
                     tailings, first_priority=first_priority
                 )
             elif variant[i] == 4:
@@ -85,33 +87,36 @@ def recursive_packing(x, y, length, width, rectangles, result, tailings,
                 min_w = min(min_w, min_l)
                 min_l = min_w
                 if width - omega < min_w:
-                    tailings.append(Tailing(omega, y, d, width - omega))
+                    tailings.append(Tailing(x + omega, y, d, width - omega))
                     recursive_packing(
-                        x, y + d, length - d, width, rectangles, result,
+                        x, y + d + allowance, length - d - allowance, width, rectangles, result,
                         tailings, first_priority=first_priority
                     )
                 elif length - d < min_l:
                     tailings.append(Tailing(x, y + d, length - d, omega))
                     recursive_packing(
-                        x + omega, y, length, width - omega, rectangles, 
+                        x + omega + allowance, y, length,
+                        width - omega - allowance, rectangles,
                         result, tailings, first_priority=first_priority
                     )
                 elif omega < min_w:
                     recursive_packing(
-                        x + omega, y, d, width - omega, rectangles, result,
-                        tailings
+                        x + omega + allowance, y, d, width - omega - allowance,
+                        rectangles, result, tailings
                     )
                     recursive_packing(
-                        x, y + d, length - d, width, rectangles, result,
+                        x, y + d + allowance, length - d - allowance, width,
+                        rectangles, result,
                         tailings, first_priority=first_priority
                     )
                 else:
                     recursive_packing(
-                        x, y + d, length - d, omega, rectangles, result,
-                        tailings
+                        x, y + d + allowance, length - d - allowance, omega,
+                        rectangles, result, tailings
                     )
                     recursive_packing(
-                        x + omega, y, length, width - omega, rectangles, 
+                        x + omega + allowance, y, length,
+                        width - omega - allowance, rectangles,
                         result, tailings, first_priority=first_priority
                     )
             break
@@ -132,6 +137,14 @@ def get_best_fig(length, width, rectangles):
                 priority, orientation, best = 3, j, rect
             elif priority > 4 and rect_l < length and rect_w < width:
                 priority, orientation, best = 4, j, rect
+            elif priority == 4 and best is rect:
+                s_1 = min((length - size[0]) * rect_w, (width - size[1]) * rect_l)
+                s_2 = min((length - rect_l) * rect_w, (width - rect_w) * rect_l)
+                if s_1 > 0 and s_2 > 0:
+                    if s_1 < s_2:
+                        priority, orientation, best = 4, 0, rect
+                    else:
+                        priority, orientation, best = 4, 1, rect
             elif priority > 5:
                 priority, orientation, best = 5, j, rect
     if best and orientation != 0 and best.is_rotatable:

@@ -13,6 +13,7 @@ from copy import copy, deepcopy
 from enum import Enum
 from functools import partial
 from itertools import chain, product, count
+from operator import attrgetter
 
 
 from .ph import ph_bpp
@@ -22,7 +23,7 @@ from .exception import (
     ChildrenNodeError, OperationTypeError
 )
 from .rectangle import BinType, Bin, Direction, Kit, Number, Result, UnsizedBin
-from sequential_mh.tsh.bpp_ts import bpp_ts
+from sequential_mh.tsh.bpp_ts import bpp_ts, Rectangle, RectangleType
 
 
 Vec3 = tuple[Number, Number, Number]
@@ -1248,8 +1249,8 @@ class OperationNode(Node):
                     dst.bin.width = size[WIDTH] - estimate[WIDTH]
                     dst.bin.length = size[LENGTH]
                     self.point = 0., right.bin.width
-            src.update_size(max_len=max_len)
-            dst.update_size(max_len=max_len)
+        src.update_size(max_len=max_len)
+        dst.update_size(max_len=max_len)
 
     def set_cut(self, max_len=None):
         if self.operation == Operations.cutting:
@@ -1436,6 +1437,7 @@ class CuttingChartNode(Node):
                 bin_node.bin.length, bin_node.bin.width, bin_node.bin.height,
                 bin_node.bin.d_height, group, self.bin.rolldir, x_hem=self.x_hem, y_hem=self.y_hem,
                 allowance=allowance, max_size=max_size,
+                first_priority=min([priority for priority, sg in group.items() if sg]),
                 is_visualize=False
             )
             width, length = min_rect.width, min_rect.length
@@ -1454,10 +1456,51 @@ class CuttingChartNode(Node):
                 for k in group:
                     group[k] = []
                 return
-            result, *_ = ph_bpp(
-                length, width, group, x0=x_0, y0=y_0, first_priority=True
+            edge = None
+            if x_0 == 0:
+                r = min(filter(
+                    lambda item: hasattr(item, 'rtype') and item.rtype == RectangleType.EDGE,
+                    self.result.tailings
+                ), key=attrgetter('x', 'width'))
+                x_0 += r.width
+                width -= 2 * r.width
+                # FIXME: костыль
+                edge = max(self.result.tailings, key=attrgetter('y'))
+                y_0 = y_0 - edge.length + allowance
+            elif y_0 == 0:
+                r = min(filter(
+                    lambda item: hasattr(item, 'rtype') and item.rtype == RectangleType.EDGE,
+                    self.result.tailings
+                ), key=attrgetter('y', 'length'))
+                y_0 += r.length
+                length -= 2 * r.length
+                edge = max(self.result.tailings, key=attrgetter('x'))
+                x_0 = x_0 - edge.width + allowance
+            result, *_, tailings = ph_bpp(
+                length, width, group, x0=x_0, y0=y_0, first_priority=True,
+                allowance=allowance
             )
-            self.result.update(result, tailings=None)
+            unplaced = []
+            if not result:
+                for _, subgroup in group.items():
+                    unplaced.extend(subgroup)
+                    subgroup.clear()
+            else:
+                tailings = []
+                if edge:
+                    if x_0 == self.x_hem[0]:
+                        max_y = max([r.y + r.rectangle.length for r in chain.from_iterable(result.values())])
+                        r = Rectangle.create_by_size(
+                            (edge.blp.x, max_y), edge.length, edge.width
+                        )
+                        tailings.append(r)
+                    elif y_0 == self.y_hem[0]:
+                        max_x = max([r.x + r.rectangle.width for r in chain.from_iterable(result.values())])
+                        r = Rectangle.create_by_size(
+                            (max_x, edge.blp.y), edge.length, edge.width
+                        )
+                        tailings.append(r)
+                self.result.update(result, tailings=tailings)
 
         if self.result.is_empty:
             troot = self.get_troot()
@@ -1524,7 +1567,8 @@ class CuttingChartNode(Node):
                 width -= esize[WIDTH]
             return length, width, self.bin.height
         estimate = self.parent.estimate_size()
-        if self.parent.direction == Direction.H:
+        # if self.parent.direction == Direction.H:
+        if cutting_node.direction == Direction.H:
             size = (
                 self.parent_bnode.bin.length - estimate[LENGTH],
                 self.parent_bnode.bin.width,
@@ -1697,14 +1741,14 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
     used_volume = 0.
     number_detail = 0
     priorities = []
-    all_priorities = []
+    all_priorities = [1/blank.priority for blank in root.kit]
     for node in path:
         if is_cc_node(node):
             used_total_volume += node.bin.volume
             used_volume += node.result.total_volume
-            priorities.extend([1/blank.rectangle.priority for blank in node.result])
-            all_priorities.extend([1/blank.rectangle.priority for blank in node.result])
-            all_priorities.extend([1/blank.priority for blank in node.result.unplaced])
+            priorities.extend(
+                [1/blank.rectangle.priority for blank in node.result]
+            )
             number_detail += node.result.qty()
     if is_total:
         efficiency = used_volume / root.bin.volume
@@ -1713,10 +1757,10 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
             efficiency = 0
         else:
             efficiency = used_volume / used_total_volume
-    if len(set(all_priorities)) == 1:
+    if not is_p or len(set(all_priorities)) == 1:
         if nd and number_detail:
             efficiency *= number_detail / root.kit.qty()
-    elif is_p:
+    else:
         sp = sum(all_priorities)
         priorities = [p / sp for p in priorities]
         efficiency = (efficiency + sum(priorities)) / 2
