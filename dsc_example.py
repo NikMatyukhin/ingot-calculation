@@ -9,6 +9,8 @@ from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency
 )
 from sequential_mh.bpp_dsc.stm import stmh_idrd
+from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
+
 from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 from sequential_mh.tsh import rect
@@ -155,15 +157,27 @@ def example_7():
     return {
         'name': 'Реальный пример 3',
         'kit': [
-            (86, 220, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
-            (76, 110, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
-            (76, 110, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
-            (76, 110, 3.0, 1), (76, 110, 3.0, 1), (76, 110, 3.0, 1),
-            (76, 110, 3.0, 1)
+            # (86, 220, 3.0, 1),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P),
+            (76, 110, 3.0, 1, Direction.P)
         ],
-        'L0': 100,
+        # 'L0': 180,
+        # 'W0': 120,
+        'L0': 120,
         'W0': 180,
-        'H0': 23,
+        # 'L0': 180,
+        # 'W0': 180,
+        'H0': 30,
         'max_size': ((1200, 380), (1200, 400)),
         'cutting_length': 1200,  # максимальная длина реза
         # 'cutting_thickness': 4.2,  # толщина реза
@@ -462,6 +476,70 @@ def example_16():
     }
 
 
+def example_17():
+    return {
+        'name': '',
+        'kit': [
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+            (110, 76, 3.0, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 120,
+        # 'L0': 120,
+        # 'W0': 180,
+        'H0': 30,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 3,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
+def example_18():
+    return {
+        'name': '',
+        'kit': [
+            (110, 76, 3.0, 1, Direction.A),
+            (128, 180, 3.2, 1, Direction.A),
+            (150, 180, 2.0, 1, Direction.A),
+            (430, 100, 1.0, 1, Direction.A),
+            (430, 100, 1.0, 1, Direction.A),
+            (850, 120, 0.5, 1, Direction.A),
+            (430, 180, 0.5, 1, Direction.A),
+            (160, 100, 0.5, 1, Direction.A),
+            (260, 180, 1.0, 1, Direction.A),
+            # (110, 76, 3.0, 1, Direction.A),
+            # (110, 76, 3.0, 1, Direction.A),
+            # (110, 76, 3.0, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 120,
+        # 'L0': 120,
+        # 'W0': 180,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -479,10 +557,33 @@ EXAMPLES = [
     example_14,
     example_15,
     example_16,
+    example_17,
+    example_18,
 ]
 
 
-def main(example, use_graphviz=False):
+def predict_ingot_size(kit, material, restrictions, use_graphviz=False):
+    print('Расчет параметров слитка:')
+
+    bin_ = Bin(
+        180, 180, 30,
+        material=material, bin_type=BinType.ingot
+    )
+    root = BinNode(bin_, kit=kit)
+    tree = Tree(root)
+
+    tree = optimal_ingot_size(tree, (70, 70, 20), (180, 180, 30), restrictions)
+    ef_after = solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True)
+    print(f'По всему объему после прогноза слитка: {ef_after}')
+    # print(f'Дельта эффективности: {ef_after - ef_before}')
+
+    if use_graphviz:
+        graph1, all_nodes1 = plot(tree.root, 'pdf/graph1.gv')
+        create_edges(graph1, all_nodes1)
+        graph1.view()
+
+
+def main(example, use_graphviz=False, use_predict=False):
     material = Material('Сплав 1', 2.2, 1.)
     if 0 <= example - 1 < len(EXAMPLES):
         data = EXAMPLES[example - 1]()
@@ -529,7 +630,7 @@ def main(example, use_graphviz=False):
     # res.update_size()
 
     if use_graphviz:
-        graph1, all_nodes1 = plot(tree.root, 'pdf/graph3.gv')
+        graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
         create_edges(graph1, all_nodes1)
         graph1.view()
 
@@ -551,12 +652,17 @@ def main(example, use_graphviz=False):
         )
     nodes = list(dfs(tree.root))
     print(f'Всего деталей: {tree.root.kit.qty()}')
-    print(f'По всему объему: {solution_efficiency(tree.root, nodes, is_total=True)}')
+    ef_before = solution_efficiency(tree.root, nodes, is_total=True)
+    print(f'По всему объему: {ef_before}')
     print(f'По используемому объему: {solution_efficiency(tree.root, nodes)}')
     print(f'Взвешенная: {solution_efficiency(tree.root, nodes, nd=True)}')
+
+    if use_predict:
+        predict_ingot_size(kit, material, restrictions, use_graphviz)
 
 
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
-    NUMBER = 16
-    main(NUMBER, USE_GRAPHVIZ)
+    USE_PREDICT = True
+    NUMBER = 7
+    main(NUMBER, USE_GRAPHVIZ, USE_PREDICT)
