@@ -70,16 +70,20 @@ def get_unpacked_item(parent, node):
     return add_detail
 
 
-def stmh_idrd(tree, restrictions=None):
+def stmh_idrd(tree, with_filter=True, restrictions=None):
     is_main = True
-    trees = _stmh_idrd(tree, restrictions=restrictions, local=not is_main)
+    trees = _stmh_idrd(
+        tree, restrictions=restrictions, local=not is_main,
+        with_filter=with_filter
+    )
 
     if restrictions:
         max_size = restrictions.get('max_size')
     else:
         max_size = None
     print(f'Количество деревьев: {len(trees)}')
-    trees = [item for item in trees if not is_defective_tree(item, max_size)]
+    if with_filter:
+        trees = [item for item in trees if not is_defective_tree(item, max_size)]
     # efficiency = [
     #     solution_efficiency(item.root, list(dfs(item.root)), nd=True) for item in trees
     # ]
@@ -98,7 +102,7 @@ def stmh_idrd(tree, restrictions=None):
     return best
 
 
-def _stmh_idrd(tree, local=False, restrictions=None):
+def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None):
     # if local:
     #     level = deque(tree.root.leaves())
     #     for node in tree.root.cc_leaves:
@@ -124,7 +128,7 @@ def _stmh_idrd(tree, local=False, restrictions=None):
         # ]
         new_level = deque([])
         for _, tree_ in enumerate(level):
-            if is_defective_tree(tree_, max_size=max_size):
+            if with_filter and is_defective_tree(tree_, max_size=max_size):
                 continue
             if is_empty_tree(tree_):
                 result.append(tree_)
