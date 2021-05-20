@@ -236,6 +236,15 @@ class Node(BaseNode):
         for node in self.list_of_children():
             node.update_size(start=start, max_len=max_len)
 
+    def upward_size_update(self, min_size=None, max_size=None, change_height=False):
+        # восходящее обновление размеров
+        parent = self.parent
+        if parent:
+            parent.upward_size_update(
+                min_size=min_size, max_size=max_size,
+                change_height=change_height
+            )
+
     # дополнительно (для удобства) -------------------------------------
     def update_kit(self, height):
         for node in self.list_of_children():
@@ -940,6 +949,14 @@ class BinNode(Node):
                 restrictions=restrictions
             )
 
+    def upward_size_update(self, min_size=None, max_size=None, change_height=False):
+        # восходящее обновление размеров
+        if self.bin.bin_type == BinType.INTERMEDIATE:
+            change_height = True
+        super().upward_size_update(
+            min_size=min_size, max_size=max_size, change_height=change_height
+        )
+
     def update_kit(self, height):
         self.kit.delete_height(height)
         return super().update_kit(height=height)
@@ -1201,6 +1218,72 @@ class OperationNode(Node):
                 childe_bin.height, childe_bin.material.extension
             )
         return super().update_size(start=start, max_len=max_len)
+
+    def upward_size_update(self, min_size=None, max_size=None, change_height=False):
+        parent = self.parent_bnode
+        if self.get_troot().parent is None:
+            change_height = True
+        if change_height:
+            print(f'{self._id}: Разрешено изменять толщину (этап подгонки под ограничения)')
+        else:
+            print(f'{self._id}: Запрещено изменять толщину (этап обновления размеров)')
+        if self.operation == Operations.cutting:
+            left, right = self.children
+            left_size = left.bin.size
+            right_size = right.bin.size
+            if self.direction == Direction.H:
+                parent.bin.length = left_size[LENGTH] + right_size[LENGTH]
+            else:
+                parent.bin.width = left_size[WIDTH] + right_size[WIDTH]
+        elif self.operation == Operations.h_rolling:
+            size = self.children.bin.size
+            new_width = deformation(
+                size[WIDTH], size[HEIGHT],
+                parent.bin.height, parent.bin.material.extension
+            )
+            if not change_height:
+                parent.bin.width = new_width
+                parent.bin.length = size[LENGTH]
+            else:
+                if new_width < min_size[WIDTH]:
+                    new_width = min_size[WIDTH]
+                    new_height = size[WIDTH] * size[HEIGHT] / new_width
+                else:
+                    new_height = parent.bin.height
+                parent.bin.width = new_width
+                if size[LENGTH] < min_size[LENGTH]:
+                    new_length = min_size[LENGTH]
+                    new_height = size[LENGTH] * new_height / new_length
+                else:
+                    new_length = size[LENGTH]
+                parent.bin.length = size[LENGTH]
+                parent.bin.height = new_height
+        elif self.operation == Operations.v_rolling:
+            size = self.children.bin.size
+            new_length = deformation(
+                size[LENGTH], size[HEIGHT],
+                parent.bin.height, parent.bin.material.extension
+            )
+            if not change_height:
+                parent.bin.length = new_length
+                parent.bin.width = size[WIDTH]
+            else:
+                if new_length < min_size[LENGTH]:
+                    new_length = min_size[LENGTH]
+                    new_height = size[LENGTH] * size[HEIGHT] / new_length
+                else:
+                    new_height = parent.bin.height
+                if size[WIDTH] < min_size[WIDTH]:
+                    new_width = min_size[WIDTH]
+                    new_height = size[WIDTH] * new_height / new_width
+                else:
+                    new_width = size[WIDTH]
+                parent.bin.width = new_width
+                parent.bin.length = new_length
+                parent.bin.height = new_height
+        super().upward_size_update(
+            min_size=min_size, max_size=max_size, change_height=change_height
+        )
 
     def transfer_size(self, to_right=False, max_len=None):
         if self.operation != Operations.cutting:

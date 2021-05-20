@@ -169,6 +169,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                             empty_rect.blp, empty_rect.length + allowance, region.left_hem
                         )
                         dummy_hem.rtype=RectangleType.EDGE
+                        usable_square += dummy_hem.square
                         empty_rect.blp = Point(region.left_hem, y)
                         tailings.append(dummy_hem)
                 elif y == 0:
@@ -179,6 +180,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                             empty_rect.blp, region.bottom_hem, empty_rect.width
                         )
                         dummy_hem.rtype=RectangleType.EDGE
+                        usable_square += dummy_hem.square
                         empty_rect.blp = Point(empty_rect.blp.x, empty_rect.blp.y + region.bottom_hem)
                         tailings.append(dummy_hem)
                 if allowance and x > 0:
@@ -187,6 +189,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                         empty_rect.blp, empty_rect.length, allowance
                     )
                     dummy_alw.rtype=RectangleType.ALLOWANCE
+                    usable_square += dummy_alw.square
                     empty_rect.blp = Point(empty_rect.blp.x + allowance, empty_rect.blp.y)
                     tailings.append(dummy_alw)
                 if allowance and y > 0:
@@ -195,6 +198,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                         empty_rect.blp, allowance, empty_rect.width
                     )
                     dummy_alw.rtype=RectangleType.ALLOWANCE
+                    usable_square += dummy_alw.square
                     empty_rect.blp = Point(empty_rect.blp.x, empty_rect.blp.y + allowance)
                     tailings.append(dummy_alw)
 
@@ -238,6 +242,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             )
             layout_options.append(status)
         # выбрать вариант размещения
+        # TODO: Может сравнивать как длины векторов???
         layout = max(
             enumerate(layout_options), key=lambda item: (item[1].efficiency,
                                               item[1].inters_square,

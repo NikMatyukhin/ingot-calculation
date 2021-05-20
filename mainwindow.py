@@ -1,8 +1,12 @@
 import sys
+import os
+import pickle
+from datetime import datetime
 from typing import Iterable, Union, NoReturn
 from itertools import chain
 from operator import itemgetter, attrgetter
 from collections import Counter
+from pathlib import Path
 
 from PySide6.QtCore import (
     QMessageAuthenticationCode, Qt, QSettings, QModelIndex
@@ -406,6 +410,7 @@ class MainWindow (QMainWindow):
         :param material: Материал
         :type material: Material
         """
+        # self.current_order.save_tree()
         settings = {
             'max_size': (
                 (self.maximum_plate_height, self.clean_roll_plate_width),
@@ -665,6 +670,47 @@ class MainWindow (QMainWindow):
             'rolling/max_rough_width', self.rough_roll_plate_width)
         self.settings.setValue(
             'rolling/max_clean_width', self.clean_roll_plate_width)
+
+    def save_tree(self):
+        """Сохранение корневого узла дерева"""
+        file_name = self.get_file_name()
+        path = 'schemes'
+        abs_path = get_abs_path(file_name, path)
+        with abs_path.open(mode='wb') as f:
+            pickle.dump(self.tree, f)
+            print('Файл сохранен')
+
+        # для проверки наличия файла
+        # if not abs_path.exists():
+        #     pass
+        # else:
+        #     print('Файл существует')
+
+    def load_tree(self):
+        """Загрузка корневого узла дерева из файла"""
+        file_name = self.get_file_name()
+        path = 'schemes'
+        abs_path = get_abs_path(file_name, path)
+        with abs_path.open(mode='rb') as f:
+            self.tree = pickle.load(f)
+            print(f'Файл считан: {self.tree}')
+
+    def get_file_name(self) -> str:
+        """Создание имени файла для сохранения дерева раскроя"""
+        extension = 'oci'
+        return f'{self.id}_{self.name}_{self.date.date().strftime("%d_%m_%Y")}.{extension}'
+
+def get_abs_path(file_name, path=None) -> Path:
+    # file_name = self.get_file_name()
+    # path = 'schemes'
+    # Path.cwd() ?
+    # dir_path = Path(os.path.dirname(os.path.realpath(__file__)))
+    dir_path = Path(__file__).parent.absolute()
+    if path:
+        abs_path = dir_path / path / file_name
+    else:
+        abs_path = dir_path / file_name
+    return abs_path
 
 
 if __name__ == '__main__':
