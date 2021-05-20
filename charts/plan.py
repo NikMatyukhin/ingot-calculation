@@ -193,19 +193,14 @@ class CuttingPlanPainter:
                    Qt.PenJoinStyle.RoundJoin)
         brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
         
-        label_text = ''
         if self.blanks:
-            label_text = f'Пластина с торцами и кромками {self.bin_lenght} на {self.bin_width}'
             self.scene.addRect(self.vl_point.x() - 5,
                                self.vl_point.y() - 5,
                                self.vr_point.x() - self.vl_point.x() + 10,
                                self.lb_point.y() - self.vl_point.y() + 10,
                                pen, brush)
         else:
-            label_text = f'Слиток {self.bin_lenght} на {self.bin_width} толщиной {self.bin_depth}'
-            self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght, pen, brush)
-        label = self.scene.addText(label_text)
-        label.setPos(0, self.bin_lenght + 30)
+            self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght, pen, brush)\
 
     def drawCoords(self):
         self.scene.addLine(self.vl_point.x(), -10,

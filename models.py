@@ -1,12 +1,14 @@
 import application_rc
+import typing
+from typing import NoReturn, List, Dict, Any
 
-from typing import NoReturn, List, Any
+from PySide6.QtCore import (
+    Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, Slot, QObject,
+    QAbstractListModel
+)
+from PySide6.QtGui import QIcon
 
-from PySide6.QtCore import (Qt, QAbstractItemModel, QModelIndex,
-                            QSortFilterProxyModel, Slot)
-from PySide6.QtGui import (QIcon)
-
-from service import (StandardDataService)
+from service import StandardDataService, OrderDataService
 
 
 class TreeItem:
@@ -95,7 +97,7 @@ class TreeItem:
         return True
 
 
-class TreeModel (QAbstractItemModel):
+class TreeModel(QAbstractItemModel):
 
     def __init__(self, headers, parent=None):
 
@@ -267,7 +269,76 @@ class TreeModel (QAbstractItemModel):
         pass
 
 
-class CatalogModel (TreeModel):
+class ListModel(QAbstractListModel):
+    
+    def __init__(self, parent: typing.Optional[QObject], data = None) -> None:
+        super(ListModel, self).__init__(parent)
+        self.__items_data = data if data else []
+
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(self.__items_data)
+    
+    def data(self, index: QModelIndex, role: int) -> typing.Any:
+        if not index.isValid():
+            return None
+        if role == Qt.DisplayRole:
+            return self.__items_data[index.row()]
+        return None
+    
+    def setData(self, index: QModelIndex, value: Dict, role: int) -> bool:
+        if index.isValid() and role == Qt.EditRole:
+            self.__items_data[index.row()].update(value)
+            self.dataChanged.emit(index, index, [role])
+            return True
+        return False
+
+    def appendRow(self, data: Dict, index: QModelIndex = QModelIndex()) -> bool:
+        if not self.insertRows(0, 1, index):
+            return False
+        self.__items_data[-1] = data
+    
+    def deleteRow(self, row: int, index: QModelIndex = QModelIndex()) -> bool:
+        if 0 > row > len(self.__items_data):
+            return False
+        return self.removeRows(row, 1, index)
+
+    def insertRows(self, position: int, rows: int, parent: QModelIndex) -> bool:
+        self.beginInsertRows(parent, position, position + rows - 1)
+        self.__items_data.append({})
+        self.endInsertRows()
+        return True
+
+    def removeRows(self, position: int, rows: int, parent: QModelIndex) -> bool:
+        self.beginRemoveRows(parent, position, position + rows - 1)
+        for _ in range(rows):
+            try:
+                self.__items_data.pop(position)
+            except IndexError:
+                return False
+        self.endRemoveRows()
+        return True
+
+    def setupModelData(self):
+        for order in OrderDataService.get_table_2():
+            ingots = OrderDataService.ingots({'order_id': order[0]})
+            complects = OrderDataService.complects({'order_id': order[0]})
+            data_row = {
+                'order_id': order[0],
+                'status_name': order[1],
+                'status_id': order[2],
+                'order_name': order[3],
+                'current_depth': order[4],
+                'efficiency': order[5],
+                'is_on_storage': order[6],
+                'complects': complects,
+                'ingots': ingots,
+                'detail_number': sum([line[2] for pack in complects.values() for line in pack]),
+                'article_number': len(complects),
+            }
+            self.appendRow(data_row)
+
+
+class CatalogModel(TreeModel):
 
     def setData(self, index: QModelIndex, value: object, role: int) -> bool:
 
@@ -290,7 +361,7 @@ class CatalogModel (TreeModel):
             key, type, designation = line
             self.appendRow([key, type, designation, None, None], QModelIndex())
 
-            sub = StandardDataService.get_by_field('articles', register_id=key)
+            sub = StandardDataService.get_by_field('articles', product_id=key)
             parent = self.index(0, 0, QModelIndex())
 
             for sub_line in sub:
@@ -299,7 +370,7 @@ class CatalogModel (TreeModel):
                 self.appendRow([None, type, nomen, rent, id], parent)
 
 
-class ComplectsModel (TreeModel):
+class ComplectsModel(TreeModel):
 
     def data(self, index: QModelIndex, role: int) -> Any:
 
@@ -331,7 +402,7 @@ class ComplectsModel (TreeModel):
                 QModelIndex()
             )
 
-            sub = StandardDataService.get_by_field('details', register_id=key)
+            sub = StandardDataService.get_by_field('details', product_id=key)
             if not sub:
                 self.removeRows(0, 1, QModelIndex())
 
@@ -345,11 +416,11 @@ class ComplectsModel (TreeModel):
                 )
 
 
-class ProductInformationFilterProxyModel (QSortFilterProxyModel):
+class ProductInformationFilterProxyModel(QSortFilterProxyModel):
 
     def __init__(self, parent=None):
         super(ProductInformationFilterProxyModel, self).__init__(parent)
-        self.register_filter = ''
+        self.product_id_filter = ''
         self.designtaion_filter = ''
         self.nomenclature_filter = ''
         self.rent_filter = ''
@@ -371,7 +442,7 @@ class ProductInformationFilterProxyModel (QSortFilterProxyModel):
             return self.nomenclature_filter in nomenclature and \
                 self.rent_filter in rent
         else:
-            register = str(self.sourceModel().data(
+            product_id = str(self.sourceModel().data(
                 self.sourceModel().index(sourceRow, 0, QModelIndex()),
                 Qt.DisplayRole)
             )
@@ -384,12 +455,12 @@ class ProductInformationFilterProxyModel (QSortFilterProxyModel):
                 Qt.DisplayRole
             )
             return self.type_filter in product_type and \
-                self.register_filter in register and \
+                self.product_id_filter in product_id and \
                 self.designtaion_filter in designation
 
     @Slot(str)
     def setRegister(self, filter: str) -> NoReturn:
-        self.register_filter = filter
+        self.product_id_filter = filter
         self.invalidateFilter()
 
     @Slot(str)
@@ -418,7 +489,7 @@ class ProductInformationFilterProxyModel (QSortFilterProxyModel):
         self.invalidateFilter()
 
 
-class ArticleInformationFilterProxyModel (QSortFilterProxyModel):
+class ArticleInformationFilterProxyModel(QSortFilterProxyModel):
 
     def __init__(self, parent=None):
         super(ArticleInformationFilterProxyModel, self).__init__(parent)
@@ -442,7 +513,7 @@ class ArticleInformationFilterProxyModel (QSortFilterProxyModel):
         self.invalidateFilter()
 
 
-class NewOrderFilterProxyModel (QSortFilterProxyModel):
+class NewOrderFilterProxyModel(QSortFilterProxyModel):
 
     def filterAcceptsRow(self, sourceRow: int,
                          sourceParent: QModelIndex) -> bool:

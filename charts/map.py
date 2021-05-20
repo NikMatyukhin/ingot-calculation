@@ -324,7 +324,7 @@ class CuttingMapPainter:
         if residue:
             try:
                 self.source_point = self.cutting_nodes[-1].bottom
-                self.y = 80
+                self.y = 100
                 self.x = self.cutting_nodes[-1].x_pos - 30
             except IndexError:
                 pass

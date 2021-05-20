@@ -1,24 +1,24 @@
 import application_rc
 
-from typing import NoReturn, List, Any
+from typing import List, Any
 from operator import itemgetter
 
-from PySide6.QtCore import Qt, Signal, QPointF, QModelIndex
-from PySide6.QtGui import QIntValidator
-from PySide6.QtWidgets import (QApplication, QDialog, QAbstractItemView,
-                               QTableWidgetItem, QCompleter, QMessageBox,
-                               QMenu, QComboBox)
+from PySide6.QtCore import Qt, QPointF, QModelIndex
+from PySide6.QtWidgets import (
+    QApplication, QDialog, QTableWidgetItem, QMessageBox, QMenu, QTableWidget
+)
 
-from gui import (ui_catalog, ui_add_product_dialog, ui_add_article_dialog,
-                 ui_add_detail_dialog)
-from service import (ProductDataService, ArticleDataService,
-                     StandardDataService, FusionDataService, DetailDataService)
+from gui import ui_catalog
+from service import (
+    ProductDataService, ArticleDataService, StandardDataService, 
+    DetailDataService
+)
 from models import CatalogModel, ProductInformationFilterProxyModel
 from dialogs import ProductDialog, ArticleDialog, DetailDialog
-from delegates import ListValuesDelegate
+from widgets import ListValuesDelegate
 
 
-class Catalog (QDialog):
+class Catalog(QDialog):
 
     def __init__(self, parent=None):
         super(Catalog, self).__init__(parent)
@@ -64,6 +64,7 @@ class Catalog (QDialog):
         self.ui.newProduct.clicked.connect(self.openProductDialog)
         self.ui.newArticle.clicked.connect(self.openArticleDialog)
         self.ui.newDetail.clicked.connect(self.openDetailDialog)
+
         # TODO: дописать логику кнопки с новой картинкой для детали
         self.customContextMenuRequested.connect(self.showContextMenu)
 
@@ -81,9 +82,9 @@ class Catalog (QDialog):
         view.setItemDelegateForColumn(7, self.direction_delegate)
 
         if not parent.isValid():
-            register_index = self.model.index(index.row(), 0, parent)
-            id = self.model.data(register_index, Qt.DisplayRole)
-            details_list = DetailDataService.details_list({'register_id': id})
+            product_id_index = self.model.index(index.row(), 0, parent)
+            id = self.model.data(product_id_index, Qt.DisplayRole)
+            details_list = DetailDataService.details_list({'product_id': id})
 
             for detail in details_list:
                 view.insertRow(view.rowCount())
@@ -155,15 +156,15 @@ class Catalog (QDialog):
         if not index.isValid():
             return False
 
-        register_index = self.model.index(index.row(), 0, QModelIndex())
+        product_id_index = self.model.index(index.row(), 0, QModelIndex())
         type_index = self.model.index(index.row(), 1, QModelIndex())
         designation_index = self.model.index(index.row(), 2, QModelIndex())
 
-        register = self.model.data(register_index, Qt.DisplayRole)
+        product_id = self.model.data(product_id_index, Qt.DisplayRole)
         type = self.model.data(type_index, Qt.DisplayRole)
         designation = self.model.data(designation_index, Qt.DisplayRole)
 
-        window.setRegister(register)
+        window.setRegister(product_id)
         window.setDesignation(designation)
         window.setType(type)
 
@@ -177,15 +178,15 @@ class Catalog (QDialog):
         if not index.isValid():
             return False
 
-        register_index = self.model.index(index.row(), 0, QModelIndex())
+        product_id_index = self.model.index(index.row(), 0, QModelIndex())
         type_index = self.model.index(index.row(), 1, QModelIndex())
         designation_index = self.model.index(index.row(), 2, QModelIndex())
 
-        register = self.model.data(register_index, Qt.DisplayRole)
+        product_id = self.model.data(product_id_index, Qt.DisplayRole)
         type = self.model.data(type_index, Qt.DisplayRole)
         designation = self.model.data(designation_index, Qt.DisplayRole)
 
-        window.setRegister(register)
+        window.setRegister(product_id)
         window.setDesignation(designation)
         window.setFusionsList(self.fusions_list)
         window.setDirectionsList(self.directions_list)
@@ -206,15 +207,15 @@ class Catalog (QDialog):
                       roles: List[int]):
 
         parent = self.model.parent(index)
-        register_index = self.model.index(index.row(), 0, parent)
+        product_id_index = self.model.index(index.row(), 0, parent)
         designation_index = self.model.index(index.row(), 2, parent)
 
-        register = self.model.data(register_index, Qt.DisplayRole)
+        product_id = self.model.data(product_id_index, Qt.DisplayRole)
         designation = self.model.data(designation_index, Qt.DisplayRole)
 
         success = StandardDataService.update_record(
             'products',
-            {'register_number': register},
+            {'product_id': product_id},
             designation=designation
         )
 
@@ -222,7 +223,7 @@ class Catalog (QDialog):
             QMessageBox.critical(
                 self,
                 'Ошибка обновления',
-                f'Продукция {register}\nне была обновлена в базе '
+                f'Продукция {product_id}\nне была обновлена в базе '
                 'из-за программной ошибки!',
                 QMessageBox.Ok
             )
@@ -322,7 +323,7 @@ class Catalog (QDialog):
         key, type, nomenclature, rent = data
         id = ArticleDataService.get_by_fields(
             'articles',
-            register_id=key,
+            product_id=key,
             nomenclature=nomenclature,
             rent=rent
         )
@@ -347,7 +348,7 @@ class Catalog (QDialog):
 
         success = StandardDataService.delete_by_id(
             'products',
-            {'register_number': id}
+            {'product_id': id}
         )
 
         if success:

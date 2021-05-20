@@ -7,7 +7,7 @@ from mainwindow import MainWindow
 
 class UIFunctions (MainWindow):
 
-    def set_application_styles(self):
+    def setApplicationStyles(self):
         self.ui.searchResult_1.verticalScrollBar().setStyleSheet('''
             QScrollBar:vertical {
                 border: none;
@@ -178,7 +178,7 @@ class UIFunctions (MainWindow):
                 padding-left: 8px;
             }''')
 
-    def set_topbar_shadow(self):
+    def setTopbarShadow(self):
         self.shadow_effect = QGraphicsDropShadowEffect()
         self.shadow_effect.setColor(QColor(0, 0, 0))
         self.shadow_effect.setYOffset(-5)

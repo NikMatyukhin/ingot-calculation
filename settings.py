@@ -4,12 +4,13 @@ from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QDialog, QApplication
 
 
-class Settings(QDialog):
-
+class SettingsDialog(QDialog):
+    """Класс окна с настройками"""
     def __init__(self, parent=None, settings: QSettings = QSettings()):
-        super(Settings, self).__init__(parent)
+        super(SettingsDialog, self).__init__(parent)
         self.ui = ui_settings.Ui_Dialog()
         self.ui.setupUi(self)
+
         self.settings = settings
         self.saved = False
 
@@ -21,11 +22,17 @@ class Settings(QDialog):
         self.ui.rolling.clicked.connect(
             lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.rollingPage)
         )
-
-        self.ui.save.clicked.connect(self.save_settings)
+        self.ui.save.clicked.connect(self.save)
         self.ui.cancel.clicked.connect(self.reject)
 
     def init_settings(self):
+        """Инициализация окна настроек
+
+        Всем виджетам SpinBox и DoubleSpinBox устанавливаются значения
+        по умолчанию в соответствии с сохранёнными настройками.
+        Значения, возвращаемые по умолчанию из defauldValue, являются
+        стандартными для всего приложения и согласованы с владельцем продукта.
+        """
         self.ui.spinBox_9.setValue(self.settings.value(
             'cutting/cut_allowance', defaultValue=2, type=int))
         self.ui.doubleSpinBox.setValue(self.settings.value(
@@ -54,7 +61,14 @@ class Settings(QDialog):
         self.ui.spinBox_3.setValue(self.settings.value(
             'rolling/max_clean_width', defaultValue=400, type=int))
 
-    def save_settings(self):
+    def save(self):
+        """Сохранение настроек
+
+        Если пользователь нажал кнопку `Сохранить`, то соответствующие значения
+        перезаписываются в файл.
+        Для значений, получаемых из DoubleSpinBox, проводится приведение к
+        относительным единицам вместо процентов.
+        """
         self.settings.setValue('cutting/end_face',
                                self.ui.doubleSpinBox.value() / 100)
         self.settings.setValue('cutting/cut_allowance',
@@ -90,7 +104,7 @@ class Settings(QDialog):
 if __name__ == '__main__':
     application = QApplication()
 
-    window = Settings()
+    window = SettingsDialog()
     window.show()
 
     application.exec_()

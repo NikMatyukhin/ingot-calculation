@@ -1,13 +1,31 @@
 import sqlite3
 from collections import namedtuple
 from abc import ABC, abstractmethod
+from sqlite3.dbapi2 import Cursor
 from typing import List, Dict, Union, Sequence, NewType, Any
 
 
+"""
+Пользовательский тип TableField предназначается для описания словаря
+с названием и значением конкретного атрибута таблицы базы данных, например:
+- {'id': 1}
+- {'name': 'Питатель'}
+- {'status_id': 3}
+"""
 TableField = NewType('TableField', Dict[str, Union[str, int, float]])
 
 
 def db_connector(func):
+    """Декоратор для работы с базой данных
+
+    Устанавливается подключение к базе данных, включается ограничение на
+    внешние ключи для поддержания целостности базы, а затем вызывается метод.
+    В зависимости от успешности вызова изменения в базе будут зафиксированы или
+    откатаны назад, после чего соединение закроется.
+
+    :param func: Метод-обёртка запроса в базу данных
+    :type func: function
+    """
     def with_connection(*args, **kwargs):
         database_name = 'data/application_database.db'
         connection = sqlite3.connect(database_name)
@@ -26,6 +44,13 @@ def db_connector(func):
 
 
 def parse_field(record_field: TableField):
+    """Парсер атрибута базы данных
+
+    :param record_field: Атрибут таблицы базы данных
+    :type record_field: TableField
+    :return: Пары в виде ключа и значения атрибута
+    :rtype: list
+    """
     if len(record_field) != 1:
         return None, None
     return list(record_field.items())[0]
@@ -160,7 +185,7 @@ class StandardDataService (AbstractDataService):
                   f'WHERE {" AND ".join([f"{i}=:{i}" for i in srch_fields])}')
 
         cursor = connection.cursor()
-        cursor.execute(sql, upd_fields)
+        cursor.execute(sql, srch_fields)
         return True
 
 
@@ -244,18 +269,40 @@ class OrderDataService (StandardDataService):
 
     @staticmethod
     @db_connector
+    def max_id(connection) -> int:
+
+        cursor = connection.cursor()
+        cursor.execute('SELECT MAX(order_id) FROM orders')
+        return cursor.fetchone()[0]
+
+    @staticmethod
+    @db_connector
     def get_table(connection, table: str) -> List:
 
         sql = str('SELECT orders.order_id, orders.name, '
                   'COUNT(DISTINCT complects.article_id) AS structure, '
-                  'statuses.name, orders.current_depth, orders.efficiency '
+                  'orders_statuses.name, orders.current_depth, orders.efficiency '
                   'FROM orders '
                   'LEFT JOIN complects '
                   'ON orders.order_id = complects.order_id '
-                  'LEFT JOIN statuses '
-                  'ON statuses.status_id = orders.status_id '
+                  'LEFT JOIN orders_statuses '
+                  'ON orders_statuses.status_id = orders.status_id '
                   'GROUP BY complects.order_id '
-                  'ORDER BY statuses.sort_order')
+                  'ORDER BY orders_statuses.sort_order')
+
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return list(map(list, cursor.fetchall()))
+
+    @staticmethod
+    @db_connector
+    def get_table_2(connection) -> List:
+
+        sql = str('SELECT order_id, orders_statuses.name, orders_statuses.status_id, '
+                  'orders.name, current_depth, efficiency, is_on_storage '
+                  'FROM orders '
+                  'LEFT JOIN orders_statuses '
+                  'ON orders_statuses.status_id = orders.status_id')
 
         cursor = connection.cursor()
         cursor.execute(sql)
@@ -286,8 +333,7 @@ class OrderDataService (StandardDataService):
         sql = str('SELECT complects.article_id, articles.nomenclature, '
                   'complects.detail_id, details.name, complects.amount, '
                   'complects.priority, details.height, details.width, '
-                  'details.depth, complects.is_spoiled, complects.is_carved, '
-                  'complects.is_not_packed, complects.is_partially_packed '
+                  'details.depth, complects.status_id '
                   'FROM complects '
                   'LEFT JOIN details '
                   'ON details.detail_id = complects.detail_id '
@@ -331,7 +377,7 @@ class OrderDataService (StandardDataService):
                   'details.width, details.depth '
                   'FROM complects '
                   'INNER JOIN details '
-                  'ON details.detail_id=complects.detail_id AND complects.is_not_packed=0 '
+                  'ON details.detail_id=complects.detail_id AND complects.status_id<>4 '
                   f'{f"AND details.depth={d}" if d > 0 else ""} '
                   'LEFT JOIN fusions ON fusions.fusion_id=details.fusion_id '
                   f'WHERE complects.{field}={value}')
@@ -360,6 +406,22 @@ class OrderDataService (StandardDataService):
         cursor = connection.cursor()
         cursor.execute(sql)
         return cursor.fetchone()
+
+    @staticmethod
+    @db_connector
+    def update_complect(connection, order_id: TableField, article_id: TableField,
+                        detail_id: TableField, **upd_fields: Sequence[TableField]) -> bool:
+
+        field1, value1 = parse_field(order_id)
+        field2, value2 = parse_field(article_id)
+        field3, value3 = parse_field(detail_id)
+        sql = str(f'UPDATE complects '
+                  f'SET {", ".join([f"{i}=:{i}" for i in upd_fields])} '
+                  f'WHERE {field1}={value1} AND {field2}={value2} AND {field3}={value3}')
+
+        cursor = connection.cursor()
+        cursor.execute(sql, upd_fields)
+        return True
 
 
 class IngotsDataService (StandardDataService):
