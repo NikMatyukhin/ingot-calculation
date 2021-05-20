@@ -340,7 +340,6 @@ class MainWindow (QMainWindow):
             )
         try:
             self.createCut(main_ingot[1:], details, material)
-            self.predict_size(material, details)
         except Exception as e: 
             QMessageBox.critical(
                 self,
