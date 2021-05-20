@@ -31,6 +31,7 @@ from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency,
     CuttingChartNode
 )
+from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 from sequential_mh.bpp_dsc.support import dfs 
 from sequential_mh.bpp_dsc.stm import stmh_idrd
 
@@ -359,6 +360,55 @@ class MainWindow (QMainWindow):
         self.map_painter.setTree(self.tree)
         self.map_painter.setEfficiency(data_row['efficiency'])
         self.map_painter.drawTree()
+
+    def predict_size(self, material, kit):
+        """Метод расчета параметров слитка"""
+        # TODO: считать из настроек максимальные параметры слитка
+        #       без припусков на фрезеровку и погрешность!
+        max_size = (180, 180, 30)
+        # max_length = 180
+        # max_width = 180
+        # max_height = 30
+        bin_ = Bin(*max_size, material=material)
+        root = BinNode(bin_, kit=kit)
+        tree = Tree(root)
+
+        settings = {
+            'max_size': (
+                (self.maximum_plate_height, self.clean_roll_plate_width),
+                (self.maximum_plate_height, self.rough_roll_plate_width)
+            ),
+            'cutting_length': self.guillotine_width,
+            'cutting_thickness': round(self.cutting_thickness, 4),
+            'hem_until_3': self.rough_roll_edge_loss,
+            'hem_after_3': self.clean_roll_edge_loss,
+            'allowance': self.cut_allowance,
+            'end': round(self.end_face_loss, 4),
+        }
+
+        # TODO: считать из настроек минимальные параметры слитка
+        #       без припусков на фрезеровку и погрешность!
+        min_size = (70, 70, 20)
+        # min_length = 180
+        # min_width = 180
+        # min_height = 30
+
+        # Дерево с рассчитанным слитком
+        tree = optimal_ingot_size(tree, min_size, max_size, settings)
+        efficiency = solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True)
+        print(f'Эффективность после расчета: {efficiency}')
+
+        # TODO: Получить из настроек погрешность и припуски на фрезеровку
+        size_error = 2
+        allowance = 1.5
+
+        # Получение слитка с учетом погрешности и припусков
+        length = tree.root.bin.length + size_error + 2 * allowance
+        width = tree.root.bin.width + size_error + 2 * allowance
+        height = tree.root.bin.height + size_error + 2 * allowance
+
+        print(f'Финальные размеры: {length, width, height}')
+        print(f'Масса слитка: {length * width * height * material.density}')
 
     def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
         """Формирование набора заготовок
