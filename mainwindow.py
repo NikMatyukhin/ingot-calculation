@@ -340,6 +340,7 @@ class MainWindow (QMainWindow):
             )
         try:
             self.createCut(main_ingot[1:], details, material)
+            self.predict_size(material, details)
         except Exception as e: 
             QMessageBox.critical(
                 self,
@@ -408,7 +409,9 @@ class MainWindow (QMainWindow):
         height = tree.root.bin.height + size_error + 2 * allowance
 
         print(f'Финальные размеры: {length, width, height}')
-        print(f'Масса слитка: {length * width * height * material.density}')
+        print(f'Масса слитка (в гр): {length * width * height * material.density / 1000}')
+        print(f'Масса слитка (в кг): {length * width * height * material.density / 1_000_000}')
+        print(f'{material.density = }')
 
     def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
         """Формирование набора заготовок
