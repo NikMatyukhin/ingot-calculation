@@ -838,6 +838,26 @@ def get_abs_path(file_name, path=None) -> Path:
     return abs_path
 
 
+def number_of_steps(num_of_heights, doubling=True):
+    """Количество шагов алгоритма
+
+    :param num_of_heights: Количество толщин
+    :type num_of_heights: int
+    :param doubling: Использование удвоения, когда используется толщина
+                     реза, defaults to True
+    :type doubling: bool, optional
+    :return: Количество операций в алгоритме
+    :rtype: int
+    """
+    number_of_trees = 4 ** num_of_heights
+    if doubling:
+        number_of_trees *= 2
+        n = (number_of_trees - 2) / 3 + 1
+    else:
+        n = (number_of_trees - 1) / 3 + 1
+    return number_of_trees + n
+
+
 if __name__ == '__main__':
     application = QApplication(sys.argv)
 
