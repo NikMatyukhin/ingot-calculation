@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Iterable, Union, NoReturn
 from itertools import chain
 from operator import itemgetter, attrgetter
-from collections import Counter
+from collections import Counter, deque
 from pathlib import Path
 
 from PySide6.QtCore import (
@@ -28,12 +28,13 @@ from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Tree, solution_efficiency,
-    CuttingChartNode
+    BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node
 )
 from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 from sequential_mh.bpp_dsc.support import dfs 
-from sequential_mh.bpp_dsc.stm import stmh_idrd
+from sequential_mh.bpp_dsc.stm import (
+    _pack, _create_insert_template, predicate, is_empty_tree, is_empty_node
+)
 
 from service import (
     OrderDataService, FusionDataService, IngotsDataService, StandardDataService
@@ -478,7 +479,7 @@ class MainWindow (QMainWindow):
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
-        tree = stmh_idrd(tree, restrictions=settings)
+        tree = self.stmh_idrd(tree, restrictions=settings)
         self.tree = tree.root
         
         # считаем эффективность со всего слитка (в долях!)
@@ -486,6 +487,78 @@ class MainWindow (QMainWindow):
         current_index = self.ui.searchResult_1.currentIndex()
         self.order_model.setData(current_index, {'efficiency': round(100 * solution_efficiency(
             self.tree, list(dfs(tree.root)), is_total=True), 2)}, Qt.EditRole)
+
+    # Методы из пакета sequential_mh.bpp_dsc
+    # перенесены для возможности учета прогрогресса
+    def stmh_idrd(self, tree, with_filter=True, restrictions=None):
+        is_main = True
+        trees = self._stmh_idrd(
+            tree, restrictions=restrictions, local=not is_main,
+            with_filter=with_filter
+        )
+
+        if restrictions:
+            max_size = restrictions.get('max_size')
+        else:
+            max_size = None
+        print(f'Количество деревьев: {len(trees)}')
+        if with_filter:
+            trees = [
+                item for item in trees if not is_defective_tree(item, max_size)
+            ]
+
+        print(f'Годных деревьев: {len(trees)}')
+        best = max(
+            trees, key=lambda item: solution_efficiency(
+                item.root, list(dfs(item.root)), nd=True, is_p=True
+            )
+        )
+        total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
+        print('Построение дерева завершено')
+        print(f'Общая эффективность: {total_efficiency:.4f}')
+        print(f'Взвешенная эффективность: {solution_efficiency(best.root, list(dfs(best.root)), nd=True):.4f}')
+        print(f'Эффективность с приоритетами: {solution_efficiency(best.root, list(dfs(best.root)), is_p=True):.4f}')
+        print('-' * 50)
+        return best
+
+    def _stmh_idrd(self, tree, local=False, with_filter=True, restrictions=None):
+        level = deque([tree])
+        result = []
+
+        if restrictions:
+            max_size = restrictions.get('max_size')
+        else:
+            max_size = None
+
+        while level:
+            new_level = deque([])
+            for _, tree_ in enumerate(level):
+                if with_filter and is_defective_tree(tree_, max_size=max_size):
+                    continue
+                if is_empty_tree(tree_):
+                    result.append(tree_)
+                else:
+                    new_level.append(tree_)
+            level = new_level
+            if not level:
+                break
+
+            tree = level.popleft()
+            nodes = [
+                node for node in tree.root.leaves() if not is_empty_node(node)
+            ]
+            nodes = deque(sorted(nodes, key=predicate))
+            node = nodes[0]
+            if is_cc_node(node):
+                _pack(node, level, restrictions)
+                if is_empty_tree(tree):
+                    result.append(tree)
+                else:
+                    level.append(tree)
+            else:
+                _create_insert_template(node, level, tree, local, restrictions)
+
+        return result
 
     def steps(self):
         leaves = self.tree.cc_leaves
