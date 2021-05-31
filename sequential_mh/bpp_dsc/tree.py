@@ -23,7 +23,8 @@ from .exception import (
     ChildrenNodeError, OperationTypeError
 )
 from .rectangle import BinType, Bin, Direction, Kit, Number, Result, UnsizedBin
-from sequential_mh.tsh.bpp_ts import bpp_ts, Rectangle, RectangleType
+
+from ..tsh.bpp_ts import bpp_ts, Rectangle, RectangleType
 
 
 Vec3 = tuple[Number, Number, Number]
