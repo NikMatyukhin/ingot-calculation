@@ -54,4 +54,8 @@ def timeit(func):
         finally:
             end = time.time()
             print(f'Time {func.__name__}: {end - start} sec')
+            logging.info(
+                'Время выполнения функции %(name)s: '
+                '%(time).4f сек', {'name': func.__name__, 'time': end - start}
+            )
     return inner
