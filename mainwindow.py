@@ -1,6 +1,8 @@
 import sys
 import os
 import pickle
+import logging
+import time
 from datetime import datetime
 from typing import Iterable, Union, NoReturn
 from itertools import chain
@@ -42,6 +44,7 @@ from service import (
 from dialogs import OrderDialog, NewIngotDialog
 from catalog import Catalog
 from settings import SettingsDialog
+from log import setup_logging
 
 
 Number = Union[int, float]
@@ -889,9 +892,20 @@ def number_of_steps(num_of_heights, doubling=True):
 
 
 if __name__ == '__main__':
+    oci_logger = setup_logging()
+    logging.info('Приложение OCI запущено.')
+    start = time.time()
     application = QApplication(sys.argv)
 
     window = MainWindow()
     window.show()
 
-    sys.exit(application.exec_())
+    exit_code = application.exec_()
+
+    total_time = time.time() - start
+    print(f'{start = }, {total_time = }')
+    logging.info(
+        f'Выход из приложения OCI. Время работы: {total_time / 60:.2f} мин.'
+    )
+
+    sys.exit(exit_code)
