@@ -41,7 +41,7 @@ from service import (
 from dialogs import OrderDialog, NewIngotDialog
 from catalog import Catalog
 from settings import SettingsDialog
-from log import setup_logging
+from log import setup_logging, timeit
 
 
 Number = Union[int, float]
@@ -341,9 +341,28 @@ class MainWindow (QMainWindow):
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowTitle('Раскрой')
         progress.forceShow()
+        order_name = data_row['order_name']
         try:
             progress.setLabelText('Процесс раскроя...')
-            self.createCut(main_ingot[1:], details, material, progress=progress)
+            logging.info(
+                'Попытка создания раскроя для заказа %(name)s.',
+                {'name': order_name}
+            )
+            size = main_ingot[1:]
+            logging.info(
+                'Заказ %(name)s: %(blanks)d заготовок, %(heights)d толщин, '
+                'слиток %(length)dх%(width)dх%(height)d',
+                {
+                    'name': order_name, 'blanks': details.qty(),
+                    'heights': len(details.keys()),
+                    'length': size[0], 'width': size[1], 'height': size[2]
+                }
+            )
+            self.createCut(size, details, material, progress=progress)
+            logging.info(
+                'Раскрой для заказа %(name)s успешно создан.',
+                {'name': order_name}
+            )
             progress.setLabelText('Завершение раскроя...')
         except Exception as e: 
             QMessageBox.critical(
@@ -495,6 +514,7 @@ class MainWindow (QMainWindow):
 
     # Методы из пакета sequential_mh.bpp_dsc
     # перенесены для возможности учета прогрогресса
+    @timeit
     def stmh_idrd(self, tree, with_filter=True, restrictions=None, progress=None):
         is_main = True
         trees = self._stmh_idrd(
@@ -901,7 +921,8 @@ if __name__ == '__main__':
     total_time = time.time() - start
     print(f'{start = }, {total_time = }')
     logging.info(
-        f'Выход из приложения OCI. Время работы: {total_time / 60:.2f} мин.'
+        'Выход из приложения OCI. Время работы: %(time).2f мин.',
+        {'time': total_time / 60}
     )
 
     sys.exit(exit_code)
