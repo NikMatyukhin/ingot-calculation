@@ -339,8 +339,14 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+        progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowTitle('Раскрой')
+        progress.forceShow()
         try:
-            self.createCut(main_ingot[1:], details, material)
+            progress.setLabelText('Процесс раскроя...')
+            self.createCut(main_ingot[1:], details, material, progress=progress)
+            progress.setLabelText('Завершение раскроя...')
         except Exception as e: 
             QMessageBox.critical(
                 self,
@@ -349,6 +355,7 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+        progress.close()
 
         self.updateDetailStatuses(data_row)
 
@@ -453,7 +460,7 @@ class MainWindow (QMainWindow):
         kit.sort('width')
         return kit
 
-    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material):
+    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material, progress=None):
         """Метод запуска алоритма раскроя
 
         :param ingot_size: Размер слитка в формате (длина, ширина, толщина)
@@ -479,7 +486,7 @@ class MainWindow (QMainWindow):
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
-        tree = self.stmh_idrd(tree, restrictions=settings)
+        tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
         
         # считаем эффективность со всего слитка (в долях!)
@@ -490,11 +497,11 @@ class MainWindow (QMainWindow):
 
     # Методы из пакета sequential_mh.bpp_dsc
     # перенесены для возможности учета прогрогресса
-    def stmh_idrd(self, tree, with_filter=True, restrictions=None):
+    def stmh_idrd(self, tree, with_filter=True, restrictions=None, progress=None):
         is_main = True
         trees = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
-            with_filter=with_filter
+            with_filter=with_filter, progress=progress
         )
 
         if restrictions:
@@ -502,12 +509,14 @@ class MainWindow (QMainWindow):
         else:
             max_size = None
         print(f'Количество деревьев: {len(trees)}')
+        progress.setLabelText('Фильтрация решений...')
         if with_filter:
             trees = [
                 item for item in trees if not is_defective_tree(item, max_size)
             ]
 
         print(f'Годных деревьев: {len(trees)}')
+        progress.setLabelText('Выбор оптимального решения...')
         best = max(
             trees, key=lambda item: solution_efficiency(
                 item.root, list(dfs(item.root)), nd=True, is_p=True
@@ -521,9 +530,16 @@ class MainWindow (QMainWindow):
         print('-' * 50)
         return best
 
-    def _stmh_idrd(self, tree, local=False, with_filter=True, restrictions=None):
+    def _stmh_idrd(self, tree, local=False, with_filter=True, restrictions=None, progress=None):
         level = deque([tree])
         result = []
+        step = 0
+        doubling = False
+        if restrictions:
+            cut_thickness = restrictions.get('cutting_thickness')
+            doubling = cut_thickness >= max(tree.root.kit.keys())
+        steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
+        progress.setRange(0, steps)
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -531,9 +547,16 @@ class MainWindow (QMainWindow):
             max_size = None
 
         while level:
+            step += 1
             new_level = deque([])
             for _, tree_ in enumerate(level):
                 if with_filter and is_defective_tree(tree_, max_size=max_size):
+                    # Додумать на сколько уменьшать
+                    # min_height = min(map(lambda item: item.bin.height, tree_.root.cc_leaves))
+                    # steps -= number_of_steps(len([x for x in tree.root.kit.keys() if x < min_height]), doubling=False)
+                    steps -= 1
+                    progress.setRange(0, steps)
+                    progress.setValue(step - 1)
                     continue
                 if is_empty_tree(tree_):
                     result.append(tree_)
@@ -557,6 +580,13 @@ class MainWindow (QMainWindow):
                     level.append(tree)
             else:
                 _create_insert_template(node, level, tree, local, restrictions)
+            if progress:
+                # print(step, steps)
+                progress.setValue(step)
+        
+        # костыль для завершения прогресса
+        if step < steps and progress:
+            progress.setValue(steps)
 
         return result
 
@@ -849,13 +879,13 @@ def number_of_steps(num_of_heights, doubling=True):
     :return: Количество операций в алгоритме
     :rtype: int
     """
-    number_of_trees = 4 ** num_of_heights
+    number_of_trees = 4 * (4 ** num_of_heights - 1) / 3
     if doubling:
         number_of_trees *= 2
-        n = (number_of_trees - 2) / 3 + 1
+        n = (4 ** num_of_heights * 2 - 2) / 3 + 1
     else:
-        n = (number_of_trees - 1) / 3 + 1
-    return number_of_trees + n
+        n = (4 ** num_of_heights - 1) / 3 + 1
+    return int(number_of_trees + n)
 
 
 if __name__ == '__main__':
