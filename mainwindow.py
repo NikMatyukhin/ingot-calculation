@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Iterable, Union, NoReturn
 from itertools import chain
 from operator import itemgetter, attrgetter
-from collections import Counter
+from collections import Counter, deque
 from pathlib import Path
 
 from PySide6.QtCore import (
@@ -28,12 +28,13 @@ from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Tree, solution_efficiency,
-    CuttingChartNode
+    BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node
 )
 from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 from sequential_mh.bpp_dsc.support import dfs 
-from sequential_mh.bpp_dsc.stm import stmh_idrd
+from sequential_mh.bpp_dsc.stm import (
+    _pack, _create_insert_template, predicate, is_empty_tree, is_empty_node
+)
 
 from service import (
     OrderDataService, FusionDataService, IngotsDataService, StandardDataService
@@ -338,8 +339,14 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+        progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowTitle('Раскрой')
+        progress.forceShow()
         try:
-            self.createCut(main_ingot[1:], details, material)
+            progress.setLabelText('Процесс раскроя...')
+            self.createCut(main_ingot[1:], details, material, progress=progress)
+            progress.setLabelText('Завершение раскроя...')
         except Exception as e: 
             QMessageBox.critical(
                 self,
@@ -348,6 +355,7 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+        progress.close()
 
         self.updateDetailStatuses(data_row)
 
@@ -452,7 +460,7 @@ class MainWindow (QMainWindow):
         kit.sort('width')
         return kit
 
-    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material):
+    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material, progress=None):
         """Метод запуска алоритма раскроя
 
         :param ingot_size: Размер слитка в формате (длина, ширина, толщина)
@@ -478,7 +486,7 @@ class MainWindow (QMainWindow):
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
-        tree = stmh_idrd(tree, restrictions=settings)
+        tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
         
         # считаем эффективность со всего слитка (в долях!)
@@ -486,6 +494,101 @@ class MainWindow (QMainWindow):
         current_index = self.ui.searchResult_1.currentIndex()
         self.order_model.setData(current_index, {'efficiency': round(100 * solution_efficiency(
             self.tree, list(dfs(tree.root)), is_total=True), 2)}, Qt.EditRole)
+
+    # Методы из пакета sequential_mh.bpp_dsc
+    # перенесены для возможности учета прогрогресса
+    def stmh_idrd(self, tree, with_filter=True, restrictions=None, progress=None):
+        is_main = True
+        trees = self._stmh_idrd(
+            tree, restrictions=restrictions, local=not is_main,
+            with_filter=with_filter, progress=progress
+        )
+
+        if restrictions:
+            max_size = restrictions.get('max_size')
+        else:
+            max_size = None
+        print(f'Количество деревьев: {len(trees)}')
+        progress.setLabelText('Фильтрация решений...')
+        if with_filter:
+            trees = [
+                item for item in trees if not is_defective_tree(item, max_size)
+            ]
+
+        print(f'Годных деревьев: {len(trees)}')
+        progress.setLabelText('Выбор оптимального решения...')
+        best = max(
+            trees, key=lambda item: solution_efficiency(
+                item.root, list(dfs(item.root)), nd=True, is_p=True
+            )
+        )
+        total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
+        print('Построение дерева завершено')
+        print(f'Общая эффективность: {total_efficiency:.4f}')
+        print(f'Взвешенная эффективность: {solution_efficiency(best.root, list(dfs(best.root)), nd=True):.4f}')
+        print(f'Эффективность с приоритетами: {solution_efficiency(best.root, list(dfs(best.root)), is_p=True):.4f}')
+        print('-' * 50)
+        return best
+
+    def _stmh_idrd(self, tree, local=False, with_filter=True, restrictions=None, progress=None):
+        level = deque([tree])
+        result = []
+        step = 0
+        doubling = False
+        if restrictions:
+            cut_thickness = restrictions.get('cutting_thickness')
+            doubling = cut_thickness >= max(tree.root.kit.keys())
+        steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
+        progress.setRange(0, steps)
+
+        if restrictions:
+            max_size = restrictions.get('max_size')
+        else:
+            max_size = None
+
+        while level:
+            step += 1
+            new_level = deque([])
+            for _, tree_ in enumerate(level):
+                if with_filter and is_defective_tree(tree_, max_size=max_size):
+                    # Додумать на сколько уменьшать
+                    # min_height = min(map(lambda item: item.bin.height, tree_.root.cc_leaves))
+                    # steps -= number_of_steps(len([x for x in tree.root.kit.keys() if x < min_height]), doubling=False)
+                    steps -= 1
+                    progress.setRange(0, steps)
+                    progress.setValue(step - 1)
+                    continue
+                if is_empty_tree(tree_):
+                    result.append(tree_)
+                else:
+                    new_level.append(tree_)
+            level = new_level
+            if not level:
+                break
+
+            tree = level.popleft()
+            nodes = [
+                node for node in tree.root.leaves() if not is_empty_node(node)
+            ]
+            nodes = deque(sorted(nodes, key=predicate))
+            node = nodes[0]
+            if is_cc_node(node):
+                _pack(node, level, restrictions)
+                if is_empty_tree(tree):
+                    result.append(tree)
+                else:
+                    level.append(tree)
+            else:
+                _create_insert_template(node, level, tree, local, restrictions)
+            if progress:
+                # print(step, steps)
+                progress.setValue(step)
+        
+        # костыль для завершения прогресса
+        if step < steps and progress:
+            progress.setValue(steps)
+
+        return result
 
     def steps(self):
         leaves = self.tree.cc_leaves
@@ -763,6 +866,26 @@ def get_abs_path(file_name, path=None) -> Path:
     else:
         abs_path = dir_path / file_name
     return abs_path
+
+
+def number_of_steps(num_of_heights, doubling=True):
+    """Количество шагов алгоритма
+
+    :param num_of_heights: Количество толщин
+    :type num_of_heights: int
+    :param doubling: Использование удвоения, когда используется толщина
+                     реза, defaults to True
+    :type doubling: bool, optional
+    :return: Количество операций в алгоритме
+    :rtype: int
+    """
+    number_of_trees = 4 * (4 ** num_of_heights - 1) / 3
+    if doubling:
+        number_of_trees *= 2
+        n = (4 ** num_of_heights * 2 - 2) / 3 + 1
+    else:
+        n = (4 ** num_of_heights - 1) / 3 + 1
+    return int(number_of_trees + n)
 
 
 if __name__ == '__main__':
