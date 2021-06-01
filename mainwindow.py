@@ -1,19 +1,18 @@
 import sys
-import os
 import pickle
-from datetime import datetime
-from typing import Iterable, Union, NoReturn
+import logging
+import time
+from typing import Iterable, Union
 from itertools import chain
-from operator import itemgetter, attrgetter
+from operator import itemgetter
 from collections import Counter, deque
 from pathlib import Path
 
-from PySide6.QtCore import (
-    QMessageAuthenticationCode, Qt, QSettings, QModelIndex
-)
+from PySide6.QtCore import Qt, QSettings, QModelIndex
 from PySide6.QtWidgets import (
-    QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
-    QMessageBox, QDialog, QHBoxLayout, QVBoxLayout, QLayout, QGraphicsScene, QProgressDialog
+    QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
+    QTreeWidgetItem, QMessageBox, QDialog, QHBoxLayout, QVBoxLayout, QLayout,
+    QGraphicsScene, QProgressDialog
 )
 
 from gui import ui_mainwindow, ui_full_screen
@@ -31,7 +30,7 @@ from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node
 )
 from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
-from sequential_mh.bpp_dsc.support import dfs 
+from sequential_mh.bpp_dsc.support import dfs
 from sequential_mh.bpp_dsc.stm import (
     _pack, _create_insert_template, predicate, is_empty_tree, is_empty_node
 )
@@ -42,6 +41,7 @@ from service import (
 from dialogs import OrderDialog, NewIngotDialog
 from catalog import Catalog
 from settings import SettingsDialog
+from log import setup_logging, timeit
 
 
 Number = Union[int, float]
@@ -50,7 +50,6 @@ ListSizes = list[Sizes]
 
 
 class FullScreenWindow (QDialog):
-
     def __init__(self, parent=None):
         super(FullScreenWindow, self).__init__(parent)
         self.ui = ui_full_screen.Ui_Dialog()
@@ -60,7 +59,6 @@ class FullScreenWindow (QDialog):
 
 
 class MainWindow (QMainWindow):
-
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
@@ -110,11 +108,11 @@ class MainWindow (QMainWindow):
         self.map_painter = CuttingMapPainter(self.map_scene)
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
 
-        # TODO: Пока без фактического режима эта кнопка не нужна. 
+        # TODO: Пока без фактического режима эта кнопка не нужна.
         self.ui.closeOrder.hide()
         self.ui.searchNumber.hide()
         self.ui.searchType.hide()
-        
+
         # Соединяем сигналы окна со слотами класса
         self.ui.newOrder.clicked.connect(self.openNewOrder)
         self.ui.catalog.clicked.connect(self.openCatalog)
@@ -137,7 +135,7 @@ class MainWindow (QMainWindow):
             )
         )
 
-        # Кнопку "Исходная пластина" привызяваем отдельно от всех
+        # Кнопку "Исходная пластина" привязываем отдельно от всех
         self.ui.sourcePlate.clicked.connect(self.depthLineChanged)
 
         # Кнопки страницы заказа
@@ -156,7 +154,7 @@ class MainWindow (QMainWindow):
         """Подгрузка списка заказов
 
         Загружается список заказов из таблицы заказов и на его основе
-        формируется скомпанованный слой из виджетов Section с информацией.
+        формируется скомпонованный слой из виджетов Section с информацией.
         """
         self.order_model.setupModelData()
         self.ui.searchResult_1.setModel(self.order_model)
@@ -206,7 +204,7 @@ class MainWindow (QMainWindow):
             self.ui.label_6.hide()
         elif status == 4 or status == 5:
             self.ui.detailedPlan.hide()
-        
+
         storage = ' (на склад)' if data_row['is_on_storage'] else ''
         self.ui.label.setText('Заказ ' + data_row['order_name'] + storage)
 
@@ -324,7 +322,7 @@ class MainWindow (QMainWindow):
 
         # TODO: Вторым аргументом нужно вставить плотность сплава
         material = Material(main_ingot[0], 2.2, 1.)
-        
+
         # Выбор заготовок и удаление лишних значений
         try:
             details_info = map(
@@ -343,9 +341,28 @@ class MainWindow (QMainWindow):
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowTitle('Раскрой')
         progress.forceShow()
+        order_name = data_row['order_name']
         try:
             progress.setLabelText('Процесс раскроя...')
-            self.createCut(main_ingot[1:], details, material, progress=progress)
+            logging.info(
+                'Попытка создания раскроя для заказа %(name)s.',
+                {'name': order_name}
+            )
+            size = main_ingot[1:]
+            logging.info(
+                'Заказ %(name)s: %(blanks)d заготовок, %(heights)d толщин, '
+                'слиток %(length)dх%(width)dх%(height)d',
+                {
+                    'name': order_name, 'blanks': details.qty(),
+                    'heights': len(details.keys()),
+                    'length': size[0], 'width': size[1], 'height': size[2]
+                }
+            )
+            self.createCut(size, details, material, progress=progress)
+            logging.info(
+                'Раскрой для заказа %(name)s успешно создан.',
+                {'name': order_name}
+            )
             progress.setLabelText('Завершение раскроя...')
         except Exception as e: 
             QMessageBox.critical(
@@ -488,7 +505,7 @@ class MainWindow (QMainWindow):
         tree = Tree(root)
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
-        
+
         # считаем эффективность со всего слитка (в долях!)
         # для отображения нужно округлить!
         current_index = self.ui.searchResult_1.currentIndex()
@@ -497,6 +514,7 @@ class MainWindow (QMainWindow):
 
     # Методы из пакета sequential_mh.bpp_dsc
     # перенесены для возможности учета прогрогресса
+    @timeit
     def stmh_idrd(self, tree, with_filter=True, restrictions=None, progress=None):
         is_main = True
         trees = self._stmh_idrd(
@@ -583,7 +601,7 @@ class MainWindow (QMainWindow):
             if progress:
                 # print(step, steps)
                 progress.setValue(step)
-        
+
         # костыль для завершения прогресса
         if step < steps and progress:
             progress.setValue(steps)
@@ -855,6 +873,7 @@ class MainWindow (QMainWindow):
         extension = 'oci'
         return f'{self.id}_{self.name}_{self.date.date().strftime("%d_%m_%Y")}.{extension}'
 
+
 def get_abs_path(file_name, path=None) -> Path:
     # file_name = self.get_file_name()
     # path = 'schemes'
@@ -889,9 +908,21 @@ def number_of_steps(num_of_heights, doubling=True):
 
 
 if __name__ == '__main__':
+    oci_logger = setup_logging()
+    logging.info('Приложение OCI запущено.')
+    start = time.time()
     application = QApplication(sys.argv)
 
     window = MainWindow()
     window.show()
 
-    sys.exit(application.exec_())
+    exit_code = application.exec_()
+
+    total_time = time.time() - start
+    print(f'{start = }, {total_time = }')
+    logging.info(
+        'Выход из приложения OCI. Время работы: %(time).2f мин.',
+        {'time': total_time / 60}
+    )
+
+    sys.exit(exit_code)
