@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowBoVzRj.ui'
+## Form generated from reading UI file 'mainwindowuhBSvb.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -435,7 +435,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 681, 1264))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -300, 681, 1299))
         self.scrollAreaWidgetContents.setStyleSheet(u"* {\n"
 "	margin-right: 7px;\n"
 "}\n"
@@ -544,23 +544,20 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.label_3)
 
-        self.scrollArea_2 = QScrollArea(self.scrollAreaWidgetContents)
-        self.scrollArea_2.setObjectName(u"scrollArea_2")
-        self.scrollArea_2.setMinimumSize(QSize(0, 160))
-        self.scrollArea_2.setMaximumSize(QSize(16777215, 160))
-        self.scrollArea_2.setStyleSheet(u"QScrollArea {\n"
-"	padding: 0px;\n"
-"}")
-        self.scrollArea_2.setFrameShape(QFrame.StyledPanel)
-        self.scrollArea_2.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scrollArea_2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scrollArea_2.setWidgetResizable(True)
-        self.scrollAreaWidgetContents_4 = QWidget()
-        self.scrollAreaWidgetContents_4.setObjectName(u"scrollAreaWidgetContents_4")
-        self.scrollAreaWidgetContents_4.setGeometry(QRect(0, 0, 665, 144))
-        self.scrollArea_2.setWidget(self.scrollAreaWidgetContents_4)
+        self.ingotsView = QListView(self.scrollAreaWidgetContents)
+        self.ingotsView.setObjectName(u"ingotsView")
+        self.ingotsView.setMinimumSize(QSize(0, 195))
+        self.ingotsView.setMaximumSize(QSize(16777215, 195))
+        self.ingotsView.setFrameShape(QFrame.Box)
+        self.ingotsView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.ingotsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.ingotsView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.ingotsView.setProperty("showDropIndicator", False)
+        self.ingotsView.setSelectionMode(QAbstractItemView.NoSelection)
+        self.ingotsView.setFlow(QListView.LeftToRight)
+        self.ingotsView.setSpacing(5)
 
-        self.verticalLayout_4.addWidget(self.scrollArea_2)
+        self.verticalLayout_4.addWidget(self.ingotsView)
 
         self.detailedPlanFrame = QFrame(self.scrollAreaWidgetContents)
         self.detailedPlanFrame.setObjectName(u"detailedPlanFrame")

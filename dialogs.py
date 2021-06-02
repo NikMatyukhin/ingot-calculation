@@ -15,9 +15,9 @@ from service import (
     OrderDataService, ProductDataService, StandardDataService, IngotsDataService
 )
 from models import (
-   ComplectsModel, ArticleInformationFilterProxyModel, NewOrderFilterProxyModel
+   ComplectsModel, ArticleInformationFilterProxyModel, IngotModel, NewOrderFilterProxyModel
 )
-from widgets import Plate
+from widgets import IngotSectionDelegate, Plate
 
 
 class ProductDialog(QDialog):
@@ -33,6 +33,7 @@ class ProductDialog(QDialog):
         super(ProductDialog, self).__init__(parent)
         self.ui = ui_add_product_dialog.Ui_Dialog()
         self.ui.setupUi(self)
+        self.setWindowTitle('Добавление продукции')
 
         self.ui.register_number.setValidator(QIntValidator(self.ui.register_number))
 
@@ -98,6 +99,7 @@ class ArticleDialog(QDialog):
         super(ArticleDialog, self).__init__(parent)
         self.ui = ui_add_article_dialog.Ui_Dialog()
         self.ui.setupUi(self)
+        self.setWindowTitle('Добавление изделия')
 
         self.ui.add.clicked.connect(self.addArticle)
         self.ui.ok.clicked.connect(self.accept)
@@ -180,6 +182,7 @@ class DetailDialog(QDialog):
         super(DetailDialog, self).__init__(parent)
         self.ui = ui_add_detail_dialog.Ui_Dialog()
         self.ui.setupUi(self)
+        self.setWindowTitle('Добавление детали')
 
         self.ui.add.clicked.connect(self.addDetail)
         self.ui.ok.clicked.connect(self.accept)
@@ -308,7 +311,7 @@ class OrderDialog(QDialog):
         ])
         
         # Список выбранных слитков (точнее их идентификаторов)
-        self.ingots = []
+        # self.ingots = []
         
         # Прокси-модель для поиска нужных изделий (фильтр по названию)
         self.search_proxy = ArticleInformationFilterProxyModel()
@@ -325,20 +328,14 @@ class OrderDialog(QDialog):
 
         for i in range(3, 10):
             self.ui.treeView_1.setColumnHidden(i, True)
-        for i in range(8, 9):
+        for i in range(8, 10):
             self.ui.treeView_2.setColumnHidden(i, True)
         
-        # Отображение списка доступных для использования слитков (не занятых)
-        # TODO: переделать на мотив model/view
-        ingots_layout = QHBoxLayout()
-        for ingot in IngotsDataService.vacancy_ingots():
-            ingot_plate = Plate(ingot[0], ingot[2], ingot[3], ingot[4:-1], is_selected=False)
-            ingot_plate.checked.connect(self.addIngot)
-            ingots_layout.addWidget(ingot_plate)
-        ingots_layout.setContentsMargins(0, 0, 0, 0)
-        ingots_layout.setSpacing(0)
-        ingots_layout.addStretch()
-        self.ui.scrollAreaWidgetContents.setLayout(ingots_layout)
+        self.ingot_model = IngotModel()
+        self.ingot_model.setupModelData()
+        self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
+        self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
+        self.ui.ingotsView.setModel(self.ingot_model)
 
         self.customContextMenuRequested.connect(self.showContextMenu)
         self.ui.searchName.textChanged.connect(self.search_proxy.setNomenclature)
@@ -380,15 +377,6 @@ class OrderDialog(QDialog):
                     delete = menu.addAction('Убрать изделие целиком')
                     delete.triggered.connect(self.removeArticle)
         menu.exec_(self.mapToGlobal(point))
-
-    def addIngot(self):
-        """Добавление или удаление слитка из набора выбранных"""
-        choosen_plate = self.sender()
-        id = choosen_plate.getID()
-        if id in self.ingots:
-            self.ingots.remove(id)
-        else:
-            self.ingots.append(id)
 
     def addArticle(self):
         index = self.search_proxy.mapToSource(self.ui.treeView_1.currentIndex())
@@ -474,21 +462,25 @@ class OrderDialog(QDialog):
         """
         # Имя и статус складирования заказа - основа записи в базе данных
         order_name = self.ui.orderName.text()
-        storage = int(self.ui.storage.isChecked())
+        selected_indexes = self.ui.ingotsView.selectedIndexes()
 
         # Если заполнено имя, выбран хотя бы один слиток и изделие
-        if order_name and self.ingots and self.choice_proxy.rowCount(QModelIndex()):
+        if order_name and selected_indexes and self.choice_proxy.rowCount(QModelIndex()):
             success = StandardDataService.save_record(
-                'orders', status_id=1, name=order_name, is_on_storage=storage, date=datetime.today().strftime("%d_%m_%Y")
+                'orders', status_id=1, name=order_name, is_on_storage=0, date=datetime.today().strftime("%d_%m_%Y")
             )
             if success:
                 order_id = OrderDataService.max_id()
-                                
-                # Обновляем слитки - привязываем их к нашему заказу
-                for ingot in self.ingots:
-                    StandardDataService.update_record('ingots', {'ingot_id': ingot}, order_id=order_id)
-                used_fusions = [ingot[1] for ingot in StandardDataService.get_by_field(
-                        'ingots', order_id=order_id)]
+
+                used_fusions = []
+                for index in selected_indexes:
+                    data_row = self.ingot_model.data(index, Qt.DisplayRole)
+                    StandardDataService.update_record(
+                        'ingots',
+                        {'ingot_id': data_row['ingot_id']},
+                        order_id=order_id
+                    )
+                    used_fusions.append(data_row['fusion_id'])
 
                 # Добавляем записи о комплектации заказа в целом
                 for row in range(self.choice_proxy.rowCount(QModelIndex())):
@@ -535,7 +527,7 @@ class OrderDialog(QDialog):
                     'order_name': order_name,
                     'current_depth': max([line[6] for pack in complects.values() for line in pack]),
                     'efficiency': 0.0,
-                    'is_on_storage': storage,
+                    'is_on_storage': 0,
                     'creation_date': datetime.today().strftime("%d_%m_%Y"),
                     'complects': complects,
                     'ingots': OrderDataService.ingots({'order_id': order_id}),

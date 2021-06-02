@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 from gui import ui_mainwindow, ui_full_screen
 from gui.ui_functions import *
 
-from widgets import Section, ExclusiveButton, OrderSectionDelegate, Plate
+from widgets import IngotSectionDelegate, Section, ExclusiveButton, OrderSectionDelegate, Plate
 from models import IngotModel, OrderModel
 from charts.plan import CuttingPlanPainter, MyQGraphicsView
 from charts.map import CuttingMapPainter
@@ -149,8 +149,6 @@ class MainWindow (QMainWindow):
 
         # Заполняем список заказов из базы
         self.loadOrderList()
-        # self.vacancy_ingot_model = IngotModel()
-        # self.vacancy_ingot_model.setupModelData()
 
     def loadOrderList(self):
         """Подгрузка списка заказов
@@ -200,8 +198,11 @@ class MainWindow (QMainWindow):
             return
         data_row = index.data(Qt.DisplayRole)
         
-        # ingot_model = IngotModel(order = data_row['order_id'])
-        # ingot_model.setupModelData()
+        self.ingot_model = IngotModel(order = data_row['order_id'])
+        self.ingot_model.setupModelData()
+        self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
+        self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
+        self.ui.ingotsView.setModel(self.ingot_model)
 
         status = data_row['status_id']
         if status == 1 or status == 2:
@@ -216,16 +217,6 @@ class MainWindow (QMainWindow):
         self.map_scene.clear()
 
         self.refreshCompletcsTreeWidget(data_row)
-
-        ingots_layout = QHBoxLayout()
-        for ingot in data_row['ingots']:
-            print(data_row['ingots'])
-            ingot_plate = Plate(ingot[0], ingot[2], ingot[3], ingot[4:7])
-            ingots_layout.addWidget(ingot_plate)
-        ingots_layout.setContentsMargins(0, 0, 0, 0)
-        ingots_layout.setSpacing(0)
-        ingots_layout.addStretch()
-        self.ui.scrollAreaWidgetContents_4.setLayout(ingots_layout)
 
         if self.is_file_exist(data_row):
             self.load_tree(data_row)
@@ -651,7 +642,7 @@ class MainWindow (QMainWindow):
         depth = data_row['current_depth']
         self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
 
-    def depthLineChanged(self): # pylint: disable=invalid-name
+    def depthLineChanged(self):
         """Просмотр другой толщины и подгрузка нового списка деталей"""
         button = self.sender()
         self.plan_painter.clearCanvas()
@@ -665,7 +656,7 @@ class MainWindow (QMainWindow):
             depth = button.depth
             self.stepPage(depth)
 
-    def sourcePage(self): # pylint: disable=invalid-name
+    def sourcePage(self):
         """Переход на страницу с исходным слитком"""
         self.loadDetailList(depth=0.0)
         self.graphicsView.setScene(self.map_scene)

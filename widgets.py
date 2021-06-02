@@ -434,7 +434,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
         # Настройка шрифта для плитки со слитком
         font = QFont(opt.font)
-        font.setPointSize(14)
+        font.setPointSize(8)
         # font.setBold(True)
         # font.setFontFamily('serif')
 
@@ -449,6 +449,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
         painter.save()
         painter.setClipping(True)
         painter.setClipRect(rect)
+        painter.setFont(font)
 
         if opt.state & QStyle.State_Selected:
             painter.fillRect(rect, fill_color.darker(109))
@@ -468,49 +469,51 @@ class IngotSectionDelegate(QStyledItemDelegate):
         else:
             part = 'Партия не указана'
         part_rect = QRect(self.textBox(font, part))
-        part_rect.moveTo(rect.left() + margin, rect.top() + margin)
+        part_rect.moveTo(contentRect.left(), contentRect.top())
         painter.drawText(part_rect, Qt.TextSingleLine, part)
 
         # Надпись с размерами слитка
         size = 'Размеры: ' + 'х'.join(map(str, data_row['ingot_size']))
         size_rect = QRect(self.textBox(font, size))
-        size_rect.moveTo(rect.left() + margin, rect.bottom() - size_rect.height())
+        size_rect.moveTo(contentRect.left(), rect.bottom() - size_rect.height() - margin)
         painter.drawText(size_rect, Qt.TextSingleLine, size)
 
         # Надпись со сплавом слитка
-        fusion = 'Сплав:      ' + data_row['fusion_name']
+        fusion = 'Сплав: ' + data_row['fusion_name']
         fusion_rect = QRect(self.textBox(font, fusion))
-        fusion_rect.moveTo(rect.left() + margin, rect.bottom() - fusion_rect.height() - size_rect.height())
+        fusion_rect.moveTo(contentRect.left(), rect.bottom() - fusion_rect.height() - size_rect.height() - margin)
         painter.drawText(fusion_rect, Qt.TextSingleLine, fusion)
 
         # Иконка 
-        free_height = fusion_rect.top() - part_rect.bottom() - margin
+        free_height = fusion_rect.top() - part_rect.bottom() - margin * 2
+        free_height = min(contentRect.width(), free_height)
         if status_data[0] != 3:
-            if data_row[2] == 'ПлРд 90-10 ДС':
+            if data_row['fusion_name'] == 'ПлРд 90-10 ДС':
                 self.forgeIcon = QPixmap(':icons/ingot-90-10-DC.png')
-            elif data_row[2] == 'ПлРд 90-10':
+            elif data_row['fusion_name'] == 'ПлРд 90-10':
                 self.forgeIcon = QPixmap(':icons/ingot-90-10.png')
-            elif data_row[2] == 'ПлРд 80-30':
+            elif data_row['fusion_name'] == 'ПлРд 80-30':
                 self.forgeIcon = QPixmap(':icons/ingot-80-30.png')
-            elif data_row[2] == 'ПлРд 80-20':
+            elif data_row['fusion_name'] == 'ПлРд 80-20':
                 self.forgeIcon = QPixmap(':icons/ingot-80-20.png')
         else:
             self.forgeIcon = QPixmap(':icons/forged.png')
-        self.forgeIcon = self.forgeIcon.scaled(130, free_height, mode = Qt.SmoothTransformation)
-        self.forgeIconPos = QPoint(rect.left() + margin, rect.top() + margin + part_rect.height())
+        self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, mode = Qt.SmoothTransformation)
+        icon_left_margin = contentRect.width() // 2 - free_height // 2
+        self.forgeIconPos = QPoint(rect.left() + icon_left_margin, contentRect.top() + margin + part_rect.height())
         painter.drawPixmap(self.forgeIconPos, self.forgeIcon)
 
         painter.restore()
     
     def textBox(self, font: QFont, data: str) -> QRect:
-        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, -1, -1)
+        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 1, 1)
     
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
 
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
 
-        return QSize(145, opt.rect.height())
+        return QSize(135, opt.rect.height())
 
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
         if event.type() == QEvent.MouseButtonRelease:
@@ -523,10 +526,6 @@ class IngotSectionDelegate(QStyledItemDelegate):
             if(forgeIconRect.contains(event.pos()) and status_data[0] == 3):
                 self.forgedIndexClicked.emit(index)
         return super().editorEvent(event, model, option, index)
-
-
-def printData(index: QModelIndex):
-    print(index.row(), index.data(Qt.DisplayRole)['order_name'])
 
 
 if __name__ == '__main__':

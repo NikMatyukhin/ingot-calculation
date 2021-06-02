@@ -20,10 +20,12 @@ options = {
         ], # packages must be in the build
         "include_files": [
             os.path.join(plugins_path, "platforms"),
-            "charts/", "data/", "gui/", "sequential_mh/", "schemes/",
+            "charts/", "data/", "gui/", "sequential_mh/", "schemes/", "log/",
             "application_rc.py",
             "catalog.py",
             "dialogs.py",
+            "log.py",
+            "log_config.yaml",
             "models.py",
             "service.py",
             "settings.py",

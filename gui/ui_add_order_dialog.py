@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_order_dialogOAahzs.ui'
+## Form generated from reading UI file 'add_order_dialogNYHVjt.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -104,13 +104,9 @@ class Ui_Dialog(object):
         self.frame.setFrameShape(QFrame.StyledPanel)
         self.frame.setFrameShadow(QFrame.Raised)
         self.horizontalLayout_3 = QHBoxLayout(self.frame)
+        self.horizontalLayout_3.setSpacing(5)
         self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.storage = QCheckBox(self.frame)
-        self.storage.setObjectName(u"storage")
-        self.storage.setStyleSheet(u"")
-
-        self.horizontalLayout_3.addWidget(self.storage)
-
+        self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.line = QFrame(self.frame)
         self.line.setObjectName(u"line")
         self.line.setFrameShape(QFrame.VLine)
@@ -120,13 +116,22 @@ class Ui_Dialog(object):
 
         self.label = QLabel(self.frame)
         self.label.setObjectName(u"label")
+        self.label.setEnabled(False)
 
         self.horizontalLayout_3.addWidget(self.label)
 
         self.doubleSpinBox = QDoubleSpinBox(self.frame)
         self.doubleSpinBox.setObjectName(u"doubleSpinBox")
+        self.doubleSpinBox.setEnabled(False)
 
         self.horizontalLayout_3.addWidget(self.doubleSpinBox)
+
+        self.line_2 = QFrame(self.frame)
+        self.line_2.setObjectName(u"line_2")
+        self.line_2.setFrameShape(QFrame.VLine)
+        self.line_2.setFrameShadow(QFrame.Sunken)
+
+        self.horizontalLayout_3.addWidget(self.line_2)
 
         self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
@@ -157,19 +162,22 @@ class Ui_Dialog(object):
 
         self.verticalLayout_4.addWidget(self.treeView_2)
 
-        self.ingots = QScrollArea(self.rightArea)
-        self.ingots.setObjectName(u"ingots")
-        self.ingots.setMinimumSize(QSize(0, 160))
-        self.ingots.setMaximumSize(QSize(16777215, 160))
-        self.ingots.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.ingots.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.ingots.setWidgetResizable(True)
-        self.scrollAreaWidgetContents = QWidget()
-        self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 506, 141))
-        self.ingots.setWidget(self.scrollAreaWidgetContents)
+        self.ingotsView = QListView(self.rightArea)
+        self.ingotsView.setObjectName(u"ingotsView")
+        self.ingotsView.setMinimumSize(QSize(0, 195))
+        self.ingotsView.setMaximumSize(QSize(16777215, 195))
+        self.ingotsView.setFrameShadow(QFrame.Plain)
+        self.ingotsView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.ingotsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.ingotsView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.ingotsView.setProperty("showDropIndicator", False)
+        self.ingotsView.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.ingotsView.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.ingotsView.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.ingotsView.setFlow(QListView.LeftToRight)
+        self.ingotsView.setSpacing(5)
 
-        self.verticalLayout_4.addWidget(self.ingots)
+        self.verticalLayout_4.addWidget(self.ingotsView)
 
         self.splitter.addWidget(self.rightArea)
 
@@ -195,16 +203,17 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer_1)
 
-        self.pushButton = QPushButton(self.buttonArea)
-        self.pushButton.setObjectName(u"pushButton")
-
-        self.horizontalLayout_2.addWidget(self.pushButton)
-
         self.add = QPushButton(self.buttonArea)
         self.add.setObjectName(u"add")
         self.add.setMinimumSize(QSize(80, 0))
 
         self.horizontalLayout_2.addWidget(self.add)
+
+        self.pushButton = QPushButton(self.buttonArea)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setEnabled(False)
+
+        self.horizontalLayout_2.addWidget(self.pushButton)
 
         self.cancel = QPushButton(self.buttonArea)
         self.cancel.setObjectName(u"cancel")
@@ -225,10 +234,9 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"\u041d\u043e\u0432\u044b\u0439 \u0437\u0430\u043a\u0430\u0437", None))
         self.searchName.setPlaceholderText(QCoreApplication.translate("Dialog", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f...", None))
         self.orderName.setPlaceholderText(QCoreApplication.translate("Dialog", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0437\u0430\u043a\u0430\u0437\u0430...", None))
-        self.storage.setText(QCoreApplication.translate("Dialog", u"\u0417\u0430\u043a\u0430\u0437 \u043d\u0430 \u0441\u043a\u043b\u0430\u0434", None))
         self.label.setText(QCoreApplication.translate("Dialog", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430 \u0440\u0435\u0437\u0430:", None))
-        self.pushButton.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u0442\u044c", None))
         self.add.setText(QCoreApplication.translate("Dialog", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
+        self.pushButton.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u0442\u044c", None))
         self.cancel.setText(QCoreApplication.translate("Dialog", u"\u041e\u0442\u043c\u0435\u043d\u0430", None))
     # retranslateUi
 
