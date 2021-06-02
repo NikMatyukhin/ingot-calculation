@@ -540,6 +540,52 @@ def example_18():
     }
 
 
+def example_19():
+    return {
+        'name': '',
+        'kit': [
+            (240, 180, 1.8, 1, Direction.A),
+            (233.5, 70, 0.8, 1, Direction.A),
+            (40, 23, 0.7, 1, Direction.A),
+            (57, 70, 0.6, 1, Direction.A),
+            (480, 120, 0.5, 1, Direction.A),
+            (480, 122.8, 0.5, 1, Direction.A),
+            (500, 212, 0.5, 1, Direction.A),
+            (500, 212, 0.5, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 78,
+        'H0': 29,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
+def example_20():
+    return {
+        'name': 'Два донышка',
+        'kit': [
+            (160, 69, 3, 1, Direction.P),
+            (160, 69, 3, 1, Direction.P),
+        ],
+        'L0': 180,
+        'W0': 84,
+        'H0': 29,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -559,6 +605,8 @@ EXAMPLES = [
     example_16,
     example_17,
     example_18,
+    example_19,
+    example_20,
 ]
 
 
@@ -664,5 +712,5 @@ def main(example, use_graphviz=False, use_predict=False):
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
     USE_PREDICT = True
-    NUMBER = 7
+    NUMBER = 20
     main(NUMBER, USE_GRAPHVIZ, USE_PREDICT)
