@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from PySide6.QtCore import Qt, Signal, QPointF, QModelIndex
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
@@ -542,6 +543,8 @@ class OrderDialog(QDialog):
                     'article_number': len(complects),
                 }
                 self.accept()
+
+                logging.info('Заказ %(name)s добавлен в базу.', {'name': order_name})
             else:
                 QMessageBox.critical(
                     self,

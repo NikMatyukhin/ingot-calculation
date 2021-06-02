@@ -1,19 +1,18 @@
 import sys
-import os
 import pickle
-from datetime import datetime
-from typing import Iterable, Union, NoReturn
+import logging
+import time
+from typing import Iterable, Union
 from itertools import chain
-from operator import itemgetter, attrgetter
-from collections import Counter
+from operator import itemgetter
+from collections import Counter, deque
 from pathlib import Path
 
-from PySide6.QtCore import (
-    QMessageAuthenticationCode, Qt, QSettings, QModelIndex
-)
+from PySide6.QtCore import Qt, QSettings, QModelIndex
 from PySide6.QtWidgets import (
-    QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem, QTreeWidgetItem,
-    QMessageBox, QDialog, QHBoxLayout, QVBoxLayout, QLayout, QGraphicsScene, QProgressDialog
+    QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
+    QTreeWidgetItem, QMessageBox, QDialog, QHBoxLayout, QVBoxLayout, QLayout,
+    QGraphicsScene, QProgressDialog
 )
 
 from gui import ui_mainwindow, ui_full_screen
@@ -28,11 +27,13 @@ from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Tree, solution_efficiency,
-    CuttingChartNode
+    BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node
 )
-from sequential_mh.bpp_dsc.support import dfs 
-from sequential_mh.bpp_dsc.stm import stmh_idrd
+from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
+from sequential_mh.bpp_dsc.support import dfs
+from sequential_mh.bpp_dsc.stm import (
+    _pack, _create_insert_template, predicate, is_empty_tree, is_empty_node
+)
 
 from service import (
     OrderDataService, FusionDataService, IngotsDataService, StandardDataService
@@ -40,6 +41,7 @@ from service import (
 from dialogs import OrderDialog, NewIngotDialog
 from catalog import Catalog
 from settings import SettingsDialog
+from log import setup_logging, timeit
 
 
 Number = Union[int, float]
@@ -48,7 +50,6 @@ ListSizes = list[Sizes]
 
 
 class FullScreenWindow (QDialog):
-
     def __init__(self, parent=None):
         super(FullScreenWindow, self).__init__(parent)
         self.ui = ui_full_screen.Ui_Dialog()
@@ -58,7 +59,6 @@ class FullScreenWindow (QDialog):
 
 
 class MainWindow (QMainWindow):
-
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
@@ -108,11 +108,11 @@ class MainWindow (QMainWindow):
         self.map_painter = CuttingMapPainter(self.map_scene)
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
 
-        # TODO: Пока без фактического режима эта кнопка не нужна. 
+        # TODO: Пока без фактического режима эта кнопка не нужна.
         self.ui.closeOrder.hide()
         self.ui.searchNumber.hide()
         self.ui.searchType.hide()
-        
+
         # Соединяем сигналы окна со слотами класса
         self.ui.newOrder.clicked.connect(self.openNewOrder)
         self.ui.catalog.clicked.connect(self.openCatalog)
@@ -135,7 +135,7 @@ class MainWindow (QMainWindow):
             )
         )
 
-        # Кнопку "Исходная пластина" привызяваем отдельно от всех
+        # Кнопку "Исходная пластина" привязываем отдельно от всех
         self.ui.sourcePlate.clicked.connect(self.depthLineChanged)
 
         # Кнопки страницы заказа
@@ -156,7 +156,7 @@ class MainWindow (QMainWindow):
         """Подгрузка списка заказов
 
         Загружается список заказов из таблицы заказов и на его основе
-        формируется скомпанованный слой из виджетов Section с информацией.
+        формируется скомпонованный слой из виджетов Section с информацией.
         """
         self.order_model.setupModelData()
         self.ui.searchResult_1.setModel(self.order_model)
@@ -209,7 +209,7 @@ class MainWindow (QMainWindow):
             self.ui.label_6.hide()
         elif status == 4 or status == 5:
             self.ui.detailedPlan.hide()
-        
+
         storage = ' (на склад)' if data_row['is_on_storage'] else ''
         self.ui.label.setText('Заказ ' + data_row['order_name'] + storage)
 
@@ -338,7 +338,7 @@ class MainWindow (QMainWindow):
 
         # TODO: Вторым аргументом нужно вставить плотность сплава
         material = Material(main_ingot[0], 2.2, 1.)
-        
+
         # Выбор заготовок и удаление лишних значений
         try:
             details_info = map(
@@ -353,8 +353,33 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+        progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowTitle('Раскрой')
+        progress.forceShow()
+        order_name = data_row['order_name']
         try:
-            self.createCut(main_ingot[1:], details, material)
+            progress.setLabelText('Процесс раскроя...')
+            logging.info(
+                'Попытка создания раскроя для заказа %(name)s.',
+                {'name': order_name}
+            )
+            size = main_ingot[1:]
+            logging.info(
+                'Заказ %(name)s: %(blanks)d заготовок, %(heights)d толщин, '
+                'слиток %(length)dх%(width)dх%(height)d',
+                {
+                    'name': order_name, 'blanks': details.qty(),
+                    'heights': len(details.keys()),
+                    'length': size[0], 'width': size[1], 'height': size[2]
+                }
+            )
+            self.createCut(size, details, material, progress=progress)
+            logging.info(
+                'Раскрой для заказа %(name)s успешно создан.',
+                {'name': order_name}
+            )
+            progress.setLabelText('Завершение раскроя...')
         except Exception as e: 
             QMessageBox.critical(
                 self,
@@ -363,6 +388,7 @@ class MainWindow (QMainWindow):
                 f'{e}',
                 QMessageBox.Ok
             )
+        progress.close()
 
         self.updateDetailStatuses(data_row)
 
@@ -377,6 +403,57 @@ class MainWindow (QMainWindow):
         self.map_painter.setTree(self.tree)
         self.map_painter.setEfficiency(data_row['efficiency'])
         self.map_painter.drawTree()
+
+    def predict_size(self, material, kit):
+        """Метод расчета параметров слитка"""
+        # TODO: считать из настроек максимальные параметры слитка
+        #       без припусков на фрезеровку и погрешность!
+        max_size = (180, 180, 30)
+        # max_length = 180
+        # max_width = 180
+        # max_height = 30
+        bin_ = Bin(*max_size, material=material)
+        root = BinNode(bin_, kit=kit)
+        tree = Tree(root)
+
+        settings = {
+            'max_size': (
+                (self.maximum_plate_height, self.clean_roll_plate_width),
+                (self.maximum_plate_height, self.rough_roll_plate_width)
+            ),
+            'cutting_length': self.guillotine_width,
+            'cutting_thickness': round(self.cutting_thickness, 4),
+            'hem_until_3': self.rough_roll_edge_loss,
+            'hem_after_3': self.clean_roll_edge_loss,
+            'allowance': self.cut_allowance,
+            'end': round(self.end_face_loss, 4),
+        }
+
+        # TODO: считать из настроек минимальные параметры слитка
+        #       без припусков на фрезеровку и погрешность!
+        min_size = (70, 70, 20)
+        # min_length = 180
+        # min_width = 180
+        # min_height = 30
+
+        # Дерево с рассчитанным слитком
+        tree = optimal_ingot_size(tree, min_size, max_size, settings)
+        efficiency = solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True)
+        print(f'Эффективность после расчета: {efficiency}')
+
+        # TODO: Получить из настроек погрешность и припуски на фрезеровку
+        size_error = 2
+        allowance = 1.5
+
+        # Получение слитка с учетом погрешности и припусков
+        length = tree.root.bin.length + size_error + 2 * allowance
+        width = tree.root.bin.width + size_error + 2 * allowance
+        height = tree.root.bin.height + size_error + 2 * allowance
+
+        print(f'Финальные размеры: {length, width, height}')
+        print(f'Масса слитка (в гр): {length * width * height * material.density / 1000}')
+        print(f'Масса слитка (в кг): {length * width * height * material.density / 1_000_000}')
+        print(f'{material.density = }')
 
     def getDetails(self, details_id: Iterable[int], material: Material) -> Kit:
         """Формирование набора заготовок
@@ -418,7 +495,7 @@ class MainWindow (QMainWindow):
         kit.sort('width')
         return kit
 
-    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material):
+    def createCut(self, ingot_size: Sizes, kit: Kit, material: Material, progress=None):
         """Метод запуска алоритма раскроя
 
         :param ingot_size: Размер слитка в формате (длина, ширина, толщина)
@@ -444,14 +521,110 @@ class MainWindow (QMainWindow):
         bin_ = Bin(*ingot_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
-        tree = stmh_idrd(tree, restrictions=settings)
+        tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
-        
+
         # считаем эффективность со всего слитка (в долях!)
         # для отображения нужно округлить!
         current_index = self.ui.searchResult_1.currentIndex()
         self.order_model.setData(current_index, {'efficiency': round(100 * solution_efficiency(
             self.tree, list(dfs(tree.root)), is_total=True), 2)}, Qt.EditRole)
+
+    # Методы из пакета sequential_mh.bpp_dsc
+    # перенесены для возможности учета прогрогресса
+    @timeit
+    def stmh_idrd(self, tree, with_filter=True, restrictions=None, progress=None):
+        is_main = True
+        trees = self._stmh_idrd(
+            tree, restrictions=restrictions, local=not is_main,
+            with_filter=with_filter, progress=progress
+        )
+
+        if restrictions:
+            max_size = restrictions.get('max_size')
+        else:
+            max_size = None
+        print(f'Количество деревьев: {len(trees)}')
+        progress.setLabelText('Фильтрация решений...')
+        if with_filter:
+            trees = [
+                item for item in trees if not is_defective_tree(item, max_size)
+            ]
+
+        print(f'Годных деревьев: {len(trees)}')
+        progress.setLabelText('Выбор оптимального решения...')
+        best = max(
+            trees, key=lambda item: solution_efficiency(
+                item.root, list(dfs(item.root)), nd=True, is_p=True
+            )
+        )
+        total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
+        print('Построение дерева завершено')
+        print(f'Общая эффективность: {total_efficiency:.4f}')
+        print(f'Взвешенная эффективность: {solution_efficiency(best.root, list(dfs(best.root)), nd=True):.4f}')
+        print(f'Эффективность с приоритетами: {solution_efficiency(best.root, list(dfs(best.root)), is_p=True):.4f}')
+        print('-' * 50)
+        return best
+
+    def _stmh_idrd(self, tree, local=False, with_filter=True, restrictions=None, progress=None):
+        level = deque([tree])
+        result = []
+        step = 0
+        doubling = False
+        if restrictions:
+            cut_thickness = restrictions.get('cutting_thickness')
+            doubling = cut_thickness >= max(tree.root.kit.keys())
+        steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
+        progress.setRange(0, steps)
+
+        if restrictions:
+            max_size = restrictions.get('max_size')
+        else:
+            max_size = None
+
+        while level:
+            step += 1
+            new_level = deque([])
+            for _, tree_ in enumerate(level):
+                if with_filter and is_defective_tree(tree_, max_size=max_size):
+                    # Додумать на сколько уменьшать
+                    # min_height = min(map(lambda item: item.bin.height, tree_.root.cc_leaves))
+                    # steps -= number_of_steps(len([x for x in tree.root.kit.keys() if x < min_height]), doubling=False)
+                    steps -= 1
+                    progress.setRange(0, steps)
+                    progress.setValue(step - 1)
+                    continue
+                if is_empty_tree(tree_):
+                    result.append(tree_)
+                else:
+                    new_level.append(tree_)
+            level = new_level
+            if not level:
+                break
+
+            tree = level.popleft()
+            nodes = [
+                node for node in tree.root.leaves() if not is_empty_node(node)
+            ]
+            nodes = deque(sorted(nodes, key=predicate))
+            node = nodes[0]
+            if is_cc_node(node):
+                _pack(node, level, restrictions)
+                if is_empty_tree(tree):
+                    result.append(tree)
+                else:
+                    level.append(tree)
+            else:
+                _create_insert_template(node, level, tree, local, restrictions)
+            if progress:
+                # print(step, steps)
+                progress.setValue(step)
+
+        # костыль для завершения прогресса
+        if step < steps and progress:
+            progress.setValue(steps)
+
+        return result
 
     def steps(self):
         leaves = self.tree.cc_leaves
@@ -718,6 +891,7 @@ class MainWindow (QMainWindow):
         extension = 'oci'
         return f'{data["order_id"]}_{data["creation_date"]}.{extension}'
 
+
 def get_abs_path(file_name, path=None) -> Path:
     # file_name = self.get_file_name()
     # path = 'schemes'
@@ -731,10 +905,42 @@ def get_abs_path(file_name, path=None) -> Path:
     return abs_path
 
 
+def number_of_steps(num_of_heights, doubling=True):
+    """Количество шагов алгоритма
+
+    :param num_of_heights: Количество толщин
+    :type num_of_heights: int
+    :param doubling: Использование удвоения, когда используется толщина
+                     реза, defaults to True
+    :type doubling: bool, optional
+    :return: Количество операций в алгоритме
+    :rtype: int
+    """
+    number_of_trees = 4 * (4 ** num_of_heights - 1) / 3
+    if doubling:
+        number_of_trees *= 2
+        n = (4 ** num_of_heights * 2 - 2) / 3 + 1
+    else:
+        n = (4 ** num_of_heights - 1) / 3 + 1
+    return int(number_of_trees + n)
+
+
 if __name__ == '__main__':
+    oci_logger = setup_logging()
+    logging.info('Приложение OCI запущено.')
+    start = time.time()
     application = QApplication(sys.argv)
 
     window = MainWindow()
     window.show()
 
-    sys.exit(application.exec_())
+    exit_code = application.exec_()
+
+    total_time = time.time() - start
+    print(f'{start = }, {total_time = }')
+    logging.info(
+        'Выход из приложения OCI. Время работы: %(time).2f мин.',
+        {'time': total_time / 60}
+    )
+
+    sys.exit(exit_code)
