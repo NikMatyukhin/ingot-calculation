@@ -20,18 +20,14 @@ options = {
         ], # packages must be in the build
         "include_files": [
             os.path.join(plugins_path, "platforms"),
-            "charts/", "data/", "gui/", "sequential_mh/",
+            "charts/", "data/", "gui/", "sequential_mh/", "schemes/",
             "application_rc.py",
-            "button.py",
             "catalog.py",
-            "delegates.py",
             "dialogs.py",
             "models.py",
-            "page.py",
-            "plate.py",
-            "section.py",
             "service.py",
             "settings.py",
+            "widgets.py",
             shiboken6_path,
             pyside6_path
         ],  # additional plugins needed by qt at runtime
@@ -51,12 +47,12 @@ options = {
     }
 }
 
-executables = [Executable("mainwindow.py", base=base, icon="gui/resources/kras-logo.ico", target_name="SPP")]
+executables = [Executable("mainwindow.py", base=base, icon="gui/resources/kras-logo.ico", target_name="OCI")]
 
 setup(
-    name="SPP",
-    version="0.1",
-    description="-",
+    name="OCI",
+    version="1.0",
+    description="No description",
     options=options,
     executables=executables,
 )

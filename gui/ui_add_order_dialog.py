@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_order_dialogleWatp.ui'
+## Form generated from reading UI file 'add_order_dialogOAahzs.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.0.0
+## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -99,11 +99,41 @@ class Ui_Dialog(object):
 
         self.verticalLayout_4.addWidget(self.orderName)
 
-        self.storage = QCheckBox(self.rightArea)
+        self.frame = QFrame(self.rightArea)
+        self.frame.setObjectName(u"frame")
+        self.frame.setFrameShape(QFrame.StyledPanel)
+        self.frame.setFrameShadow(QFrame.Raised)
+        self.horizontalLayout_3 = QHBoxLayout(self.frame)
+        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
+        self.storage = QCheckBox(self.frame)
         self.storage.setObjectName(u"storage")
         self.storage.setStyleSheet(u"")
 
-        self.verticalLayout_4.addWidget(self.storage)
+        self.horizontalLayout_3.addWidget(self.storage)
+
+        self.line = QFrame(self.frame)
+        self.line.setObjectName(u"line")
+        self.line.setFrameShape(QFrame.VLine)
+        self.line.setFrameShadow(QFrame.Sunken)
+
+        self.horizontalLayout_3.addWidget(self.line)
+
+        self.label = QLabel(self.frame)
+        self.label.setObjectName(u"label")
+
+        self.horizontalLayout_3.addWidget(self.label)
+
+        self.doubleSpinBox = QDoubleSpinBox(self.frame)
+        self.doubleSpinBox.setObjectName(u"doubleSpinBox")
+
+        self.horizontalLayout_3.addWidget(self.doubleSpinBox)
+
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout_3.addItem(self.horizontalSpacer)
+
+
+        self.verticalLayout_4.addWidget(self.frame)
 
         self.treeView_2 = QTreeView(self.rightArea)
         self.treeView_2.setObjectName(u"treeView_2")
@@ -136,7 +166,7 @@ class Ui_Dialog(object):
         self.ingots.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 496, 141))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 506, 141))
         self.ingots.setWidget(self.scrollAreaWidgetContents)
 
         self.verticalLayout_4.addWidget(self.ingots)
@@ -165,6 +195,11 @@ class Ui_Dialog(object):
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer_1)
 
+        self.pushButton = QPushButton(self.buttonArea)
+        self.pushButton.setObjectName(u"pushButton")
+
+        self.horizontalLayout_2.addWidget(self.pushButton)
+
         self.add = QPushButton(self.buttonArea)
         self.add.setObjectName(u"add")
         self.add.setMinimumSize(QSize(80, 0))
@@ -191,6 +226,8 @@ class Ui_Dialog(object):
         self.searchName.setPlaceholderText(QCoreApplication.translate("Dialog", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f...", None))
         self.orderName.setPlaceholderText(QCoreApplication.translate("Dialog", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0437\u0430\u043a\u0430\u0437\u0430...", None))
         self.storage.setText(QCoreApplication.translate("Dialog", u"\u0417\u0430\u043a\u0430\u0437 \u043d\u0430 \u0441\u043a\u043b\u0430\u0434", None))
+        self.label.setText(QCoreApplication.translate("Dialog", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430 \u0440\u0435\u0437\u0430:", None))
+        self.pushButton.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0441\u0441\u0447\u0438\u0442\u0430\u0442\u044c", None))
         self.add.setText(QCoreApplication.translate("Dialog", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c", None))
         self.cancel.setText(QCoreApplication.translate("Dialog", u"\u041e\u0442\u043c\u0435\u043d\u0430", None))
     # retranslateUi

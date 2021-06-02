@@ -8,12 +8,12 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QIcon
 
-from service import StandardDataService, OrderDataService
+from service import IngotsDataService, StandardDataService, OrderDataService
 
 
 class TreeItem:
 
-    def __init__(self, data: list, parent=None):
+    def __init__(self, data: list, parent: typing.Optional[QObject] = None):
         self.__item_data = data
         self.__parent_item = parent
         self.__child_items = []
@@ -271,7 +271,7 @@ class TreeModel(QAbstractItemModel):
 
 class ListModel(QAbstractListModel):
     
-    def __init__(self, parent: typing.Optional[QObject], data = None) -> None:
+    def __init__(self, parent: typing.Optional[QObject], data: list = None) -> None:
         super(ListModel, self).__init__(parent)
         self.__items_data = data if data else []
 
@@ -318,6 +318,9 @@ class ListModel(QAbstractListModel):
         self.endRemoveRows()
         return True
 
+
+class OrderModel(ListModel):
+
     def setupModelData(self):
         for order in OrderDataService.get_table_2():
             ingots = OrderDataService.ingots({'order_id': order[0]})
@@ -330,10 +333,34 @@ class ListModel(QAbstractListModel):
                 'current_depth': order[4],
                 'efficiency': order[5],
                 'is_on_storage': order[6],
+                'creation_date': order[7],
                 'complects': complects,
                 'ingots': ingots,
                 'detail_number': sum([line[2] for pack in complects.values() for line in pack]),
                 'article_number': len(complects),
+            }
+            self.appendRow(data_row)
+
+
+class IngotModel(ListModel):
+
+    def __init__(self, order: int = None, parent: typing.Optional[QObject] = None, data: list = None) -> None:
+        super().__init__(parent, data=data)
+        self.__order_id = order
+
+    def setupModelData(self):
+        if self.__order_id:
+            result = OrderDataService.ingots({'order_id': self.__order_id})
+        else:
+            result = IngotsDataService.vacancy_ingots()
+        for ingot in result:
+            data_row = {
+                'ingot_id': ingot[0],
+                'fusion_id': ingot[1],
+                'fusion_name': ingot[2],
+                'ingot_part': ingot[3],
+                'ingot_size': [ingot[4], ingot[5], ingot[6]],
+                'status_id': ingot[7]
             }
             self.appendRow(data_row)
 

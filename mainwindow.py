@@ -20,7 +20,7 @@ from gui import ui_mainwindow, ui_full_screen
 from gui.ui_functions import *
 
 from widgets import Section, ExclusiveButton, OrderSectionDelegate, Plate
-from models import ListModel
+from models import IngotModel, OrderModel
 from charts.plan import CuttingPlanPainter, MyQGraphicsView
 from charts.map import CuttingMapPainter
 
@@ -69,7 +69,7 @@ class MainWindow (QMainWindow):
         UIFunctions.setTopbarShadow(self)
 
         # Модель и делегат заказов
-        self.order_model = ListModel(self)
+        self.order_model = OrderModel(self)
         self.order_delegate = OrderSectionDelegate(self.ui.searchResult_1)
 
         # Постраиваемое дерево раскроя
@@ -149,6 +149,8 @@ class MainWindow (QMainWindow):
 
         # Заполняем список заказов из базы
         self.loadOrderList()
+        # self.vacancy_ingot_model = IngotModel()
+        # self.vacancy_ingot_model.setupModelData()
 
     def loadOrderList(self):
         """Подгрузка списка заказов
@@ -196,8 +198,11 @@ class MainWindow (QMainWindow):
         """
         if not index.isValid():
             return
-
         data_row = index.data(Qt.DisplayRole)
+        
+        # ingot_model = IngotModel(order = data_row['order_id'])
+        # ingot_model.setupModelData()
+
         status = data_row['status_id']
         if status == 1 or status == 2:
             self.ui.label_5.hide()
@@ -214,12 +219,19 @@ class MainWindow (QMainWindow):
 
         ingots_layout = QHBoxLayout()
         for ingot in data_row['ingots']:
-            ingot_plate = Plate(ingot[0], ingot[1], ingot[2], ingot[3:])
+            print(data_row['ingots'])
+            ingot_plate = Plate(ingot[0], ingot[2], ingot[3], ingot[4:7])
             ingots_layout.addWidget(ingot_plate)
         ingots_layout.setContentsMargins(0, 0, 0, 0)
         ingots_layout.setSpacing(0)
         ingots_layout.addStretch()
         self.ui.scrollAreaWidgetContents_4.setLayout(ingots_layout)
+
+        if self.is_file_exist(data_row):
+            self.load_tree(data_row)
+            self.map_painter.setTree(self.tree)
+            self.map_painter.setEfficiency(data_row['efficiency'])
+            self.map_painter.drawTree()
 
         self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
 
@@ -247,10 +259,10 @@ class MainWindow (QMainWindow):
     def updateDetailStatuses(self, data: dict):
         unplaced = list(chain.from_iterable([leave.result.unplaced for leave in self.tree.cc_leaves]))
         unplaced_counter = Counter([blank.name for blank in unplaced])
-        complect_counter = {blank[1]: (blank[0], blank[2], blank[6]) for blank in chain.from_iterable(data['complects'].values())}
+        complect_counter = {blank[1]: (blank[0], blank[2], blank[6], blank[7]) for blank in chain.from_iterable(data['complects'].values())}
         try:
             for name in unplaced_counter:
-                detail_id, amount, depth = complect_counter[name]
+                detail_id, amount, depth, _ = complect_counter[name]
                 surplus = unplaced_counter[name]
                 print(name, amount, surplus)
                 if amount == surplus:
@@ -267,8 +279,11 @@ class MainWindow (QMainWindow):
                     )
             
             for name in complect_counter:
-                detail_id, amount, depth = complect_counter[name]
+                detail_id, amount, depth, status_id = complect_counter[name]
                 surplus = unplaced_counter[name]
+                if status_id == 6:
+                    continue
+
                 if depth not in self.steps():
                     OrderDataService.update_status(
                         {'order_id': data['order_id']},
@@ -318,7 +333,8 @@ class MainWindow (QMainWindow):
     def createTree(self):
         # Пока работаем только с одном слитком
         data_row = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
-        main_ingot = data_row['ingots'][0][-4:]
+        main_ingot = data_row['ingots'][0]
+        main_ingot = [main_ingot[3], main_ingot[4], main_ingot[5], main_ingot[6]]
 
         # TODO: Вторым аргументом нужно вставить плотность сплава
         material = Material(main_ingot[0], 2.2, 1.)
@@ -355,7 +371,9 @@ class MainWindow (QMainWindow):
             'orders', {'order_id': data_row['order_id']},
             efficiency=data_row['efficiency']
         )
+        self.save_tree(data_row)
 
+        self.map_scene.clear()
         self.map_painter.setTree(self.tree)
         self.map_painter.setEfficiency(data_row['efficiency'])
         self.map_painter.drawTree()
@@ -671,34 +689,34 @@ class MainWindow (QMainWindow):
         self.settings.setValue(
             'rolling/max_clean_width', self.clean_roll_plate_width)
 
-    def save_tree(self):
+    def save_tree(self, data: dict):
         """Сохранение корневого узла дерева"""
-        file_name = self.get_file_name()
+        file_name = self.get_file_name(data)
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
         with abs_path.open(mode='wb') as f:
             pickle.dump(self.tree, f)
             print('Файл сохранен')
 
-        # для проверки наличия файла
-        # if not abs_path.exists():
-        #     pass
-        # else:
-        #     print('Файл существует')
+    def is_file_exist(self, data: dict):
+        file_name = self.get_file_name(data)
+        path = 'schemes'
+        abs_path = get_abs_path(file_name, path)
+        return abs_path.exists()
 
-    def load_tree(self):
+    def load_tree(self, data: dict):
         """Загрузка корневого узла дерева из файла"""
-        file_name = self.get_file_name()
+        file_name = self.get_file_name(data)
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
         with abs_path.open(mode='rb') as f:
             self.tree = pickle.load(f)
             print(f'Файл считан: {self.tree}')
 
-    def get_file_name(self) -> str:
+    def get_file_name(self, data: dict) -> str:
         """Создание имени файла для сохранения дерева раскроя"""
         extension = 'oci'
-        return f'{self.id}_{self.name}_{self.date.date().strftime("%d_%m_%Y")}.{extension}'
+        return f'{data["order_id"]}_{data["creation_date"]}.{extension}'
 
 def get_abs_path(file_name, path=None) -> Path:
     # file_name = self.get_file_name()

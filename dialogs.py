@@ -1,3 +1,4 @@
+from datetime import datetime
 from PySide6.QtCore import Qt, Signal, QPointF, QModelIndex
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
@@ -330,7 +331,7 @@ class OrderDialog(QDialog):
         # TODO: переделать на мотив model/view
         ingots_layout = QHBoxLayout()
         for ingot in IngotsDataService.vacancy_ingots():
-            ingot_plate = Plate(ingot[0], ingot[1], ingot[2], ingot[3:], is_selected=False)
+            ingot_plate = Plate(ingot[0], ingot[2], ingot[3], ingot[4:-1], is_selected=False)
             ingot_plate.checked.connect(self.addIngot)
             ingots_layout.addWidget(ingot_plate)
         ingots_layout.setContentsMargins(0, 0, 0, 0)
@@ -477,7 +478,7 @@ class OrderDialog(QDialog):
         # Если заполнено имя, выбран хотя бы один слиток и изделие
         if order_name and self.ingots and self.choice_proxy.rowCount(QModelIndex()):
             success = StandardDataService.save_record(
-                'orders', status_id=1, name=order_name, is_on_storage=storage
+                'orders', status_id=1, name=order_name, is_on_storage=storage, date=datetime.today().strftime("%d_%m_%Y")
             )
             if success:
                 order_id = OrderDataService.max_id()
@@ -534,6 +535,7 @@ class OrderDialog(QDialog):
                     'current_depth': max([line[6] for pack in complects.values() for line in pack]),
                     'efficiency': 0.0,
                     'is_on_storage': storage,
+                    'creation_date': datetime.today().strftime("%d_%m_%Y"),
                     'complects': complects,
                     'ingots': OrderDataService.ingots({'order_id': order_id}),
                     'detail_number': sum([line[2] for pack in complects.values() for line in pack]),

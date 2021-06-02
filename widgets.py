@@ -1,8 +1,9 @@
+from service import StandardDataService
 import application_rc
 import typing
 import math
 from PySide6.QtCore import (
-    QPoint, Qt, Signal, QPropertyAnimation, QParallelAnimationGroup, QModelIndex,
+    QMargins, QPoint, Qt, Signal, QPropertyAnimation, QParallelAnimationGroup, QModelIndex,
     QAbstractAnimation, QAbstractItemModel, QObject, QRect, QSize, QEvent
 )
 from PySide6.QtWidgets import (
@@ -11,9 +12,9 @@ from PySide6.QtWidgets import (
     QPushButton, QStyledItemDelegate, QStyle
 )
 from PySide6.QtGui import (
-    QPixmap, QPainter, QPalette, QFont, QFontMetrics
+    QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
 )
-from models import ListModel
+from models import IngotModel
 
 
 class ExclusiveButton(QPushButton):
@@ -116,7 +117,7 @@ class Plate(QWidget):
 
         self.check_box = QCheckBox('Партия ' + str(self.batch_number))
         self.sizes_label = QLabel(f'{sizes[0]}x{sizes[1]}x{sizes[2]}')
-        self.fusion_label = QLabel(fusion)
+        self.fusion_label = QLabel(str(fusion))
 
         if self.is_selected:
             self.check_box.setDisabled(True)
@@ -396,6 +397,134 @@ class OrderSectionDelegate(QStyledItemDelegate):
         return super().editorEvent(event, model, option, index)
 
 
+class IngotSectionDelegate(QStyledItemDelegate):
+
+    forgedIndexClicked = Signal(QModelIndex)
+
+    def __init__(self, parent: typing.Optional[QObject] = None) -> None:
+        super(IngotSectionDelegate, self).__init__(parent)
+    
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem,
+              index: QModelIndex) -> None:
+        """Метод отрисовки делегата для модели слитков.
+
+        Отрисовывается номер партии (в случае, если слиток запланирован, то 
+        вместо номера троеточие), иконка слитка (если запланирован, то иконка 
+        загрузки), размеры и сплав.
+
+        :param painter: Объект отрисовщика
+        :type painter: QPainter
+        :param option: Настройки отрисовки
+        :type option: QStyleOptionViewItem
+        :param index: Индекс текущего объекта в модели данных
+        :type index: QModelIndex
+        """
+        opt = QStyleOptionViewItem(option)
+        self.initStyleOption(opt, index)
+        
+        # Статус наведения мышкой на иконку
+        self.mouseOnIcon = False
+
+        # Отступ от границ плитки внутрь и наружу
+        margin = 5
+
+        palette = QPalette(opt.palette)
+        rect = QRect(opt.rect.adjusted(margin, 0, 0, 0))
+        contentRect = QRect(rect.adjusted(margin, margin, margin, margin))
+
+        # Настройка шрифта для плитки со слитком
+        font = QFont(opt.font)
+        font.setPointSize(14)
+        # font.setBold(True)
+        # font.setFontFamily('serif')
+
+        # Получение данных о текущем слитке
+        data_row = index.data(Qt.DisplayRole)
+        status_data = StandardDataService.get_by_id(
+            'ingots_statuses',
+            {'status_id': data_row['status_id']}
+        )
+        fill_color = QColor(status_data[2])
+
+        painter.save()
+        painter.setClipping(True)
+        painter.setClipRect(rect)
+
+        if opt.state & QStyle.State_Selected:
+            painter.fillRect(rect, fill_color.darker(109))
+            painter.setPen(QColor(255, 100, 0))
+        elif opt.state & QStyle.State_MouseOver:
+            painter.fillRect(rect, fill_color.darker(103))
+            painter.setPen(palette.shadow().color())
+        else:
+            painter.fillRect(rect, fill_color)
+            painter.setPen(palette.shadow().color())
+        painter.drawRect(rect.adjusted(0, 0, -1, -1))
+        painter.setPen(Qt.black)
+
+        # Надпись с партией слитка
+        if status_data[0] != 3:
+            part = 'Партия: №' + str(data_row['ingot_part'])
+        else:
+            part = 'Партия не указана'
+        part_rect = QRect(self.textBox(font, part))
+        part_rect.moveTo(rect.left() + margin, rect.top() + margin)
+        painter.drawText(part_rect, Qt.TextSingleLine, part)
+
+        # Надпись с размерами слитка
+        size = 'Размеры: ' + 'х'.join(map(str, data_row['ingot_size']))
+        size_rect = QRect(self.textBox(font, size))
+        size_rect.moveTo(rect.left() + margin, rect.bottom() - size_rect.height())
+        painter.drawText(size_rect, Qt.TextSingleLine, size)
+
+        # Надпись со сплавом слитка
+        fusion = 'Сплав:      ' + data_row['fusion_name']
+        fusion_rect = QRect(self.textBox(font, fusion))
+        fusion_rect.moveTo(rect.left() + margin, rect.bottom() - fusion_rect.height() - size_rect.height())
+        painter.drawText(fusion_rect, Qt.TextSingleLine, fusion)
+
+        # Иконка 
+        free_height = fusion_rect.top() - part_rect.bottom() - margin
+        if status_data[0] != 3:
+            if data_row[2] == 'ПлРд 90-10 ДС':
+                self.forgeIcon = QPixmap(':icons/ingot-90-10-DC.png')
+            elif data_row[2] == 'ПлРд 90-10':
+                self.forgeIcon = QPixmap(':icons/ingot-90-10.png')
+            elif data_row[2] == 'ПлРд 80-30':
+                self.forgeIcon = QPixmap(':icons/ingot-80-30.png')
+            elif data_row[2] == 'ПлРд 80-20':
+                self.forgeIcon = QPixmap(':icons/ingot-80-20.png')
+        else:
+            self.forgeIcon = QPixmap(':icons/forged.png')
+        self.forgeIcon = self.forgeIcon.scaled(130, free_height, mode = Qt.SmoothTransformation)
+        self.forgeIconPos = QPoint(rect.left() + margin, rect.top() + margin + part_rect.height())
+        painter.drawPixmap(self.forgeIconPos, self.forgeIcon)
+
+        painter.restore()
+    
+    def textBox(self, font: QFont, data: str) -> QRect:
+        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, -1, -1)
+    
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+
+        opt = QStyleOptionViewItem(option)
+        self.initStyleOption(opt, index)
+
+        return QSize(145, opt.rect.height())
+
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+        if event.type() == QEvent.MouseButtonRelease:
+            forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos)
+            data_row = index.data(Qt.DisplayRole)
+            status_data = StandardDataService.get_by_id(
+                'ingots_statuses',
+                {'status_id': data_row['status_id']}
+            )
+            if(forgeIconRect.contains(event.pos()) and status_data[0] == 3):
+                self.forgedIndexClicked.emit(index)
+        return super().editorEvent(event, model, option, index)
+
+
 def printData(index: QModelIndex):
     print(index.row(), index.data(Qt.DisplayRole)['order_name'])
 
@@ -403,10 +532,15 @@ def printData(index: QModelIndex):
 if __name__ == '__main__':
     application = QApplication()
     window = QListView()
+    window.setSpacing(5)
+    window.setFlow(QListView.LeftToRight)
+    window.setSelectionMode(QListView.MultiSelection)
 
-    model = ListModel(None)
-    delegate = OrderSectionDelegate(window)
-    delegate.deleteIndexClicked.connect(printData)
+    model = IngotModel()
+    model.setupModelData()
+
+    delegate = IngotSectionDelegate(window)
+
     window.setModel(model)
     window.setItemDelegate(delegate)
     window.show()

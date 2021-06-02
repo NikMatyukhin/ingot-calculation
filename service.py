@@ -299,7 +299,7 @@ class OrderDataService (StandardDataService):
     def get_table_2(connection) -> List:
 
         sql = str('SELECT order_id, orders_statuses.name, orders_statuses.status_id, '
-                  'orders.name, current_depth, efficiency, is_on_storage '
+                  'orders.name, current_depth, efficiency, is_on_storage, date '
                   'FROM orders '
                   'LEFT JOIN orders_statuses '
                   'ON orders_statuses.status_id = orders.status_id')
@@ -314,8 +314,8 @@ class OrderDataService (StandardDataService):
 
         field, value = parse_field(order_id)
 
-        sql = str('SELECT ingots.ingot_id, fusions.name, ingots.batch, '
-                  'ingots.height, ingots.width, ingots.depth '
+        sql = str('SELECT ingots.ingot_id, ingots.fusion_id, fusions.name, ingots.batch, '
+                  'ingots.height, ingots.width, ingots.depth, ingots.status_id '
                   'FROM ingots '
                   'LEFT JOIN fusions ON fusions.fusion_id = ingots.fusion_id '
                   f'WHERE  ingots.{field}={value}')
@@ -430,8 +430,8 @@ class IngotsDataService (StandardDataService):
     @db_connector
     def vacancy_ingots(connection) -> List:
 
-        sql = str('SELECT ingots.ingot_id, fusions.name, ingots.batch, '
-                  'ingots.height, ingots.width, ingots.depth '
+        sql = str('SELECT ingots.ingot_id, ingots.fusion_id, fusions.name, ingots.batch, '
+                  'ingots.height, ingots.width, ingots.depth, ingots.status_id '
                   'FROM ingots '
                   'LEFT JOIN fusions '
                   'ON fusions.fusion_id = ingots.fusion_id '
