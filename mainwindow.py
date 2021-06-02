@@ -561,6 +561,7 @@ class MainWindow (QMainWindow):
         level = deque([tree])
         result = []
         step = 0
+        point_counter = 2
         doubling = False
         if restrictions:
             cut_thickness = restrictions.get('cutting_thickness')
@@ -608,8 +609,9 @@ class MainWindow (QMainWindow):
             else:
                 _create_insert_template(node, level, tree, local, restrictions)
             if progress:
-                # print(step, steps)
                 progress.setValue(step)
+                progress.setLabelText('Процесс раскроя.' + '.' * point_counter + ' ' * (2 - point_counter))
+                point_counter = (point_counter + 1) % 3
 
         # костыль для завершения прогресса
         if step < steps and progress:
