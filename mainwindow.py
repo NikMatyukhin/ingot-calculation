@@ -41,6 +41,7 @@ from service import (
 from dialogs import OrderDialog, NewIngotDialog
 from catalog import Catalog
 from settings import SettingsDialog
+from exceptions import ForcedTermination
 from log import setup_logging, timeit
 
 
@@ -336,12 +337,12 @@ class MainWindow (QMainWindow):
                 itemgetter(0), filter(lambda x: x[7] != 6, chain.from_iterable(data_row['complects'].values()))
             )
             details = self.getDetails(details_info, material)
-        except Exception as e: 
+        except Exception as ex:
             QMessageBox.critical(
                 self,
                 'Ошибка сборки',
                 'Конфигурация заказа привела к сбою программы!\n'
-                f'{e}',
+                f'{ex}',
                 QMessageBox.Ok
             )
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
@@ -350,7 +351,7 @@ class MainWindow (QMainWindow):
         progress.forceShow()
         order_name = data_row['order_name']
         try:
-            progress.setLabelText('Процесс раскроя...')
+            progress.setLabelText('Выполняется построение карты раскроя...')
             logging.info(
                 'Попытка создания раскроя для заказа %(name)s.',
                 {'name': order_name}
@@ -371,12 +372,23 @@ class MainWindow (QMainWindow):
                 {'name': order_name}
             )
             progress.setLabelText('Завершение раскроя...')
-        except Exception as e: 
+        except ForcedTermination:
+            logging.info(
+                'Раскрой для заказа %(name)s прерван пользователем.',
+                {'name': order_name}
+            )
+            QMessageBox.information(
+                self,
+                'Внимание',
+                'Процесс раскроя был прерван!',
+                QMessageBox.Ok
+            )
+        except Exception as ex:
             QMessageBox.critical(
                 self,
                 'Ошибка разреза',
                 'Конфигурация заказа привела к сбою программы!\n'
-                f'{e}',
+                f'{ex}',
                 QMessageBox.Ok
             )
         progress.close()
@@ -557,7 +569,27 @@ class MainWindow (QMainWindow):
         print('-' * 50)
         return best
 
-    def _stmh_idrd(self, tree, local=False, with_filter=True, restrictions=None, progress=None):
+    def _stmh_idrd(self, tree, local=False, with_filter=True,
+                   restrictions=None, progress=None):
+        """Последовательная древовидная метаэвристика.
+
+        Построение деревьев растроя.
+
+        :param tree: Начальное дерево
+        :type tree: Tree
+        :param local: Флаг локальной оптимизации, defaults to False
+        :type local: bool, optional
+        :param with_filter: Флаг фильтрации деревьев
+                            на соответствие ограничениям, defaults to True
+        :type with_filter: bool, optional
+        :param restrictions: Словарь ограничений, defaults to None
+        :type restrictions: dict, optional
+        :param progress: Прогресс бар, defaults to None
+        :type progress: QProgressDialog, optional
+        :raises ForcedTermination: Исключение принудительного завершения
+        :return: Набор построенных деревьев раскроя
+        :rtype: list[Tree]
+        """
         level = deque([tree])
         result = []
         step = 0
@@ -612,6 +644,9 @@ class MainWindow (QMainWindow):
                 progress.setValue(step)
                 progress.setLabelText('Процесс раскроя.' + '.' * point_counter + ' ' * (2 - point_counter))
                 point_counter = (point_counter + 1) % 3
+
+                if progress.wasCanceled():
+                    raise ForcedTermination('Процесс раскроя был прерван')
 
         # костыль для завершения прогресса
         if step < steps and progress:
