@@ -630,6 +630,23 @@ def predict_ingot_size(kit, material, restrictions, use_graphviz=False):
         create_edges(graph1, all_nodes1)
         graph1.view()
 
+    for node in tree.root.cc_leaves:
+        main_rect = rect.Rectangle.create_by_size(
+            (0, 0), node.bin.length, node.bin.width
+        )
+        main_region = Estimator(main_rect, node.bin.height, node.bin.height)
+        rectangles = chain.from_iterable(node.result.blanks.values())
+        l = sum(len(group) for _, group in kit[node.bin.height].items())
+        print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{l}')
+        print(f'Прокат: {node.bin.last_rolldir}')
+        print(f'Bin ID: {node._id}')
+        if hasattr(node, 'x_hem'):
+            print(f'{node.x_hem = }')
+        visualize(
+            main_region, rectangles, node.result.tailings,
+            xlim=node.bin.width + 50, ylim=node.bin.length + 50
+        )
+
 
 def main(example, use_graphviz=False, use_predict=False):
     material = Material('Сплав 1', 2.2, 1.)
