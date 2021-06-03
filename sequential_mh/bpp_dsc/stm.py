@@ -70,11 +70,11 @@ def get_unpacked_item(parent, node):
     return add_detail
 
 
-def stmh_idrd(tree, with_filter=True, restrictions=None):
+def stmh_idrd(tree, in_process_filtering=True, postfiltration=True, restrictions=None):
     is_main = True
     trees = _stmh_idrd(
         tree, restrictions=restrictions, local=not is_main,
-        with_filter=with_filter
+        with_filter=in_process_filtering
     )
 
     if restrictions:
@@ -82,8 +82,10 @@ def stmh_idrd(tree, with_filter=True, restrictions=None):
     else:
         max_size = None
     print(f'Количество деревьев: {len(trees)}')
-    if with_filter:
-        trees = [item for item in trees if not is_defective_tree(item, max_size)]
+    if postfiltration:
+        trees = [
+            item for item in trees if not is_defective_tree(item, max_size)
+        ]
     # efficiency = [
     #     solution_efficiency(item.root, list(dfs(item.root)), nd=True) for item in trees
     # ]
@@ -91,8 +93,15 @@ def stmh_idrd(tree, with_filter=True, restrictions=None):
     #     item for item in trees if solution_efficiency(item.root, list(dfs(item.root))) == max(efficiency)
     # ]
     print(f'Годных деревьев: {len(trees)}')
-    best = max(trees, key=lambda item: solution_efficiency(item.root, list(dfs(item.root)), nd=True, is_p=True))
-    total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
+    best = max(
+        trees,
+        key=lambda item: solution_efficiency(
+            item.root, list(dfs(item.root)), nd=True, is_p=True
+        )
+    )
+    total_efficiency = solution_efficiency(
+        best.root, list(dfs(best.root)), is_total=True
+    )
     print('Построение дерева завершено')
     print(f'Общая эффективность: {total_efficiency:.4f}')
     print(f'Взвешенная эффективность: {solution_efficiency(best.root, list(dfs(best.root)), nd=True):.4f}')
