@@ -261,7 +261,8 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
         # обновить region
         # TODO: неправильно обновляется, когда min_rect меньше исходного
         if min_rect.length > 0 and min_rect.width > 0:
-            main_region.update(min_rect)
+            # with_lim - частичное решение проблемы больших листов
+            main_region.update(min_rect, with_lim=False)
         # обновить регионы
         all_regions = main_region.cut(point=min_rect.trp)
 
@@ -322,8 +323,10 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
         for j in range(1 + rect.is_rotatable):
             rect_w = size[(1 + j) % 2]
             rect_l = size[(0 + j) % 2]
-            trp = estimator.rectangle.trp
-            estimate_point = max(x0 + rect_w, trp.x), max(y0 + rect_l, trp.y)
+            # На большие листы ничего не размещается
+            # trp = estimator.rectangle.trp
+            # estimate_point = max(x0 + rect_w, trp.x), max(y0 + rect_l, trp.y)
+            estimate_point = x0 + rect_w, y0 + rect_l
             if estimator(*estimate_point) is None:
                 continue
             dist = estimator(x0 + rect_w, y0)
