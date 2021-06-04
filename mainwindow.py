@@ -345,7 +345,7 @@ class MainWindow (QMainWindow):
                 f'{ex}',
                 QMessageBox.Ok
             )
-        progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
+        progress = QProgressDialog('OCI', 'Отмена', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowTitle('Раскрой')
         progress.forceShow()
