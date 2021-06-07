@@ -6,7 +6,6 @@
     - Воронов Владимир Сергеевич
 """
 
-# import os
 from collections import deque
 from operator import itemgetter
 from sequential_mh.bpp_dsc.rectangle import BinType
@@ -17,9 +16,6 @@ from .tree import (
     solution_efficiency, is_defective_tree
 )
 from .support import dfs
-
-# os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
-# from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 
 def is_zero_size(length, width, height):
@@ -70,7 +66,43 @@ def get_unpacked_item(parent, node):
     return add_detail
 
 
-def stmh_idrd(tree, in_process_filtering=True, postfiltration=True, restrictions=None):
+# def additional_packaging(tree, restrictions=None):
+#     adj_node = tree.root.adj_leaves[0]
+#     for node in tree.root.cc_leaves:
+#         adj_node.kit.update(node.result.unplaced)
+#     tree = _stmh_idrd(tree, local=True, restrictions=restrictions)
+#     return tree
+
+
+def stmh_idrd(tree, in_process_filtering=True, postfiltration=True,
+              restrictions=None):
+    """Последовательная древовидная метаэвристика
+
+    Алгоритм для поиска решения задачи упаковки слитка. Задача
+    заключается в изготовлении элементов прямоугольных размеров
+    из слитка, который можно резать и деформировать.
+
+    Метод основан на представлении процесса раскроя в виде дерева.
+    Где узлы представляют собой операции, состояния листа и карты
+    раскроя.
+
+    :param tree: Начальное дерево, представляющее собой корневой узел
+                 с набором размещаемых элемнетов.
+    :type tree: Tree
+    :param in_process_filtering: Флаг фильтрации на соответствие
+                                 ограничениям в процессе построения
+                                 деревьев, defaults to True
+    :type in_process_filtering: bool, optional
+    :param postfiltration: Флаг постфильтрации, определяет необходимость
+                           фильтрации на соответствие ограничениям
+                           деревьев после построения всех возможных
+                           вариентов, defaults to True
+    :type postfiltration: bool, optional
+    :param restrictions: Словарь ограничений, defaults to None
+    :type restrictions: dict, optional
+    :return: Дерево раскроя
+    :rtype: Tree
+    """
     is_main = True
     trees = _stmh_idrd(
         tree, restrictions=restrictions, local=not is_main,
@@ -86,12 +118,6 @@ def stmh_idrd(tree, in_process_filtering=True, postfiltration=True, restrictions
         trees = [
             item for item in trees if not is_defective_tree(item, max_size)
         ]
-    # efficiency = [
-    #     solution_efficiency(item.root, list(dfs(item.root)), nd=True) for item in trees
-    # ]
-    # bests = [
-    #     item for item in trees if solution_efficiency(item.root, list(dfs(item.root))) == max(efficiency)
-    # ]
     print(f'Годных деревьев: {len(trees)}')
     best = max(
         trees,
@@ -102,10 +128,16 @@ def stmh_idrd(tree, in_process_filtering=True, postfiltration=True, restrictions
     total_efficiency = solution_efficiency(
         best.root, list(dfs(best.root)), is_total=True
     )
+    weighted_efficiency = solution_efficiency(
+        best.root, list(dfs(best.root)), nd=True
+    )
+    prioritized_efficiency = solution_efficiency(
+        best.root, list(dfs(best.root)), is_p=True
+    )
     print('Построение дерева завершено')
     print(f'Общая эффективность: {total_efficiency:.4f}')
-    print(f'Взвешенная эффективность: {solution_efficiency(best.root, list(dfs(best.root)), nd=True):.4f}')
-    print(f'Эффективность с приоритетами: {solution_efficiency(best.root, list(dfs(best.root)), is_p=True):.4f}')
+    print(f'Взвешенная эффективность: {weighted_efficiency:.4f}')
+    print(f'Эффективность с приоритетами: {prioritized_efficiency:.4f}')
     # print(f'Взвешенная эффективность: {efficiency:.4f}')
     print('-' * 50)
     return best
@@ -131,10 +163,6 @@ def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None):
         # 1) Фильтрация узлов (пустой набор для бинов и карт; проверка
         #       размеров для бинов и карт (если у карт не хватает места
         #       - удаление группы толщины))
-        # level = [
-        #     node for node in level
-        #     if not is_empty_node(node) and node in tree.root.leaves()
-        # ]
         new_level = deque([])
         for _, tree_ in enumerate(level):
             if with_filter and is_defective_tree(tree_, max_size=max_size):
@@ -143,19 +171,19 @@ def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None):
                 result.append(tree_)
             else:
                 new_level.append(tree_)
-        # level = deque([t for t in level if not is_empty_tree(t)])
         level = new_level
         if not level:
             break
         # 2) Сортировка по приоритету, толщине и типу (узлы карт должны
         #       идти перед бинами, но приоритет и толщина должны иметь
         #       первостепенное влияние)
-        # level = deque(sorted(level, key=predicate))
         # 3) получить первую ноду (без удаления)
         # 4) если она типа 'карта раскроя':
 
         tree = level.popleft()
-        nodes = [node for node in tree.root.leaves() if not is_empty_node(node)]
+        nodes = [
+            node for node in tree.root.leaves() if not is_empty_node(node)
+        ]
         nodes = deque(sorted(nodes, key=predicate))
         node = nodes[0]
         if is_cc_node(node):
@@ -167,7 +195,6 @@ def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None):
         else:
             # 5) иначе (нужна вставка шаблона):
             # 5.1) получить первую ноду (с удалением из уровня)
-            # node = level.popleft()
             _create_insert_template(node, level, tree, local, restrictions)
 
     return result
@@ -197,6 +224,9 @@ def _pack(node, level, restrictions):
         node.pack(max_size=max_size, restrictions=restrictions)
         # 4.3.2) обновить размеры
         node.update_size(max_len=max_len)
+        if node.result.unplaced:
+            # if adj_branch._size_check(node.result.unplaced):
+            adj_branch.kit.update(node.result.unplaced)
     else:
         # 4.4) иначе:
         # 4.4.1) получить узел карты из соседне ветки
@@ -207,7 +237,6 @@ def _pack(node, level, restrictions):
         # метода pack)
         node.pack(max_size=max_size, restrictions=restrictions)
         adj_cc_node.pack(max_size=max_size, restrictions=restrictions)
-        # adj_cc_node.update_size()
         delete_all_branch(
             rolling_node, restrictions.get('max_size'), without_root=True
         )
@@ -277,24 +306,9 @@ def _create_insert_template(node, level, tree, local, restrictions):
             height = cut_thickness
         else:
             cut_thickness = None
-        # children = tree.create_template(
-        #     new_parent, height, cut_thickness=cut_thickness
-        # )
-        res = tree.create_template_branches(new_parent, height, cut_thickness=cut_thickness)
-        # if local:
-        #     if is_cutting_node(new_parent.children):
-        #         # доупаковка при дочернем разреза
-        #         children[1].parent = None
-        #         children = children[0]
-        #     elif is_rolling_node(new_parent.children):
-        #         children[0].parent = None
-        #         children = children[1]
-        #         if new_parent.children.children.operation == Operations.h_rolling:
-        #             # доупаковка при дочернем горизонтальном прокате
-        #             children.delete(children.children[0])
-        #         else:
-        #             # доупаковка при дочернем вертикальном прокате
-        #             children.delete(children.children[1])
+        res = tree.create_template_branches(
+            new_parent, height, cut_thickness=cut_thickness
+        )
         # 5.5) вставка шаблона с копированием нижестоящих узлов
         for new_tree, new_parent, branch in res:
             if new_parent.list_of_children() and not is_cutting_node(branch[0]):
@@ -306,8 +320,6 @@ def _create_insert_template(node, level, tree, local, restrictions):
                 if is_adj_node(item) and item.bin.bin_type != BinType.INTERMEDIATE:
                     item.update_kit(height)
             # 5.7) обновление уровня новыми узлами
-            # for item in new_parent.leaves():
-            #     if item not in level:
             level.append(new_tree)
     else:
         node.kit.delete_height(height)

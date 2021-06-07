@@ -460,6 +460,12 @@ class BinNode(Node):
             _, right = self.parent.children
             right_estimate = right.estimate_size()
             if right_estimate[LENGTH] == 0 or right_estimate[WIDTH] == 0:
+                if self.parent_bnode is None:
+                    print(f'{self.parent_bnode = }')
+                    print(f'{self = }')
+                    print(f'{self.parent = }')
+                    print(f'{self.parent.parent = }')
+                    print(f'{self._id = }')
                 return self.parent_bnode.bin.size
             estimate = self.parent.estimate_size()
             if self.parent.direction == Direction.H:
@@ -478,6 +484,10 @@ class BinNode(Node):
 
     def size_check(self, height=None, double_sided=True):
         blanks = self.kit.unplaced(self.bin, height)
+        return self._size_check(blanks, height=None, double_sided=True)
+
+    def _size_check(self, blanks, height=None, double_sided=True):
+        # blanks = self.kit.unplaced(self.bin, height)
         dst = self.available_size()
         number = 0
         for item in blanks:
@@ -974,7 +984,10 @@ class BinNode(Node):
         return is_adj_node(self)
 
     def __copy__(self):
-        return self.__class__(bin=copy(self.bin), kit=copy(self.kit))
+        return self.__class__(bin=deepcopy(self.bin), kit=deepcopy(self.kit))
+
+    # def __deepcopy__(self, memo=None):
+    #     return self.__class__(bin=deepcopy(self.bin), kit=deepcopy(self.kit))
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.bin}, {self.kit})'
@@ -1224,10 +1237,10 @@ class OperationNode(Node):
         parent = self.parent_bnode
         if self.get_troot().parent is None:
             change_height = True
-        if change_height:
-            print(f'{self._id}: Разрешено изменять толщину (этап подгонки под ограничения)')
-        else:
-            print(f'{self._id}: Запрещено изменять толщину (этап обновления размеров)')
+        # if change_height:
+        #     print(f'{self._id}: Разрешено изменять толщину (этап подгонки под ограничения)')
+        # else:
+        #     print(f'{self._id}: Запрещено изменять толщину (этап обновления размеров)')
         if self.operation == Operations.cutting:
             left, right = self.children
             left_size = left.bin.size
@@ -1704,8 +1717,8 @@ class CuttingChartNode(Node):
         return None
 
     def __copy__(self):
-        obj = self.__class__(copy(self.bin))
-        obj.result = copy(self.result)
+        obj = self.__class__(deepcopy(self.bin))
+        obj.result = deepcopy(self.result)
         return obj
 
 
