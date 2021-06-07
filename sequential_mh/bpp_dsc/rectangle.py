@@ -152,12 +152,12 @@ class BaseBin(Rectangle3d):
 
     def eq_rot(self, obj):
         return (
-            self.material == obj.material and super().eq_rot(obj)
+            self.material == obj.material and super().eq_rot(obj) and self.name == obj.name
             # (super().__eq__(obj) or super().eq_rot(obj))
         )
 
     def __eq__(self, o) -> bool:
-        return self.material == o.material and super().__eq__(o)
+        return self.material == o.material and super().__eq__(o) and self.name == o.name
 
 
 class Direction(Enum):
