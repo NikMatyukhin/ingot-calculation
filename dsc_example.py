@@ -4,7 +4,9 @@ import os
 from itertools import chain
 from sequential_mh.bpp_dsc.support import dfs
 
-from sequential_mh.bpp_dsc.rectangle import Direction, Material, Blank, Kit, Bin, BinType
+from sequential_mh.bpp_dsc.rectangle import (
+    Direction, Material, Blank, Kit, Bin, BinType
+)
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency
 )
@@ -22,6 +24,7 @@ os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
 
 
 def example_1():
+    """Пример"""
     return {
         'name': 'Пример 12ц',
         'kit': [
@@ -35,16 +38,17 @@ def example_1():
         'W0': 160,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,  # максимальная длина реза
+        'cutting_length': 1200,    # максимальная длина реза
         'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 10,  # кромка > 3 мм
-        'hem_after_3': 5,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'hem_until_3': 10,         # кромка > 3 мм
+        'hem_after_3': 5,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # обработка торцов листа, в долях от длины
     }
 
 
 def example_2():
+    """Пример"""
     return {
         'name': 'Синтетический пример 1',
         'kit': [
@@ -58,14 +62,15 @@ def example_2():
         'L0': 200,
         'W0': 150,
         'H0': 6,
-        'cutting_thickness': 3,  # толщина реза
-        'hem_after_3': 5,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'cutting_thickness': 3,
+        'hem_after_3': 5,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_3():
+    """Пример"""
     return {
         'name': 'Синтетический пример 2',
         'kit': [
@@ -77,15 +82,16 @@ def example_3():
         'W0': 160,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,  # кромка > 3 мм
-        'hem_after_3': 2,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_4():
+    """Пример"""
     return {
         'name': 'Синтетический пример 3',
         'kit': [
@@ -99,38 +105,41 @@ def example_4():
         'W0': 160,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,  # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,  # кромка > 3 мм
-        'hem_after_3': 2,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_5():
+    """Пример"""
     return {
         'name': 'Реальный пример 1',
         'kit': [
             (50, 180, 3.0, 1),
             (122, 417, 0.5, 1), (122, 417, 0.5, 1),
             (103, 417, 0.5, 1), (103, 417, 0.5, 1),
-            (32, 350, 0.7, 1), (32, 350, 0.7, 1), (32, 350, 0.7, 1), (32, 350, 0.7, 1)
+            (32, 350, 0.7, 1), (32, 350, 0.7, 1),
+            (32, 350, 0.7, 1), (32, 350, 0.7, 1)
         ],
         'L0': 100,
         'W0': 180,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,  # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,  # кромка > 3 мм
-        'hem_after_3': 2,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_6():
+    """Пример"""
     return {
         'name': 'Реальный пример 2',
         'kit': [
@@ -143,17 +152,18 @@ def example_6():
         'W0': 180,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,  # максимальная длина реза
-        'cutting_thickness': 3.0,  # толщина реза
-        # 'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,  # кромка > 3 мм
-        'hem_after_3': 2,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 3.0,
+        # 'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_7():
+    """Пример"""
     return {
         'name': 'Реальный пример 3',
         'kit': [
@@ -171,25 +181,21 @@ def example_7():
             (76, 110, 3.0, 1, Direction.P),
             (76, 110, 3.0, 1, Direction.P)
         ],
-        # 'L0': 180,
-        # 'W0': 120,
         'L0': 120,
         'W0': 180,
-        # 'L0': 180,
-        # 'W0': 180,
         'H0': 30,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,  # максимальная длина реза
-        # 'cutting_thickness': 4.2,  # толщина реза
-        'cutting_thickness': 3.0,  # толщина реза
-        'hem_until_3': 4,  # кромка > 3 мм
-        'hem_after_3': 2,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 3.0,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_8():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -202,16 +208,17 @@ def example_8():
         'W0': 160,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,  # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,  # кромка > 3 мм
-        'hem_after_3': 2,  # кромка <= 3 мм
-        'allowance': 2,  # припуски на разрез
-        'end': 0.02,  # обработка торцов листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_9():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -227,18 +234,18 @@ def example_9():
         'L0': 180,
         'W0': 160,
         'H0': 15,
-        # 'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_10():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -254,16 +261,17 @@ def example_10():
         'W0': 160,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_11():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -302,16 +310,17 @@ def example_11():
         'W0': 160,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_12():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -333,16 +342,17 @@ def example_12():
         'W0': 160,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_13():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -361,16 +371,17 @@ def example_13():
         'W0': 120,
         'H0': 30,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_14():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -414,6 +425,7 @@ def example_14():
 
 
 def example_15():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -429,20 +441,18 @@ def example_15():
         'L0': 180,
         'W0': 120,
         'H0': 30,
-        # 'L0': 180,
-        # 'W0': 1000,
-        # 'H0': 3,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_16():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -477,6 +487,7 @@ def example_16():
 
 
 def example_17():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -495,20 +506,19 @@ def example_17():
         ],
         'L0': 180,
         'W0': 120,
-        # 'L0': 120,
-        # 'W0': 180,
         'H0': 30,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 3,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 3,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_18():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -527,8 +537,6 @@ def example_18():
         ],
         'L0': 180,
         'W0': 120,
-        # 'L0': 120,
-        # 'W0': 180,
         'H0': 28,
         'max_size': ((1200, 380), (1200, 400)),
         'cutting_length': 1200,    # максимальная длина реза
@@ -541,6 +549,7 @@ def example_18():
 
 
 def example_19():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -557,16 +566,17 @@ def example_19():
         'W0': 78,
         'H0': 29,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_20():
+    """Пример"""
     return {
         'name': 'Два донышка',
         'kit': [
@@ -577,16 +587,17 @@ def example_20():
         'W0': 84,
         'H0': 29,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_21():
+    """Пример"""
     return {
         'name': 'Нужны несколько кусков для размещения 1 мм заготовок',
         'kit': [
@@ -604,16 +615,17 @@ def example_21():
         'W0': 160,
         'H0': 30,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.2,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 def example_22():
+    """Пример"""
     return {
         'name': '',
         'kit': [
@@ -632,38 +644,20 @@ def example_22():
         'W0': 180,
         'H0': 30,
         'max_size': ((1200, 380), (1200, 400)),
-        'cutting_length': 1200,    # максимальная длина реза
-        'cutting_thickness': 4.0,  # толщина реза
-        'hem_until_3': 4,          # кромка > 3 мм
-        'hem_after_3': 2,          # кромка <= 3 мм
-        'allowance': 2,            # припуски на разрез
-        'end': 0.02,               # торцы листа, в долях от длины
+        'cutting_length': 1200,
+        'cutting_thickness': 4.0,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
     }
 
 
 EXAMPLES = [
-    example_1,
-    example_2,
-    example_3,
-    example_4,
-    example_5,
-    example_6,
-    example_7,
-    example_8,
-    example_9,
-    example_10,
-    example_11,
-    example_12,
-    example_13,
-    example_14,
-    example_15,
-    example_16,
-    example_17,
-    example_18,
-    example_19,
-    example_20,
-    example_21,
-    example_22,
+    example_1, example_2, example_3, example_4, example_5, example_6,
+    example_7, example_8, example_9, example_10, example_11, example_12,
+    example_13, example_14, example_15, example_16, example_17, example_18,
+    example_19, example_20, example_21, example_22,
 ]
 
 
