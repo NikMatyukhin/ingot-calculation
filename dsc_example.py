@@ -586,6 +586,61 @@ def example_20():
     }
 
 
+def example_21():
+    return {
+        'name': 'Нужны несколько кусков для размещения 1 мм заготовок',
+        'kit': [
+            (65, 180, 3.2, 1, Direction.A),
+            (120, 180, 2.2, 1, Direction.A),
+            (460, 180, 1.0, 1, Direction.A),
+            (460, 180, 1.0, 1, Direction.A),
+            (460, 180, 1.0, 1, Direction.A),
+            (460, 180, 0.5, 1, Direction.A),
+            (460, 180, 0.5, 1, Direction.A),
+            (130, 90, 0.5, 1, Direction.A),
+            (480, 180, 0.5, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 30,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.2,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
+def example_22():
+    return {
+        'name': '',
+        'kit': [
+            (180, 110, 4.0, 1, Direction.A),
+            (70, 120, 4.0, 1, Direction.A),
+            (70, 120, 4.0, 1, Direction.A),
+            (180, 180, 2.5, 1, Direction.A),
+            (180, 180, 2.5, 1, Direction.A),
+            (480, 90, 0.5, 1, Direction.A),
+            (300, 180, 0.5, 1, Direction.A),
+            (450, 180, 1.0, 1, Direction.A),
+            (180, 240, 1.0, 1, Direction.A),
+            (210, 180, 1.0, 1, Direction.A),
+        ],
+        'L0': 180,
+        'W0': 180,
+        'H0': 30,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,    # максимальная длина реза
+        'cutting_thickness': 4.0,  # толщина реза
+        'hem_until_3': 4,          # кромка > 3 мм
+        'hem_after_3': 2,          # кромка <= 3 мм
+        'allowance': 2,            # припуски на разрез
+        'end': 0.02,               # торцы листа, в долях от длины
+    }
+
+
 EXAMPLES = [
     example_1,
     example_2,
@@ -607,6 +662,8 @@ EXAMPLES = [
     example_18,
     example_19,
     example_20,
+    example_21,
+    example_22,
 ]
 
 
@@ -635,11 +692,12 @@ def predict_ingot_size(kit, material, restrictions, use_graphviz=False):
             (0, 0), node.bin.length, node.bin.width
         )
         main_region = Estimator(main_rect, node.bin.height, node.bin.height)
-        rectangles = chain.from_iterable(node.result.blanks.values())
+        rectangles = list(chain.from_iterable(node.result.blanks.values()))
         l = sum(len(group) for _, group in kit[node.bin.height].items())
         print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{l}')
         print(f'Прокат: {node.bin.last_rolldir}')
         print(f'Bin ID: {node._id}')
+        print(f'{" ".join(r.rectangle.name for r in rectangles)}')
         if hasattr(node, 'x_hem'):
             print(f'{node.x_hem = }')
         visualize(
@@ -667,7 +725,7 @@ def main(example, use_graphviz=False, use_predict=False):
         'end': data.get('end'),
     }
     kit = []
-    for item in data['kit']:
+    for i, item in enumerate(data['kit']):
         # if item[0] == 300:
         #     direction=Direction.P
         # else:
@@ -676,7 +734,9 @@ def main(example, use_graphviz=False, use_predict=False):
             *item, direction = item
         else:
             direction = Direction.A
-        kit.append(Blank(*item, material=material, direction=direction))
+        blank = Blank(*item, material=material, direction=direction)
+        blank.name = str(i + 1)
+        kit.append(blank)
     kit = Kit(kit)
     bin_ = Bin(
         data['L0'], data['W0'], data['H0'],
@@ -704,11 +764,12 @@ def main(example, use_graphviz=False, use_predict=False):
             (0, 0), node.bin.length, node.bin.width
         )
         main_region = Estimator(main_rect, node.bin.height, node.bin.height)
-        rectangles = chain.from_iterable(node.result.blanks.values())
+        rectangles = list(chain.from_iterable(node.result.blanks.values()))
         l = sum(len(group) for _, group in kit[node.bin.height].items())
         print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{l}')
         print(f'Прокат: {node.bin.last_rolldir}')
         print(f'Bin ID: {node._id}')
+        print(f'Номера упакованных заготовок: {" ".join(r.rectangle.name for r in rectangles)}')
         if hasattr(node, 'x_hem'):
             print(f'{node.x_hem = }')
         visualize(
@@ -729,5 +790,5 @@ def main(example, use_graphviz=False, use_predict=False):
 if __name__ == '__main__':
     USE_GRAPHVIZ = True
     USE_PREDICT = True
-    NUMBER = 20
+    NUMBER = 21
     main(NUMBER, USE_GRAPHVIZ, USE_PREDICT)
