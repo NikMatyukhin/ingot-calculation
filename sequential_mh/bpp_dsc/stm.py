@@ -70,6 +70,14 @@ def get_unpacked_item(parent, node):
     return add_detail
 
 
+# def additional_packaging(tree, restrictions=None):
+#     adj_node = tree.root.adj_leaves[0]
+#     for node in tree.root.cc_leaves:
+#         adj_node.kit.update(node.result.unplaced)
+#     tree = _stmh_idrd(tree, local=True, restrictions=restrictions)
+#     return tree
+
+
 def stmh_idrd(tree, in_process_filtering=True, postfiltration=True, restrictions=None):
     is_main = True
     trees = _stmh_idrd(
@@ -197,6 +205,9 @@ def _pack(node, level, restrictions):
         node.pack(max_size=max_size, restrictions=restrictions)
         # 4.3.2) обновить размеры
         node.update_size(max_len=max_len)
+        if node.result.unplaced:
+            # if adj_branch._size_check(node.result.unplaced):
+            adj_branch.kit.update(node.result.unplaced)
     else:
         # 4.4) иначе:
         # 4.4.1) получить узел карты из соседне ветки
