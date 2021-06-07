@@ -18,11 +18,15 @@ from models import IngotModel
 
 
 class ExclusiveButton(QPushButton):
-
-    def __init__(self, parent: typing.Optional[QObject] = None, depth: float = 0):
+    def __init__(self, parent: typing.Optional[QObject] = None,
+                 depth: float = 0, name='', index=0):
         super(ExclusiveButton, self).__init__(parent)
         self.depth = depth
-        self.setText(str(depth) + ' мм')
+        self.index = index
+        if name:
+            self.setText(name)
+        else:
+            self.setText(str(depth) + ' мм')
         self.setCheckable(True)
         self.setAutoExclusive(True)
         self.setStyleSheet('''

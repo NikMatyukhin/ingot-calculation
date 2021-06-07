@@ -249,6 +249,7 @@ class MainWindow (QMainWindow):
                 )
 
     def updateDetailStatuses(self, data: dict):
+        # FIXME: проблемы со статусами при наличии одинаковых веток
         unplaced = list(chain.from_iterable([leave.result.unplaced for leave in self.tree.cc_leaves]))
         unplaced_counter = Counter([blank.name for blank in unplaced])
         complect_counter = {blank[1]: (blank[0], blank[2], blank[6], blank[7]) for blank in chain.from_iterable(data['complects'].values())}
@@ -666,8 +667,12 @@ class MainWindow (QMainWindow):
         """
         data_row = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         self.clearLayout(self.ui.horizontalLayout_6, take=1)
-        for depth in self.steps():
-            button = ExclusiveButton(depth=depth)
+        depth_list = self.steps()
+        for i, depth in enumerate(depth_list):
+            name = f'{depth} мм'
+            if depth_list.count(depth) > 1:
+                name += f' ({depth_list[:i].count(depth) + 1})'
+            button = ExclusiveButton(depth=depth, name=name, index=i)
             button.clicked.connect(self.depthLineChanged)
             self.ui.horizontalLayout_6.addWidget(button)
         self.ui.horizontalLayout_6.addStretch()
@@ -691,18 +696,19 @@ class MainWindow (QMainWindow):
             self.sourcePage()
         else:
             depth = button.depth
-            self.stepPage(depth)
+            index = button.index
+            self.stepPage(index)
 
     def sourcePage(self):
         """Переход на страницу с исходным слитком"""
         self.loadDetailList(depth=0.0)
         self.graphicsView.setScene(self.map_scene)
 
-    def stepPage(self, depth: float):
+    def stepPage(self, index: int):
         data_row = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         self.graphicsView.setScene(self.plan_scene)
-        index = self.steps().index(depth)
         pack = self.tree.cc_leaves[index]
+        depth = pack.bin.height
         self.plan_painter.setBin(
             round(pack.bin.length, 1),
             round(pack.bin.width, 1),
