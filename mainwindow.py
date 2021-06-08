@@ -24,7 +24,7 @@ from models import (
     IngotModel, OrderInformationComplectsModel, OrderModel
 )
 from service import (
-    OrderDataService, StandardDataService, FusionDataService, IngotsDataService
+    OrderDataService, StandardDataService
 )
 from dialogs import (
     IngotAddingDialog, IngotReadinessDialog, OrderAddingDialog, FullScreenWindow
@@ -464,7 +464,8 @@ class OCIMainWindow(QMainWindow):
                 amount = int(model.data(model.index(sub_row, 7, parent), Qt.DisplayRole))
                 priority = int(model.data(model.index(sub_row, 8, parent), Qt.DisplayRole))
                 direction_id = int(model.realdata(model.index(sub_row, 9, parent), Qt.DisplayRole))
-                direction = Direction(3 if direction_id == 1 else 2)
+                direction_code = 3 if direction_id == 1 else 2
+                direction = Direction(direction_code)
                 # Создаём заготовки из полученных данных
                 for _ in range(amount):
                     blank = Blank(*sizes, priority, direction=direction, material=material)

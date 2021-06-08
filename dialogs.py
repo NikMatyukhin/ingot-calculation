@@ -566,7 +566,8 @@ class OrderAddingDialog(QDialog):
                     amount = int(self.model.data(self.model.index(sub_row, 7, parent), Qt.DisplayRole))
                     priority = int(self.model.data(self.model.index(sub_row, 8, parent), Qt.DisplayRole))
                     direction_id = int(self.model.realdata(self.model.index(sub_row, 9, parent), Qt.DisplayRole))
-                    direction = Direction(3 if direction_id == 1 else 2)
+                    direction_code = 3 if direction_id == 1 else 2
+                    direction = Direction(direction_code)
                     # Создаём заготовки из полученных данных
                     for _ in range(amount):
                         blank = Blank(*sizes, priority, direction=direction, material=material)
