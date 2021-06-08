@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowuhBSvb.ui'
+## Form generated from reading UI file 'mainwindowIRDXoB.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -22,6 +22,7 @@ class Ui_MainWindow(object):
         icon = QIcon()
         icon.addFile(u":/icons/kras-logo.png", QSize(), QIcon.Normal, QIcon.Off)
         MainWindow.setWindowIcon(icon)
+        MainWindow.setStyleSheet(u"")
         self.centralWidget = QWidget(MainWindow)
         self.centralWidget.setObjectName(u"centralWidget")
         self.verticalLayout = QVBoxLayout(self.centralWidget)
@@ -435,7 +436,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, -300, 681, 1299))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 681, 1299))
         self.scrollAreaWidgetContents.setStyleSheet(u"* {\n"
 "	margin-right: 7px;\n"
 "}\n"
@@ -521,17 +522,19 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_4.addWidget(self.complectsFrame)
 
-        self.treeWidget = QTreeWidget(self.scrollAreaWidgetContents)
-        self.treeWidget.setObjectName(u"treeWidget")
-        self.treeWidget.setMinimumSize(QSize(0, 300))
-        self.treeWidget.setEditTriggers(QAbstractItemView.DoubleClicked|QAbstractItemView.SelectedClicked)
-        self.treeWidget.setAlternatingRowColors(True)
-        self.treeWidget.setSelectionBehavior(QAbstractItemView.SelectItems)
-        self.treeWidget.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-        self.treeWidget.setAnimated(True)
-        self.treeWidget.header().setStretchLastSection(True)
+        self.complectsView = QTreeView(self.scrollAreaWidgetContents)
+        self.complectsView.setObjectName(u"complectsView")
+        self.complectsView.setMinimumSize(QSize(0, 300))
+        self.complectsView.viewport().setProperty("cursor", QCursor(Qt.ArrowCursor))
+        self.complectsView.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.complectsView.setEditTriggers(QAbstractItemView.DoubleClicked|QAbstractItemView.SelectedClicked)
+        self.complectsView.setAlternatingRowColors(False)
+        self.complectsView.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.complectsView.setSelectionBehavior(QAbstractItemView.SelectItems)
+        self.complectsView.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.complectsView.setAnimated(True)
 
-        self.verticalLayout_4.addWidget(self.treeWidget)
+        self.verticalLayout_4.addWidget(self.complectsView)
 
         self.label_3 = QLabel(self.scrollAreaWidgetContents)
         self.label_3.setObjectName(u"label_3")
@@ -553,7 +556,7 @@ class Ui_MainWindow(object):
         self.ingotsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.ingotsView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.ingotsView.setProperty("showDropIndicator", False)
-        self.ingotsView.setSelectionMode(QAbstractItemView.NoSelection)
+        self.ingotsView.setSelectionMode(QAbstractItemView.SingleSelection)
         self.ingotsView.setFlow(QListView.LeftToRight)
         self.ingotsView.setSpacing(5)
 
@@ -923,15 +926,6 @@ class Ui_MainWindow(object):
         self.saveComplect.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c", None))
         self.saveComplectAndRecreate.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c\n"
 "\u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u0442\u044c", None))
-        ___qtreewidgetitem = self.treeWidget.headerItem()
-        ___qtreewidgetitem.setText(7, QCoreApplication.translate("MainWindow", u"ID", None));
-        ___qtreewidgetitem.setText(6, QCoreApplication.translate("MainWindow", u"\u0421\u0442\u0430\u0442\u0443\u0441", None));
-        ___qtreewidgetitem.setText(5, QCoreApplication.translate("MainWindow", u"\u041f\u0440\u0438\u043e\u0440\u0438\u0442\u0435\u0442", None));
-        ___qtreewidgetitem.setText(4, QCoreApplication.translate("MainWindow", u"\u041a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e", None));
-        ___qtreewidgetitem.setText(3, QCoreApplication.translate("MainWindow", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430", None));
-        ___qtreewidgetitem.setText(2, QCoreApplication.translate("MainWindow", u"\u0428\u0438\u0440\u0438\u043d\u0430", None));
-        ___qtreewidgetitem.setText(1, QCoreApplication.translate("MainWindow", u"\u0414\u043b\u0438\u043d\u0430", None));
-        ___qtreewidgetitem.setText(0, QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435", None));
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u0441\u043b\u0438\u0442\u043a\u0438", None))
         self.label_7.setText(QCoreApplication.translate("MainWindow", u"\u041a\u0430\u0440\u0442\u0430 \u0440\u0430\u0441\u043a\u0440\u043e\u044f", None))
         self.recalculate.setText(QCoreApplication.translate("MainWindow", u"\u041f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u0442\u044c", None))
