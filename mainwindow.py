@@ -24,7 +24,7 @@ from models import (
     IngotModel, OrderInformationComplectsModel, OrderModel
 )
 from service import (
-    OrderDataService, StandardDataService
+    OrderDataService, StandardDataService, FusionDataService, IngotsDataService
 )
 from dialogs import (
     IngotAddingDialog, IngotReadinessDialog, OrderAddingDialog, FullScreenWindow
@@ -33,6 +33,7 @@ from charts.plan import CuttingPlanPainter, MyQGraphicsView
 from charts.map import CuttingMapPainter
 from catalog import Catalog
 from settings import SettingsDialog
+from exceptions import ForcedTermination
 from log import setup_logging, timeit
 
 from sequential_mh.bpp_dsc.rectangle import (
@@ -270,6 +271,7 @@ class OCIMainWindow(QMainWindow):
 
     def update_complect_statuses(self, order_id: int, fusion_id: int):
         # Подсчитываем количество неразмещенных заготовок (название: количество)
+        # FIXME: проблемы со статусами при наличии одинаковых веток
         unplaced = list(chain.from_iterable([leave.result.unplaced for leave in self.tree.cc_leaves]))
         unplaced_counter = Counter([blank.name for blank in unplaced])
 
@@ -408,6 +410,12 @@ class OCIMainWindow(QMainWindow):
             self.create_cut(ingot_size, details, material, progress=progress)
         except Exception as exception: 
             QMessageBox.critical(self, 'Ошибка разреза', f'{exception}', QMessageBox.Ok)
+        except ForcedTermination:
+            logging.info(
+                'Раскрой для заказа %(name)s прерван пользователем.',
+                {'name': order_name}
+            )
+            QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
         else:
             progress.setLabelText('Завершение раскроя...')
             logging.info(
@@ -541,6 +549,25 @@ class OCIMainWindow(QMainWindow):
 
     def _stmh_idrd(self, tree, local: bool = False, with_filter: bool = True,
                    restrictions: dict = None, progress: QProgressDialog = None):
+        """Последовательная древовидная метаэвристика.
+
+        Построение деревьев растроя.
+
+        :param tree: Начальное дерево
+        :type tree: Tree
+        :param local: Флаг локальной оптимизации, defaults to False
+        :type local: bool, optional
+        :param with_filter: Флаг фильтрации деревьев
+                            на соответствие ограничениям, defaults to True
+        :type with_filter: bool, optional
+        :param restrictions: Словарь ограничений, defaults to None
+        :type restrictions: dict, optional
+        :param progress: Прогресс бар, defaults to None
+        :type progress: QProgressDialog, optional
+        :raises ForcedTermination: Исключение принудительного завершения
+        :return: Набор построенных деревьев раскроя
+        :rtype: list[Tree]
+        """
         level = deque([tree])
         result = []
         step = 0
@@ -596,6 +623,9 @@ class OCIMainWindow(QMainWindow):
                 progress.setLabelText('Процесс раскроя.' + '.' * point_counter + ' ' * (2 - point_counter))
                 point_counter = (point_counter + 1) % 3
 
+                if progress.wasCanceled():
+                    raise ForcedTermination('Процесс раскроя был прерван')
+
         # костыль для завершения прогресса
         if step < steps and progress:
             progress.setValue(steps)
@@ -611,8 +641,12 @@ class OCIMainWindow(QMainWindow):
         """Подготовка страницы с планами раскроя"""
         # data_row = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         self.clearLayout(self.ui.horizontalLayout_6, take=1)
-        for depth in self.steps():
-            button = ExclusiveButton(depth=depth)
+        depth_list = self.steps()
+        for i, depth in enumerate(depth_list):
+            name = f'{depth} мм'
+            if depth_list.count(depth) > 1:
+                name += f' ({depth_list[:i].count(depth) + 1})'
+            button = ExclusiveButton(depth=depth, name=name, index=i)
             button.clicked.connect(self.depthLineChanged)
             self.ui.horizontalLayout_6.addWidget(button)
         self.ui.horizontalLayout_6.addStretch()
@@ -636,18 +670,19 @@ class OCIMainWindow(QMainWindow):
             self.sourcePage()
         else:
             depth = button.depth
-            self.stepPage(depth)
+            index = button.index
+            self.stepPage(index)
 
     def sourcePage(self):
         """Переход на страницу с исходным слитком"""
         self.loadDetailList(depth=0.0)
         self.graphicsView.setScene(self.map_scene)
 
-    def stepPage(self, depth: float):
+    def stepPage(self, index: int):
         data_row = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         self.graphicsView.setScene(self.plan_scene)
-        index = self.steps().index(depth)
         pack = self.tree.cc_leaves[index]
+        depth = pack.bin.height
         self.plan_painter.setBin(
             round(pack.bin.length, 1),
             round(pack.bin.width, 1),
