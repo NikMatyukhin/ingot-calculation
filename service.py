@@ -139,8 +139,8 @@ class StandardDataService (AbstractDataService):
 
     @staticmethod
     @db_connector
-    def save_record(connection, table: str,
-                    **saved_fields: Sequence[TableField]) -> bool:
+    def save_record(connection: sqlite3.Connection, table: str,
+                    **saved_fields: Sequence[TableField]) -> int:
 
         fields_number = len(saved_fields)
         sql = str(f'INSERT INTO {table} '
@@ -149,7 +149,7 @@ class StandardDataService (AbstractDataService):
 
         cursor = connection.cursor()
         cursor.execute(sql, tuple(saved_fields.values()))
-        return True
+        return cursor.lastrowid
 
     @staticmethod
     @db_connector
@@ -328,7 +328,7 @@ class OrderDataService (StandardDataService):
         field, value = parse_field(order_id)
 
         sql = str('SELECT ingots.ingot_id, ingots.fusion_id, fusions.name, ingots.batch, '
-                  'ingots.height, ingots.width, ingots.depth, ingots.status_id '
+                  'ingots.height, ingots.width, ingots.depth, ingots.status_id, ingots.efficiency '
                   'FROM ingots '
                   'LEFT JOIN fusions ON fusions.fusion_id = ingots.fusion_id '
                   f'WHERE  ingots.{field}={value}')
@@ -442,7 +442,7 @@ class OrderDataService (StandardDataService):
     def vacancy_ingots(connection) -> List:
 
         sql = str('SELECT ingots.ingot_id, ingots.fusion_id, fusions.name, ingots.batch, '
-                  'ingots.height, ingots.width, ingots.depth, ingots.status_id '
+                  'ingots.height, ingots.width, ingots.depth, ingots.status_id, ingots.efficiency '
                   'FROM ingots '
                   'LEFT JOIN fusions '
                   'ON fusions.fusion_id = ingots.fusion_id '
