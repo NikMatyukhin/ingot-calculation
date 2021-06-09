@@ -283,7 +283,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
         visible_info = {
             'status_name': 'Статус: ' + index.model().extradata(index, Qt.DisplayRole, 'status_name'),
-            'efficiency': 'Эффективность: ' + str(data_row['efficiency']) + '%',
+            # 'efficiency': 'Эффективность: ' + str(data_row['efficiency']) + '%',
             'article_number': 'Изделий: ' + str(index.model().extradata(index, Qt.DisplayRole, 'article_number')) + ' шт',
             'detail_number': 'Заготовок: ' + str(index.model().extradata(index, Qt.DisplayRole, 'detail_number')) + ' шт',
         }

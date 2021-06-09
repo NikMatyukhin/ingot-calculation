@@ -564,7 +564,8 @@ class IngotModel(ListModel):
                 'fusion_id': ingot[1],
                 'ingot_part': ingot[3],
                 'ingot_size': [ingot[4], ingot[5], ingot[6]],
-                'status_id': ingot[7]
+                'status_id': ingot[7],
+                'efficiency': ingot[8]
             }
             self.appendRow(data_row)
 
