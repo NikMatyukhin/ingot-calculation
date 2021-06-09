@@ -328,6 +328,7 @@ class OrderAddingDialog(QDialog):
     """
 
     recordSavedSuccess = Signal(dict)
+    predictedIngotSaved = Signal(dict, dict, Tree)
 
     def __init__(self, parent):
         super(OrderAddingDialog, self).__init__(parent)
@@ -352,6 +353,9 @@ class OrderAddingDialog(QDialog):
         self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
         self.ui.ingotsView.setModel(self.ingot_model)
         self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
+
+        # Храним данные о расчитанных слитках
+        self.predicted_ingots = {}
 
         # Прокси-модель для поиска нужных изделий (фильтр по названию)
         self.search_proxy = ArticleInformationFilterProxyModel()
@@ -515,7 +519,7 @@ class OrderAddingDialog(QDialog):
 
         if self.choice_proxy.rowCount(QModelIndex()):
             details = self.get_details_kit(material)
-            sizes = self.predict_size(material, details)
+            sizes, tree, efficiency = self.predict_size(material, details)
             data_row = {
                 'ingot_id': 0,
                 'fusion_id': self.fusions[fusion_name],
@@ -531,6 +535,7 @@ class OrderAddingDialog(QDialog):
                     self.ingot_model.deleteRow(row, QModelIndex())
                     break
             self.ingot_model.appendRow(data_row)
+            self.predicted_ingots[self.fusions[fusion_name]] = {'tree': tree.root, 'efficiency': round(efficiency * 100, 2)}
         else:
             QMessageBox.critical(
                 self,
@@ -614,7 +619,7 @@ class OrderAddingDialog(QDialog):
         # print(f'Масса слитка (в гр): {length * width * height * material.density / 1000}')
         # print(f'Масса слитка (в кг): {length * width * height * material.density / 1_000_000}')
         # print(f'{material.density = }')
-        return math.ceil(length), math.ceil(width), math.ceil(height)
+        return [math.ceil(length), math.ceil(width), math.ceil(height)], tree, efficiency
 
     def repeatable_fusions(self, indexes: List[QModelIndex]):
         fusions_id = []
@@ -645,11 +650,12 @@ class OrderAddingDialog(QDialog):
 
         # Если заполнено имя, выбран хотя бы один слиток и изделие
         if order_name and selected_indexes and self.choice_proxy.rowCount(QModelIndex()):
+            creation_date = datetime.today().strftime("%d_%m_%Y")
             success = StandardDataService.save_record(
                 'orders',
                 status_id=1,
                 name=order_name,
-                date=datetime.today().strftime("%d_%m_%Y")
+                date=creation_date
             )
             if success:
                 order_id = OrderDataService.max_id()
@@ -660,15 +666,19 @@ class OrderAddingDialog(QDialog):
                     current_ingot = self.ingot_model.data(index, Qt.DisplayRole)
                     # Если текущий слиток <эфемерный>, то добавляем в базу
                     if current_ingot['status_id'] == 4:
-                        StandardDataService.save_record(
+                        predicted_tree = self.predicted_ingots[current_ingot['fusion_id']]['tree']
+                        predicted_efficiency = self.predicted_ingots[current_ingot['fusion_id']]['efficiency']
+                        current_ingot['ingot_id'] = StandardDataService.save_record(
                             'ingots',
                             fusion_id=current_ingot['fusion_id'],
                             height=current_ingot['ingot_size'][0],
                             width=current_ingot['ingot_size'][1],
                             depth=current_ingot['ingot_size'][2],
                             order_id=order_id,
-                            status_id=3
+                            status_id=3,
+                            efficiency=predicted_efficiency
                         )
+                        self.predictedIngotSaved.emit({'order_id': order_id, 'creation_date': creation_date}, current_ingot, predicted_tree)
                         planned_status = True
                     # Если текущий слиток <слиток>, то обновляем связку
                     else:

@@ -78,6 +78,7 @@ class OCIMainWindow(QMainWindow):
         self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
         self.ui.ingotsView.setModel(self.ingot_model)
         self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
+        self.ui.ingotsView.clicked.connect(self.show_ingot_information)
         self.ingot_delegate.forgedIndexClicked.connect(self.confirm_ingot_readiness)
 
         # Модель комплектов (обновляется при изменении текущего заказа)
@@ -197,12 +198,22 @@ class OCIMainWindow(QMainWindow):
         self.ui.label.setText('Заказ ' + current_order['order_name'])
 
         self.map_scene.clear()
-
-        if self.is_file_exist(current_order):
-            self.load_tree(current_order)
-            self.redraw_map(current_order)
+        
+        current_ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
+        if self.is_file_exist(current_order, current_ingot):
+            self.load_tree(current_order, current_ingot)
+            self.redraw_map(current_ingot)
 
         self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
+
+    def show_ingot_information(self, current: QModelIndex):
+        current_ingot = current.data(Qt.DisplayRole)
+        current_order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        if self.is_file_exist(current_order, current_ingot):
+            self.load_tree(current_order, current_ingot)
+            self.redraw_map(current_ingot)
+        else:
+            self.map_scene.clear()
 
     def confirm_ingot_readiness(self, index: QModelIndex):
         """Подтверждение готовности слитка.
@@ -426,13 +437,13 @@ class OCIMainWindow(QMainWindow):
 
         current_order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         self.update_complect_statuses(current_order['order_id'], current_ingot['fusion_id'])
-        self.save_tree(current_order)
-        self.redraw_map(current_order)
+        self.save_tree(current_order, current_ingot)
+        self.redraw_map(current_ingot)
 
-    def redraw_map(self, data: dict):
+    def redraw_map(self, ingot: Dict):
         self.map_scene.clear()
         self.map_painter.setTree(self.tree)
-        self.map_painter.setEfficiency(data['efficiency'])
+        self.map_painter.setEfficiency(ingot['efficiency'])
         self.map_painter.drawTree()
 
     def get_details_kit(self, material: Material) -> Kit:
@@ -504,14 +515,20 @@ class OCIMainWindow(QMainWindow):
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
 
-        current_index = self.ui.searchResult_1.currentIndex()
+        ingot_index = self.ui.ingotsView.currentIndex()
+        ingot_id = ingot_index.data(Qt.DisplayRole)['ingot_id']
         total_efficiency = 100 * solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
         data = {'efficiency': round(total_efficiency, 2)}
-        self.order_model.setData(current_index, data, Qt.EditRole)
+        self.ingot_model.setData(ingot_index, data, Qt.EditRole)
         StandardDataService.update_record(
-            'orders', {'order_id': current_index.data(Qt.DisplayRole)['order_id']},
-            efficiency = data['efficiency']
+            'ingots', {'ingot_id': ingot_id}, efficiency=data['efficiency']
         )
+        # TODO: теперь непонятно, что есть эффективность раскроя целого набора
+        # self.order_model.setData(current_index, data, Qt.EditRole)
+        # StandardDataService.update_record(
+        #     'orders', {'order_id': current_index.data(Qt.DisplayRole)['order_id']},
+        #     efficiency = data['efficiency']
+        # )
 
     @timeit
     def stmh_idrd(self, tree, with_filter: bool = True,
@@ -801,6 +818,7 @@ class OCIMainWindow(QMainWindow):
         }
         window.set_settings(settings)
         window.recordSavedSuccess.connect(self.confirm_order_adding)
+        window.predictedIngotSaved.connect(self.save_tree)
         window.exec_()
 
     def read_settings(self):
@@ -860,32 +878,35 @@ class OCIMainWindow(QMainWindow):
         self.settings.setValue(
             'rolling/max_clean_width', self.clean_roll_plate_width)
 
-    def save_tree(self, data: dict):
+    def save_tree(self, order: Dict, ingot: Dict, tree: Tree = None):
         """Сохранение корневого узла дерева"""
-        file_name = self.get_file_name(data)
+        file_name = self.get_file_name(order, ingot)
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
         with abs_path.open(mode='wb') as f:
-            pickle.dump(self.tree, f)
+            if tree:
+                pickle.dump(tree, f)
+            else:
+                pickle.dump(self.tree, f)
 
-    def is_file_exist(self, data: dict):
-        file_name = self.get_file_name(data)
+    def is_file_exist(self, order: Dict, ingot: Dict):
+        file_name = self.get_file_name(order, ingot)
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
         return abs_path.exists()
 
-    def load_tree(self, data: dict):
+    def load_tree(self, order: Dict, ingot: Dict):
         """Загрузка корневого узла дерева из файла"""
-        file_name = self.get_file_name(data)
+        file_name = self.get_file_name(order, ingot)
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
         with abs_path.open(mode='rb') as f:
             self.tree = pickle.load(f)
 
-    def get_file_name(self, data: dict) -> str:
+    def get_file_name(self, order: Dict, ingot: Dict) -> str:
         """Создание имени файла для сохранения дерева раскроя"""
         extension = 'oci'
-        return f'{data["order_id"]}_{data["creation_date"]}.{extension}'
+        return f"{order['order_id']}_{ingot['ingot_id']}_{order['creation_date']}.{extension}"
 
 
 def get_abs_path(file_name, path=None) -> Path:
