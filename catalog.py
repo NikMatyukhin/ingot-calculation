@@ -40,7 +40,7 @@ class Catalog(QDialog):
         self.model = CatalogModel(
             ['Ведомость', 'Тип', 'Название', 'Аренда', 'ID']
         )
-        self.model.dataChanged.connect(self.updateRecord)
+        self.model.dataChanged.connect(self.update_record_filter)
         self.proxy = ProductInformationFilterProxyModel()
         self.proxy.setSourceModel(self.model)
 
@@ -50,25 +50,26 @@ class Catalog(QDialog):
         self.ui.productsView.resizeColumnToContents(2)
         self.ui.productsView.setColumnHidden(1, True)
         self.ui.productsView.setColumnHidden(4, True)
-        self.ui.productsView.clicked.connect(self.showDetailsList)
+        self.ui.productsView.clicked.connect(self.show_details)
 
-        self.ui.detailsView.itemSelectionChanged.connect(self.showInformation)
-        self.ui.detailsView.itemChanged.connect(self.updateDetail)
+        self.ui.detailsView.itemSelectionChanged.connect(self.show_details_information)
+        self.ui.detailsView.itemChanged.connect(self.update_detail)
+        self.ui.detailsView.hideColumn(8)
 
-        self.ui.register_number.textChanged.connect(self.proxy.setRegister)
-        self.ui.designation.textChanged.connect(self.proxy.setDesignation)
-        self.ui.nomenclature.textChanged.connect(self.proxy.setNomenclature)
-        self.ui.type.currentTextChanged.connect(self.proxy.setType)
-        self.ui.rent.stateChanged.connect(self.proxy.setRent)
+        self.ui.register_number.textChanged.connect(self.proxy.register)
+        self.ui.designation.textChanged.connect(self.proxy.designation)
+        self.ui.nomenclature.textChanged.connect(self.proxy.nomenclature)
+        self.ui.type.currentTextChanged.connect(self.proxy.type)
+        self.ui.rent.stateChanged.connect(self.proxy.rent)
 
-        self.ui.newProduct.clicked.connect(self.openProductDialog)
-        self.ui.newArticle.clicked.connect(self.openArticleDialog)
-        self.ui.newDetail.clicked.connect(self.openDetailDialog)
+        self.ui.newProduct.clicked.connect(self.open_product_dialog)
+        self.ui.newArticle.clicked.connect(self.open_article_dialog)
+        self.ui.newDetail.clicked.connect(self.open_detail_dialog)
 
         # TODO: дописать логику кнопки с новой картинкой для детали
         self.customContextMenuRequested.connect(self.showContextMenu)
 
-    def showDetailsList(self, current_index: QModelIndex):
+    def show_details(self, current_index: QModelIndex):
         view: QTableWidget = self.ui.detailsView
         view.clearContents()
         view.setRowCount(0)
@@ -97,10 +98,8 @@ class Catalog(QDialog):
 
         for column in [0, 2, 3, 4, 5, 6]:
             view.resizeColumnToContents(column)
-        view.hideColumn(8)
 
-    def showInformation(self):
-
+    def show_details_information(self):
         selected_items = self.ui.detailsView.selectedItems()
 
         if len(selected_items) < 6:
@@ -122,35 +121,42 @@ class Catalog(QDialog):
             self.ui.detailInfo.setText(information)
 
     def showContextMenu(self, point: QPointF):
+        """Метод вызова контекстного меню.
+
+        Отвечает за добавление и удаление заготовок и изделий.
+
+        :param point: Точка выхова контекстного меню
+        :type point: QPointF
+        """
         menu = QMenu()
 
         if self.ui.productsView.hasFocus():
             if self.model.rowCount(QModelIndex()):
                 if self.ui.productsView.currentIndex().parent().isValid():
                     delete = menu.addAction('Удалить артикул')
-                    delete.triggered.connect(self.deleteArticle)
+                    delete.triggered.connect(self.confirm_article_removing)
                 else:
                     add = menu.addAction('Добавить артикул')
                     delete = menu.addAction('Удалить изделие')
-                    add.triggered.connect(self.openArticleDialog)
-                    delete.triggered.connect(self.deleteProduct)
+                    add.triggered.connect(self.open_article_dialog)
+                    delete.triggered.connect(self.confirm_product_removing)
         elif self.ui.detailsView.hasFocus():
             add = menu.addAction('Добавить деталь')
             delete = menu.addAction('Удалить деталь')
-            add.triggered.connect(self.openDetailDialog)
-            delete.triggered.connect(self.deleteDetail)
+            add.triggered.connect(self.open_detail_dialog)
+            delete.triggered.connect(self.confirm_detail_removing)
 
         menu.exec_(self.mapToGlobal(point))
 
-    def openProductDialog(self):
+    def open_product_dialog(self):
         window = ProductDialog(self)
-        window.recordSavedSuccess.connect(self.addProduct)
+        window.recordSavedSuccess.connect(self.confirm_product_adding)
 
         window.exec_()
 
-    def openArticleDialog(self):
+    def open_article_dialog(self):
         window = ArticleDialog(self)
-        window.recordSavedSuccess.connect(self.addArticle)
+        window.recordSavedSuccess.connect(self.confirm_article_adding)
 
         index = self.proxy.mapToSource(self.ui.productsView.currentIndex())
         if not index.isValid():
@@ -164,15 +170,13 @@ class Catalog(QDialog):
         type = self.model.data(type_index, Qt.DisplayRole)
         designation = self.model.data(designation_index, Qt.DisplayRole)
 
-        window.setRegister(product_id)
-        window.setDesignation(designation)
-        window.setType(type)
+        window.set_title_data(product_id, designation, type)
 
         window.exec_()
 
-    def openDetailDialog(self):
+    def open_detail_dialog(self):
         window = DetailDialog(self)
-        window.recordSavedSuccess.connect(self.addDetail)
+        window.recordSavedSuccess.connect(self.confirm_detail_adding)
 
         index = self.proxy.mapToSource(self.ui.productsView.currentIndex())
         if not index.isValid():
@@ -186,26 +190,20 @@ class Catalog(QDialog):
         type = self.model.data(type_index, Qt.DisplayRole)
         designation = self.model.data(designation_index, Qt.DisplayRole)
 
-        window.setRegister(product_id)
-        window.setDesignation(designation)
-        window.setFusionsList(self.fusions_list)
-        window.setDirectionsList(self.directions_list)
-        window.setType(type)
+        window.set_title_data(product_id, designation, type)
 
         window.exec_()
 
-    def updateRecord(self, index: QModelIndex, temp: QModelIndex,
+    def update_record_filter(self, index: QModelIndex, temp: QModelIndex,
                      roles: List[int]):
-
         parent = self.model.parent(index)
         if parent.isValid():
-            self.updateArticle(index, index, roles)
+            self.update_article(index, index, roles)
         else:
-            self.updateProduct(index, index, roles)
+            self.update_product(index, index, roles)
 
-    def updateProduct(self, index: QModelIndex, temp: QModelIndex,
+    def update_product(self, index: QModelIndex, temp: QModelIndex,
                       roles: List[int]):
-
         parent = self.model.parent(index)
         product_id_index = self.model.index(index.row(), 0, parent)
         designation_index = self.model.index(index.row(), 2, parent)
@@ -228,9 +226,8 @@ class Catalog(QDialog):
                 QMessageBox.Ok
             )
 
-    def updateArticle(self, index: QModelIndex, temp: QModelIndex,
+    def update_article(self, index: QModelIndex, temp: QModelIndex,
                       roles: List[int]):
-
         parent = self.model.parent(index)
         nomen_index = self.model.index(index.row(), 2, parent)
         rent_index = self.model.index(index.row(), 3, parent)
@@ -256,7 +253,7 @@ class Catalog(QDialog):
                 QMessageBox.Ok
             )
 
-    def updateDetail(self, it: QTableWidgetItem):
+    def update_detail(self, it: QTableWidgetItem):
         id_item = self.ui.detailsView.item(it.row(), 8)
         if id_item:
             row, column, data = it.row(), it.column(), it.data(Qt.DisplayRole)
@@ -311,13 +308,11 @@ class Catalog(QDialog):
                         self.directions_names.index(data)]
                 )
 
-    def addProduct(self, data: List[Any]):
-
+    def confirm_product_adding(self, data: List[Any]):
         key, type, designation = data
         self.model.appendRow([key, type, designation]+[None]*2, QModelIndex())
 
-    def addArticle(self, data: List[Any]):
-
+    def confirm_article_adding(self, data: List[Any]):
         parent = self.proxy.mapToSource(self.ui.productsView.currentIndex())
 
         key, type, nomenclature, rent = data
@@ -331,7 +326,7 @@ class Catalog(QDialog):
         self.model.appendRow([None, type, nomenclature, rent, id], parent)
         self.proxy.invalidate()
 
-    def addDetail(self, data: List[Any]):
+    def confirm_detail_adding(self, data: List[Any]):
 
         self.ui.detailsView.insertRow(self.ui.detailsView.rowCount())
 
@@ -341,7 +336,7 @@ class Catalog(QDialog):
             item = QTableWidgetItem(str(data))
             self.ui.detailsView.setItem(row, column, item)
 
-    def deleteProduct(self):
+    def confirm_product_removing(self):
         index = self.proxy.mapToSource(self.ui.productsView.currentIndex())
         id_index = self.model.index(index.row(), 0, QModelIndex())
         id = self.model.data(id_index, Qt.DisplayRole)
@@ -362,7 +357,7 @@ class Catalog(QDialog):
                 QMessageBox.Ok
             )
 
-    def deleteArticle(self):
+    def confirm_article_removing(self):
         index = self.proxy.mapToSource(self.ui.productsView.currentIndex())
         parent = self.model.parent(index)
         id_index = self.model.index(index.row(), 4, parent)
@@ -384,7 +379,7 @@ class Catalog(QDialog):
                 QMessageBox.Ok
             )
 
-    def deleteDetail(self):
+    def confirm_detail_removing(self):
         row = self.ui.detailsView.currentRow()
         id = self.ui.detailsView.item(row, 8).data(Qt.DisplayRole)
 

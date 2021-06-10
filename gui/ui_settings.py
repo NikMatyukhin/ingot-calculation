@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsTxBfhe.ui'
+## Form generated from reading UI file 'settingsmHLCik.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -69,19 +69,19 @@ class Ui_Dialog(object):
 "QPushButton:hover {\n"
 "	background-color: rgb(217, 217, 217);\n"
 "	border-right: 3px solid gray;\n"
-"    padding-left: 6px;\n"
+"    padding-left: 3px;\n"
 "}\n"
 "\n"
 "QPushButton:pressed {\n"
 "	background-color: rgb(202, 202, 202);\n"
 "	border-right: 3px solid black;\n"
-"    padding-left: 6px;\n"
+"    padding-left: 3px;\n"
 "}\n"
 "\n"
 "QPushButton:checked {\n"
 "	background-color: rgb(217, 217, 217);\n"
 "	border-right: 3px solid black;\n"
-"    padding-left: 0px;\n"
+"    padding-left: 3px;\n"
 "}")
         icon = QIcon()
         icon.addFile(u":/icons/scissors.png", QSize(), QIcon.Normal, QIcon.Off)
@@ -108,19 +108,19 @@ class Ui_Dialog(object):
 "QPushButton:hover {\n"
 "	background-color: rgb(217, 217, 217);\n"
 "	border-right: 3px solid gray;\n"
-"    padding-left: 6px;\n"
+"    padding-left: 3px;\n"
 "}\n"
 "\n"
 "QPushButton:pressed {\n"
 "	background-color: rgb(202, 202, 202);\n"
 "	border-right: 3px solid black;\n"
-"    padding-left: 6px;\n"
+"    padding-left: 3px;\n"
 "}\n"
 "\n"
 "QPushButton:checked {\n"
 "	background-color: rgb(217, 217, 217);\n"
 "	border-right: 3px solid black;\n"
-"    padding-left: 0px;\n"
+"    padding-left: 3px;\n"
 "}")
         icon1 = QIcon()
         icon1.addFile(u":/icons/h-roll.png", QSize(), QIcon.Normal, QIcon.Off)

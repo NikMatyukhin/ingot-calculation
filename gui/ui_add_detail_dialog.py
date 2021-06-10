@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_detail_dialogUPeVUB.ui'
+## Form generated from reading UI file 'add_detail_dialogrluuNw.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.0.0
+## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -120,6 +120,7 @@ class Ui_Dialog(object):
 
         self.height = QSpinBox(self.sizes)
         self.height.setObjectName(u"height")
+        self.height.setMinimum(1)
         self.height.setMaximum(3000)
 
         self.formLayout.setWidget(0, QFormLayout.FieldRole, self.height)
@@ -131,6 +132,7 @@ class Ui_Dialog(object):
 
         self.width = QSpinBox(self.sizes)
         self.width.setObjectName(u"width")
+        self.width.setMinimum(1)
         self.width.setMaximum(3000)
 
         self.formLayout.setWidget(1, QFormLayout.FieldRole, self.width)
@@ -142,6 +144,7 @@ class Ui_Dialog(object):
 
         self.depth = QDoubleSpinBox(self.sizes)
         self.depth.setObjectName(u"depth")
+        self.depth.setMinimum(1.000000000000000)
         self.depth.setMaximum(3000.000000000000000)
 
         self.formLayout.setWidget(2, QFormLayout.FieldRole, self.depth)

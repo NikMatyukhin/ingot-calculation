@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_order_dialogNYHVjt.ui'
+## Form generated from reading UI file 'add_order_dialogakbnwA.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -17,7 +17,7 @@ class Ui_Dialog(object):
     def setupUi(self, Dialog):
         if not Dialog.objectName():
             Dialog.setObjectName(u"Dialog")
-        Dialog.resize(1062, 654)
+        Dialog.resize(1429, 667)
         Dialog.setContextMenuPolicy(Qt.CustomContextMenu)
         self.verticalLayout = QVBoxLayout(Dialog)
         self.verticalLayout.setSpacing(0)
@@ -39,6 +39,13 @@ class Ui_Dialog(object):
         self.splitter.setOrientation(Qt.Horizontal)
         self.leftArea = QFrame(self.splitter)
         self.leftArea.setObjectName(u"leftArea")
+        sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.leftArea.sizePolicy().hasHeightForWidth())
+        self.leftArea.setSizePolicy(sizePolicy)
+        self.leftArea.setMinimumSize(QSize(540, 0))
+        self.leftArea.setMaximumSize(QSize(680, 16777215))
         self.leftArea.setStyleSheet(u"QFrame {\n"
 "	background-color: rgb(231, 231, 231);\n"
 "}")
@@ -59,6 +66,7 @@ class Ui_Dialog(object):
 
         self.treeView_1 = QTreeView(self.leftArea)
         self.treeView_1.setObjectName(u"treeView_1")
+        self.treeView_1.setMinimumSize(QSize(0, 0))
         self.treeView_1.setStyleSheet(u"QTreeView {\n"
 "	border: 1px solid gray;\n"
 "	background-color: white;\n"
@@ -86,6 +94,7 @@ class Ui_Dialog(object):
         self.splitter.addWidget(self.leftArea)
         self.rightArea = QFrame(self.splitter)
         self.rightArea.setObjectName(u"rightArea")
+        self.rightArea.setMinimumSize(QSize(850, 0))
         self.rightArea.setFrameShape(QFrame.NoFrame)
         self.rightArea.setFrameShadow(QFrame.Raised)
         self.verticalLayout_4 = QVBoxLayout(self.rightArea)
@@ -171,7 +180,7 @@ class Ui_Dialog(object):
         self.ingotsView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.ingotsView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.ingotsView.setProperty("showDropIndicator", False)
-        self.ingotsView.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.ingotsView.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.ingotsView.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.ingotsView.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.ingotsView.setFlow(QListView.LeftToRight)
@@ -211,7 +220,7 @@ class Ui_Dialog(object):
 
         self.pushButton = QPushButton(self.buttonArea)
         self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setEnabled(False)
+        self.pushButton.setEnabled(True)
 
         self.horizontalLayout_2.addWidget(self.pushButton)
 

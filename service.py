@@ -139,8 +139,8 @@ class StandardDataService (AbstractDataService):
 
     @staticmethod
     @db_connector
-    def save_record(connection, table: str,
-                    **saved_fields: Sequence[TableField]) -> bool:
+    def save_record(connection: sqlite3.Connection, table: str,
+                    **saved_fields: Sequence[TableField]) -> int:
 
         fields_number = len(saved_fields)
         sql = str(f'INSERT INTO {table} '
@@ -149,7 +149,7 @@ class StandardDataService (AbstractDataService):
 
         cursor = connection.cursor()
         cursor.execute(sql, tuple(saved_fields.values()))
-        return True
+        return cursor.lastrowid
 
     @staticmethod
     @db_connector
@@ -221,11 +221,24 @@ class FusionDataService (StandardDataService):
 
     @staticmethod
     @db_connector
-    def fusions_list(connection) -> List:
+    def fusions_list(connection):
 
+        connection.row_factory = sqlite3.Row
         cursor = connection.cursor()
         cursor.execute('SELECT fusion_id, name FROM fusions')
-        return list(map(list, cursor.fetchall()))
+        return cursor.fetchall()
+
+
+class DirectionDataService (StandardDataService):
+
+    @staticmethod
+    @db_connector
+    def directions_list(connection):
+
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        cursor.execute('SELECT direction_id, name FROM directions')
+        return cursor.fetchall()
 
 
 class DetailDataService (StandardDataService):
@@ -315,7 +328,7 @@ class OrderDataService (StandardDataService):
         field, value = parse_field(order_id)
 
         sql = str('SELECT ingots.ingot_id, ingots.fusion_id, fusions.name, ingots.batch, '
-                  'ingots.height, ingots.width, ingots.depth, ingots.status_id '
+                  'ingots.height, ingots.width, ingots.depth, ingots.status_id, ingots.efficiency '
                   'FROM ingots '
                   'LEFT JOIN fusions ON fusions.fusion_id = ingots.fusion_id '
                   f'WHERE  ingots.{field}={value}')
@@ -331,9 +344,10 @@ class OrderDataService (StandardDataService):
         field, value = parse_field(order_id)
 
         sql = str('SELECT complects.article_id, articles.nomenclature, '
-                  'complects.detail_id, details.name, complects.amount, '
-                  'complects.priority, details.height, details.width, '
-                  'details.depth, complects.status_id '
+                  'complects.detail_id, details.fusion_id, details.name,  '
+                  'details.height, details.width, details.depth, '
+                  'complects.amount, complects.priority, details.direction_id, '
+                  'complects.status_id '
                   'FROM complects '
                   'LEFT JOIN details '
                   'ON details.detail_id = complects.detail_id '
@@ -423,15 +437,12 @@ class OrderDataService (StandardDataService):
         cursor.execute(sql, upd_fields)
         return True
 
-
-class IngotsDataService (StandardDataService):
-
     @staticmethod
     @db_connector
     def vacancy_ingots(connection) -> List:
 
         sql = str('SELECT ingots.ingot_id, ingots.fusion_id, fusions.name, ingots.batch, '
-                  'ingots.height, ingots.width, ingots.depth, ingots.status_id '
+                  'ingots.height, ingots.width, ingots.depth, ingots.status_id, ingots.efficiency '
                   'FROM ingots '
                   'LEFT JOIN fusions '
                   'ON fusions.fusion_id = ingots.fusion_id '
@@ -440,3 +451,29 @@ class IngotsDataService (StandardDataService):
         cursor = connection.cursor()
         cursor.execute(sql)
         return list(map(list, cursor.fetchall()))
+    
+    @staticmethod
+    @db_connector
+    def details_count(connection, order_id: TableField) -> List:
+
+        field, value = parse_field(order_id)
+
+        sql = str('SELECT COUNT(DISTINCT detail_id) FROM complects '
+                  f'WHERE {field}={value}')
+
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return cursor.fetchone()[0]
+    
+    @staticmethod
+    @db_connector
+    def articles_count(connection, order_id: TableField) -> List:
+
+        field, value = parse_field(order_id)
+
+        sql = str('SELECT COUNT(DISTINCT article_id) FROM complects '
+                  f'WHERE {field}={value}')
+
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return cursor.fetchone()[0]

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'catalogjDhFbr.ui'
+## Form generated from reading UI file 'catalogqLcxdx.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.0.0
+## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -262,6 +262,15 @@ class Ui_Form(object):
 
         self.verticalLayout.addWidget(self.productsView)
 
+        self.label = QLabel(self.frame)
+        self.label.setObjectName(u"label")
+        self.label.setFrameShape(QFrame.StyledPanel)
+        self.label.setScaledContents(False)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setMargin(3)
+
+        self.verticalLayout.addWidget(self.label)
+
         self.splitter.addWidget(self.frame)
         self.frame_2 = QFrame(self.splitter)
         self.frame_2.setObjectName(u"frame_2")
@@ -391,26 +400,30 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"\u0421\u043f\u0440\u0430\u0432\u043e\u0447\u043d\u0438\u043a \u0437\u0430\u0433\u043e\u0442\u043e\u0432\u043e\u043a", None))
 #if QT_CONFIG(tooltip)
-        self.newProduct.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u0432\u0443\u044e \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u044e", None))
+        self.newProduct.setToolTip("")
 #endif // QT_CONFIG(tooltip)
-        self.newProduct.setText(QCoreApplication.translate("Form", u"\u041d\u043e\u0432\u0430\u044f\n"
-"\u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u044f", None))
+        self.newProduct.setText(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c\n"
+"\u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u044e", None))
 #if QT_CONFIG(tooltip)
-        self.newArticle.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u0432\u043e\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u0435", None))
+        self.newArticle.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0438\u0437\u0434\u0435\u043b\u0438\u044f \u043a \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u043e\u0439 \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438", None))
 #endif // QT_CONFIG(tooltip)
-        self.newArticle.setText(QCoreApplication.translate("Form", u"\u041d\u043e\u0432\u043e\u0435\n"
+        self.newArticle.setText(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c\n"
 "\u0438\u0437\u0434\u0435\u043b\u0438\u0435", None))
 #if QT_CONFIG(tooltip)
-        self.newDetail.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u043d\u043e\u0432\u0443\u044e \u0434\u0435\u0442\u0430\u043b\u044c", None))
+        self.newDetail.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0437\u0430\u0433\u043e\u0442\u043e\u0432\u043a\u0438 \u043a \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u043e\u0439 \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438", None))
 #endif // QT_CONFIG(tooltip)
-        self.newDetail.setText(QCoreApplication.translate("Form", u"\u041d\u043e\u0432\u0430\u044f\n"
-"\u0437\u0430\u0433\u043e\u0442\u043e\u0432\u043a\u0430", None))
+        self.newDetail.setText(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c\n"
+"\u0437\u0430\u0433\u043e\u0442\u043e\u0432\u043a\u0443", None))
         self.newImage.setText(QCoreApplication.translate("Form", u"+ 4", None))
         self.searchParameters.setTitle(QCoreApplication.translate("Form", u"\u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b \u043f\u043e\u0438\u0441\u043a\u0430", None))
         self.register_number.setPlaceholderText(QCoreApplication.translate("Form", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u043e\u043c\u0435\u0440 \u0432\u0435\u0434\u043e\u043c\u043e\u0441\u0442\u0438...", None))
         self.designation.setPlaceholderText(QCoreApplication.translate("Form", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u0440\u043e\u0434\u0443\u043a\u0446\u0438\u0438...", None))
         self.nomenclature.setPlaceholderText(QCoreApplication.translate("Form", u"\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u043e\u043c\u0435\u043d\u043a\u043b\u0430\u0442\u0443\u0440\u0443...", None))
         self.rent.setText(QCoreApplication.translate("Form", u"\u0412 \u0430\u0440\u0435\u043d\u0434\u0443", None))
+#if QT_CONFIG(tooltip)
+        self.productsView.setToolTip(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0441\u0432\u044f\u0437\u0435\u0439 \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0435\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043a \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u044b\u043c \u043e\u0431\u044a\u0435\u043a\u0442\u0430\u043c", None))
+#endif // QT_CONFIG(tooltip)
+        self.label.setText(QCoreApplication.translate("Form", u"\u0414\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0441\u0432\u044f\u0437\u0435\u0439 \u043f\u0440\u0438\u043c\u0435\u043d\u044f\u0435\u0442\u0441\u044f \u0442\u043e\u043b\u044c\u043a\u043e \u043a \u0432\u044b\u0434\u0435\u043b\u0435\u043d\u043d\u044b\u043c \u043e\u0431\u044a\u0435\u043a\u0442\u0430\u043c", None))
         ___qtablewidgetitem = self.detailsView.horizontalHeaderItem(0)
         ___qtablewidgetitem.setText(QCoreApplication.translate("Form", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435", None));
         ___qtablewidgetitem1 = self.detailsView.horizontalHeaderItem(1)

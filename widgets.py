@@ -1,19 +1,21 @@
-from service import StandardDataService
-import application_rc
-import typing
 import math
+import typing
+import application_rc
+
 from PySide6.QtCore import (
-    QMargins, QPoint, Qt, Signal, QPropertyAnimation, QParallelAnimationGroup, QModelIndex,
+    QPoint, Qt, Signal, QPropertyAnimation, QParallelAnimationGroup, QModelIndex,
     QAbstractAnimation, QAbstractItemModel, QObject, QRect, QSize, QEvent
 )
 from PySide6.QtWidgets import (
-    QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy, QScrollArea, QLabel,
-    QCheckBox, QFrame, QItemDelegate, QStyleOptionViewItem, QComboBox,
-    QPushButton, QStyledItemDelegate, QStyle
+    QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
+    QScrollArea, QItemDelegate, QStyleOptionViewItem, QComboBox, QPushButton,
+    QStyledItemDelegate, QStyle
 )
 from PySide6.QtGui import (
-    QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
+    QBrush, QPen, QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
 )
+
+from service import StandardDataService
 from models import IngotModel
 
 
@@ -85,83 +87,6 @@ class ListValuesDelegate(QItemDelegate):
     def updateEditorGeometry(self, editor: QWidget,
                              option: QStyleOptionViewItem, index: QModelIndex):
         editor.setGeometry(option.rect)
-
-
-class Plate(QWidget):
-
-    checked = Signal(bool)
-
-    def __init__(self, id: int, fusion: str, batch_number: int, sizes: list,
-                 is_selected=True, is_leftover=False,
-                 parent: typing.Optional[QObject] = None):
-        super(Plate, self).__init__(parent)
-
-        self.id = id
-        self.batch_number = batch_number
-        self.is_leftover = is_leftover
-        self.is_selected = is_selected
-        self.sizes = sizes
-
-        self.main_frame = QFrame()
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.main_frame)
-        self.setLayout(main_layout)
-
-        pixmap = None
-        if fusion == 'ПлРд 90-10 ДС':
-            pixmap = QPixmap(':icons/ingot-90-10-DC.png')
-        elif fusion == 'ПлРд 90-10':
-            pixmap = QPixmap(':icons/ingot-90-10.png')
-        elif fusion == 'ПлРд 80-30':
-            pixmap = QPixmap(':icons/ingot-80-30.png')
-        elif fusion == 'ПлРд 80-20':
-            pixmap = QPixmap(':icons/ingot-80-20.png')
-        self.icon_label = QLabel()
-        self.icon_label.setPixmap(pixmap)
-
-        self.check_box = QCheckBox('Партия ' + str(self.batch_number))
-        self.sizes_label = QLabel(f'{sizes[0]}x{sizes[1]}x{sizes[2]}')
-        self.fusion_label = QLabel(str(fusion))
-
-        if self.is_selected:
-            self.check_box.setDisabled(True)
-            self.check_box.setChecked(True)
-        if self.is_leftover:
-            self.check_box.hide()
-        self.check_box.stateChanged.connect(self.check)
-
-        self.setWidgetStyles()
-
-        layout = QVBoxLayout()
-        layout.addWidget(self.check_box)
-        layout.addWidget(self.icon_label)
-        layout.setAlignment(self.icon_label, Qt.AlignHCenter)
-        layout.addWidget(self.sizes_label)
-        layout.setAlignment(self.sizes_label, Qt.AlignHCenter)
-        layout.addWidget(self.fusion_label)
-        layout.setAlignment(self.fusion_label, Qt.AlignHCenter)
-        layout.setContentsMargins(5, 5, 5, 5)
-        layout.setSpacing(0)
-        layout.addStretch()
-        self.main_frame.setLayout(layout)
-
-    def setWidgetStyles(self):
-        self.check_box.setStyleSheet('''
-            QCheckBox {
-                background-color: rgb(225, 225, 225);
-            }''')
-
-        self.main_frame.setStyleSheet('''
-            QFrame {
-                background-color: rgb(225, 225, 225);
-                border-radius: 5px;
-            }''')
-
-    def getID(self):
-        return self.id
-
-    def check(self, check_state):
-        self.checked.emit(check_state)
 
 
 class Section(QWidget):
@@ -327,12 +252,17 @@ class OrderSectionDelegate(QStyledItemDelegate):
         painter.setClipping(True)
         painter.setClipRect(rect)
 
-        if opt.state & QStyle.State_Selected:
-            painter.fillRect(rect, palette.midlight().color().darker(105))
-        elif opt.state & QStyle.State_MouseOver:
-            painter.fillRect(rect, palette.midlight().color())
+        status_id = index.data(Qt.DisplayRole)['status_id']
+        if status_id == 6:
+            fill_color = QColor('#77e07e')
         else:
-            painter.fillRect(rect, palette.light().color())
+            fill_color = palette.light().color()
+        if opt.state & QStyle.State_Selected:
+            painter.fillRect(rect, fill_color.darker(115))
+        elif opt.state & QStyle.State_MouseOver:
+            painter.fillRect(rect, fill_color.darker(105))
+        else:
+            painter.fillRect(rect, fill_color)
 
         painter.setPen(palette.dark().color())
 
@@ -343,8 +273,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
         data_row = index.data(Qt.DisplayRole)
 
-        storage = ' (на склад)' if data_row['is_on_storage'] else ''
-        name_text = 'Заказ ' + data_row['order_name'] + storage
+        name_text = 'Заказ ' + data_row['order_name']
         name_rect = QRect(self.textBox(title_font, name_text))
         name_rect.moveTo(contentRect.left(), contentRect.top())
 
@@ -353,10 +282,10 @@ class OrderSectionDelegate(QStyledItemDelegate):
         painter.drawText(name_rect, Qt.TextSingleLine, name_text)
 
         visible_info = {
-            'status_name': 'Статус: ' + data_row['status_name'],
-            'efficiency': 'Эффективность: ' + str(data_row['efficiency']) + '%',
-            'article_number': 'Изделий: ' + str(data_row['article_number']) + ' шт',
-            'detail_number': 'Заготовок: ' + str(data_row['detail_number']) + ' шт',
+            'status_name': 'Статус: ' + index.model().extradata(index, Qt.DisplayRole, 'status_name'),
+            # 'efficiency': 'Эффективность: ' + str(data_row['efficiency']) + '%',
+            'article_number': 'Изделий: ' + str(index.model().extradata(index, Qt.DisplayRole, 'article_number')) + ' шт',
+            'detail_number': 'Заготовок: ' + str(index.model().extradata(index, Qt.DisplayRole, 'detail_number')) + ' шт',
         }
         columns = 2
         rows = math.ceil(len(visible_info) / columns)
@@ -444,11 +373,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
         # Получение данных о текущем слитке
         data_row = index.data(Qt.DisplayRole)
-        status_data = StandardDataService.get_by_id(
-            'ingots_statuses',
-            {'status_id': data_row['status_id']}
-        )
-        fill_color = QColor(status_data[2])
+        fill_color = QColor(index.model().extradata(index, Qt.DisplayRole, 'background'))
 
         painter.save()
         painter.setClipping(True)
@@ -457,18 +382,18 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
         if opt.state & QStyle.State_Selected:
             painter.fillRect(rect, fill_color.darker(109))
-            painter.setPen(QColor(255, 100, 0))
+            painter.setPen(QPen(QBrush(QColor(255, 100, 0)), 2.0))
         elif opt.state & QStyle.State_MouseOver:
             painter.fillRect(rect, fill_color.darker(103))
             painter.setPen(palette.shadow().color())
         else:
             painter.fillRect(rect, fill_color)
             painter.setPen(palette.shadow().color())
-        painter.drawRect(rect.adjusted(0, 0, -1, -1))
+        painter.drawRect(rect.adjusted(1, 1, -1, -1))
         painter.setPen(Qt.black)
 
         # Надпись с партией слитка
-        if status_data[0] != 3:
+        if data_row['status_id'] not in [3, 4]:
             part = 'Партия: №' + str(data_row['ingot_part'])
         else:
             part = 'Партия не указана'
@@ -483,7 +408,8 @@ class IngotSectionDelegate(QStyledItemDelegate):
         painter.drawText(size_rect, Qt.TextSingleLine, size)
 
         # Надпись со сплавом слитка
-        fusion = 'Сплав: ' + data_row['fusion_name']
+        fusion_name = index.model().extradata(index, Qt.DisplayRole, 'fusion_name')
+        fusion = 'Сплав: ' + fusion_name
         fusion_rect = QRect(self.textBox(font, fusion))
         fusion_rect.moveTo(contentRect.left(), rect.bottom() - fusion_rect.height() - size_rect.height() - margin)
         painter.drawText(fusion_rect, Qt.TextSingleLine, fusion)
@@ -491,14 +417,14 @@ class IngotSectionDelegate(QStyledItemDelegate):
         # Иконка 
         free_height = fusion_rect.top() - part_rect.bottom() - margin * 2
         free_height = min(contentRect.width(), free_height)
-        if status_data[0] != 3:
-            if data_row['fusion_name'] == 'ПлРд 90-10 ДС':
+        if data_row['status_id'] not in [3, 4]:
+            if fusion_name == 'ПлРд 90-10 ДС':
                 self.forgeIcon = QPixmap(':icons/ingot-90-10-DC.png')
-            elif data_row['fusion_name'] == 'ПлРд 90-10':
+            elif fusion_name == 'ПлРд 90-10':
                 self.forgeIcon = QPixmap(':icons/ingot-90-10.png')
-            elif data_row['fusion_name'] == 'ПлРд 80-30':
+            elif fusion_name == 'ПлРд 80-30':
                 self.forgeIcon = QPixmap(':icons/ingot-80-30.png')
-            elif data_row['fusion_name'] == 'ПлРд 80-20':
+            elif fusion_name == 'ПлРд 80-20':
                 self.forgeIcon = QPixmap(':icons/ingot-80-20.png')
         else:
             self.forgeIcon = QPixmap(':icons/forged.png')

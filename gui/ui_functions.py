@@ -2,10 +2,10 @@ from PySide6.QtGui import (QIcon, QColor)
 from PySide6.QtWidgets import (QMainWindow, QVBoxLayout, QLabel,
                                QGraphicsDropShadowEffect)
 
-from mainwindow import MainWindow
+from mainwindow import OCIMainWindow
 
 
-class UIFunctions (MainWindow):
+class UIFunctions (OCIMainWindow):
 
     def setApplicationStyles(self):
         self.ui.searchResult_1.verticalScrollBar().setStyleSheet('''
