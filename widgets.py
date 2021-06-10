@@ -283,7 +283,6 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
         visible_info = {
             'status_name': 'Статус: ' + index.model().extradata(index, Qt.DisplayRole, 'status_name'),
-            # 'efficiency': 'Эффективность: ' + str(data_row['efficiency']) + '%',
             'article_number': 'Изделий: ' + str(index.model().extradata(index, Qt.DisplayRole, 'article_number')) + ' шт',
             'detail_number': 'Заготовок: ' + str(index.model().extradata(index, Qt.DisplayRole, 'detail_number')) + ' шт',
         }
@@ -354,15 +353,12 @@ class IngotSectionDelegate(QStyledItemDelegate):
         """
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
-        
-        # Статус наведения мышкой на иконку
-        self.mouseOnIcon = False
 
         # Отступ от границ плитки внутрь и наружу
         margin = 5
 
         palette = QPalette(opt.palette)
-        rect = QRect(opt.rect.adjusted(margin, 0, 0, 0))
+        rect = QRect(opt.rect)
         contentRect = QRect(rect.adjusted(margin, margin, margin, margin))
 
         # Настройка шрифта для плитки со слитком
@@ -461,7 +457,6 @@ class IngotSectionDelegate(QStyledItemDelegate):
 if __name__ == '__main__':
     application = QApplication()
     window = QListView()
-    window.setSpacing(5)
     window.setFlow(QListView.LeftToRight)
     window.setSelectionMode(QListView.MultiSelection)
 
