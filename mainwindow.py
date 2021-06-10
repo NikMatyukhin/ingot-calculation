@@ -209,6 +209,10 @@ class OCIMainWindow(QMainWindow):
     def show_ingot_information(self, current: QModelIndex):
         current_ingot = current.data(Qt.DisplayRole)
         current_order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        if current_ingot['status_id'] == 3:
+            self.ui.recalculate.setEnabled(False)
+        else:
+            self.ui.recalculate.setEnabled(True)
         if self.is_file_exist(current_order, current_ingot):
             self.load_tree(current_order, current_ingot)
             self.redraw_map(current_ingot)
@@ -450,6 +454,7 @@ class OCIMainWindow(QMainWindow):
         progress.close()
 
         current_order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        current_ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
         self.update_complect_statuses(current_order['order_id'], current_ingot['fusion_id'])
         self.save_tree(current_order, current_ingot)
         self.redraw_map(current_ingot)
