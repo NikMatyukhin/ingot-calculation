@@ -250,6 +250,18 @@ class MainWindow (QMainWindow):
 
     def updateDetailStatuses(self, data: dict):
         # FIXME: проблемы со статусами при наличии одинаковых веток
+        #        эта фигня сама как-то работает, при обнаружении
+        #        проблемы нужно вернуться
+        # from itertools import groupby
+        # from collections import Counter
+        # from operator import attrgetter
+        # unplaced = []
+        # for height, group in groupby(self.tree.cc_leaves, key=attrgetter('bin.height')):
+        #     group = list(group)
+        #     num_leaves = len(group)
+        #     blanks = list(chain.from_iterable([leave.result.unplaced for leave in group]))
+        #     unplaced_for_group = list(filter(lambda item: item[1] == num_leaves, Counter(blanks).items()))
+        #     unplaced.extend(unplaced_for_group)
         unplaced = list(chain.from_iterable([leave.result.unplaced for leave in self.tree.cc_leaves]))
         unplaced_counter = Counter([blank.name for blank in unplaced])
         complect_counter = {blank[1]: (blank[0], blank[2], blank[6], blank[7]) for blank in chain.from_iterable(data['complects'].values())}
