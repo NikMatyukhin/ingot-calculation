@@ -27,7 +27,7 @@ from .rectangle import BinType, Bin, Direction, Kit, Number, Result, UnsizedBin
 from ..tsh.bpp_ts import bpp_ts, Rectangle, RectangleType
 
 
-Vec3 = Tuple[Number, Number, Number]
+Vec3 = tuple[Number, Number, Number]
 
 
 LENGTH = 0
