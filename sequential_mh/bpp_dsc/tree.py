@@ -501,8 +501,9 @@ class BinNode(Node):
                         number += is_subrectangle(
                             item.size, dst, with_rotate=False
                         )
-                    msg = f'Узел {self} не имеет направления проката'
-                    raise DirectionError(msg)
+                    else:
+                        msg = f'Узел {self} ({self._id}) не имеет направления проката'
+                        raise DirectionError(msg)
             else:
                 if double_sided:
                     if item.volume <= dst[LENGTH] * dst[WIDTH] * dst[HEIGHT]:

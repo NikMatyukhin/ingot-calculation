@@ -587,6 +587,9 @@ class Blank(BaseBin):
             condition = False
         return self.priority == o.priority and condition
 
+    def __hash__(self):
+        return id(self)
+
 
 class PackedBlank(PackedRectangle):
     pass

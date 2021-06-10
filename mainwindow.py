@@ -283,6 +283,18 @@ class OCIMainWindow(QMainWindow):
     def update_complect_statuses(self, order_id: int, fusion_id: int):
         # Подсчитываем количество неразмещенных заготовок (название: количество)
         # FIXME: проблемы со статусами при наличии одинаковых веток
+        #        эта фигня сама как-то работает, при обнаружении
+        #        проблемы нужно вернуться
+        # from itertools import groupby
+        # from collections import Counter
+        # from operator import attrgetter
+        # unplaced = []
+        # for height, group in groupby(self.tree.cc_leaves, key=attrgetter('bin.height')):
+        #     group = list(group)
+        #     num_leaves = len(group)
+        #     blanks = list(chain.from_iterable([leave.result.unplaced for leave in group]))
+        #     unplaced_for_group = list(filter(lambda item: item[1] == num_leaves, Counter(blanks).items()))
+        #     unplaced.extend(unplaced_for_group)
         unplaced = list(chain.from_iterable([leave.result.unplaced for leave in self.tree.cc_leaves]))
         unplaced_counter = Counter([blank.name for blank in unplaced])
 
@@ -419,8 +431,8 @@ class OCIMainWindow(QMainWindow):
                 }
             )
             self.create_cut(ingot_size, details, material, progress=progress)
-        except Exception as exception: 
-            QMessageBox.critical(self, 'Ошибка разреза', f'{exception}', QMessageBox.Ok)
+        # except Exception as exception: 
+        #     QMessageBox.critical(self, 'Ошибка разреза', f'{exception}', QMessageBox.Ok)
         except ForcedTermination:
             logging.info(
                 'Раскрой для заказа %(name)s прерван пользователем.',
@@ -640,7 +652,7 @@ class OCIMainWindow(QMainWindow):
                 progress.setValue(step)
                 progress.setLabelText('Процесс раскроя.' + '.' * point_counter + ' ' * (2 - point_counter))
                 point_counter = (point_counter + 1) % 3
-
+                print(f'{progress.wasCanceled() = }')
                 if progress.wasCanceled():
                     raise ForcedTermination('Процесс раскроя был прерван')
 
