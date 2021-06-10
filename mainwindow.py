@@ -431,8 +431,8 @@ class OCIMainWindow(QMainWindow):
                 }
             )
             self.create_cut(ingot_size, details, material, progress=progress)
-        except Exception as exception: 
-            QMessageBox.critical(self, 'Ошибка разреза', f'{exception}', QMessageBox.Ok)
+        # except Exception as exception: 
+        #     QMessageBox.critical(self, 'Ошибка разреза', f'{exception}', QMessageBox.Ok)
         except ForcedTermination:
             logging.info(
                 'Раскрой для заказа %(name)s прерван пользователем.',
@@ -652,7 +652,7 @@ class OCIMainWindow(QMainWindow):
                 progress.setValue(step)
                 progress.setLabelText('Процесс раскроя.' + '.' * point_counter + ' ' * (2 - point_counter))
                 point_counter = (point_counter + 1) % 3
-
+                print(f'{progress.wasCanceled() = }')
                 if progress.wasCanceled():
                     raise ForcedTermination('Процесс раскроя был прерван')
 
