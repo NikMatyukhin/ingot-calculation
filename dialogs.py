@@ -13,7 +13,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QDialog, QCompleter, QGraphicsScene, QMessageBox, QMenu, QToolTip, QWidget,
-    QGraphicsDropShadowEffect
+    QGraphicsDropShadowEffect, QProgressDialog
 )
 
 from sequential_mh.bpp_dsc.rectangle import (
@@ -22,7 +22,7 @@ from sequential_mh.bpp_dsc.rectangle import (
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency
 )
-from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
+# from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 from sequential_mh.bpp_dsc.support import dfs
 from gui import (
     ui_add_product_dialog, ui_add_article_dialog, ui_add_detail_dialog,
@@ -40,6 +40,7 @@ from models import (
 from widgets import (
     IngotSectionDelegate
 )
+from exceptions import ForcedTermination
 
 
 Number = Union[int, float]
@@ -517,9 +518,45 @@ class OrderAddingDialog(QDialog):
         fusion_name = sender.objectName()
         material = Material(fusion_name, 2.2, 1.)
 
+        progress = QProgressDialog('OCI', 'Отмена', 0, 100, self)
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setWindowTitle('Рассчет слитка под ПЗ')
+        progress.forceShow()
+        # order_name = current_order['order_name']
+        # FIXME: получить имя заказа
+        order_name = 'ЗАКАЗ'
+        # ingot_size = current_ingot['ingot_size']
+        progress.setLabelText('Процесс расчета слитка под ПЗ...') 
+
         if self.choice_proxy.rowCount(QModelIndex()):
             details = self.get_details_kit(material)
-            sizes, tree, efficiency = self.predict_size(material, details)
+            logging.info(
+                'Попытка расчета слитка под ПЗ %(name)s: '
+                '%(blanks)d заготовок, %(heights)d толщин',
+                {'name': order_name, 'blanks': details.qty(),
+                'heights': len(details.keys())}
+            )
+            try:
+                sizes, tree, efficiency = self.predict_size(
+                    material, details, progress=progress
+                )
+                logging.info(
+                    'Расчет слитка %(name)s успешно завершен. '
+                    'Размеры: %(length)d, %(width)d, %(height)d; '
+                    'эффективность: %(efficiency)d толщин',
+                    {'name': order_name, 'length': sizes[0],
+                    'width': sizes[1], 'height': sizes[2],
+                    'efficiency': efficiency}
+                )
+            except ForcedTermination:
+                logging.info(
+                    'Расчет слитка для заказа %(name)s прерван пользователем.',
+                    {'name': order_name}
+                )
+                QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
+                return
+            progress.close()
+
             data_row = {
                 'ingot_id': 0,
                 'fusion_id': self.fusions[fusion_name],
@@ -582,7 +619,7 @@ class OrderAddingDialog(QDialog):
         kit.sort('width')
         return kit
 
-    def predict_size(self, material: Material, kit: Kit):
+    def predict_size(self, material: Material, kit: Kit, progress=None):
         # TODO: считать из настроек максимальные параметры слитка
         #       без припусков на фрезеровку и погрешность!
         max_size = (180, 180, 30)
@@ -602,7 +639,9 @@ class OrderAddingDialog(QDialog):
         # min_height = 30
 
         # Дерево с рассчитанным слитком
-        tree = optimal_ingot_size(tree, min_size, max_size, self.settings)
+        tree = self.parent().optimal_ingot_size(
+            tree, min_size, max_size, self.settings, progress=progress
+        )
         efficiency = solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True)
         # print(f'Эффективность после расчета: {efficiency}')
 
