@@ -27,7 +27,7 @@ from .rectangle import BinType, Bin, Direction, Kit, Number, Result, UnsizedBin
 from ..tsh.bpp_ts import bpp_ts, Rectangle, RectangleType
 
 
-Vec3 = tuple[Number, Number, Number]
+Vec3 = Tuple[Number, Number, Number]
 
 
 LENGTH = 0
@@ -501,8 +501,9 @@ class BinNode(Node):
                         number += is_subrectangle(
                             item.size, dst, with_rotate=False
                         )
-                    msg = f'Узел {self} не имеет направления проката'
-                    raise DirectionError(msg)
+                    else:
+                        msg = f'Узел {self} ({self._id}) не имеет направления проката'
+                        raise DirectionError(msg)
             else:
                 if double_sided:
                     if item.volume <= dst[LENGTH] * dst[WIDTH] * dst[HEIGHT]:
