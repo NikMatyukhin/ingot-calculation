@@ -431,14 +431,16 @@ class OCIMainWindow(QMainWindow):
                 }
             )
             self.create_cut(ingot_size, details, material, progress=progress)
-        # except Exception as exception: 
-        #     QMessageBox.critical(self, 'Ошибка разреза', f'{exception}', QMessageBox.Ok)
         except ForcedTermination:
             logging.info(
                 'Раскрой для заказа %(name)s прерван пользователем.',
                 {'name': order_name}
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
+        except Exception as exception: 
+            QMessageBox.critical(
+                self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
+            )
         else:
             progress.setLabelText('Завершение раскроя...')
             logging.info(
