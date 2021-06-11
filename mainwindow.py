@@ -441,6 +441,7 @@ class OCIMainWindow(QMainWindow):
                 {'name': order_name}
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
+            return
         except Exception as exception: 
             QMessageBox.critical(
                 self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
