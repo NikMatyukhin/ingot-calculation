@@ -436,14 +436,16 @@ class OCIMainWindow(QMainWindow):
                 }
             )
             self.create_cut(ingot_size, details, material, progress=progress)
-        # except Exception as exception: 
-        #     QMessageBox.critical(self, 'Ошибка разреза', f'{exception}', QMessageBox.Ok)
         except ForcedTermination:
             logging.info(
                 'Раскрой для заказа %(name)s прерван пользователем.',
                 {'name': order_name}
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
+        except Exception as exception: 
+            QMessageBox.critical(
+                self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
+            )
         else:
             progress.setLabelText('Завершение раскроя...')
             logging.info(
@@ -584,7 +586,8 @@ class OCIMainWindow(QMainWindow):
         return best
 
     def _stmh_idrd(self, tree, local: bool = False, with_filter: bool = True,
-                   restrictions: dict = None, progress: QProgressDialog = None):
+                   restrictions: dict = None,
+                   progress: QProgressDialog = None, end_progress=True):
         """Последовательная древовидная метаэвристика.
 
         Построение деревьев растроя.
@@ -663,10 +666,71 @@ class OCIMainWindow(QMainWindow):
                     raise ForcedTermination('Процесс раскроя был прерван')
 
         # костыль для завершения прогресса
-        if step < steps and progress:
+        if end_progress and step < steps and progress:
             progress.setValue(steps)
 
         return result
+
+    def optimal_ingot_size(self, main_tree, min_size, max_size, restrictions, progress=None):
+        """Определение размеров слитка
+
+        :param main_tree: Основное дерево, содержащее слиток максимальных размеров
+        :type main_tree: Tree
+        :param min_size: Минимальные размеры слитка, (длина, ширина, высота)
+        :type min_size: tuple[number, number, number]
+        :param max_size: Максимальные размеры слитка, (длина, ширина, высота)
+        :type max_size: tuple[number, number, number]
+        :param restrictions: Ограничения
+        :type restrictions: dict
+        :raises ValueError: если построено некорректное дерево
+        :return: Дерево раскроя для полученного слитка
+        :rtype: Tree
+        """
+        min_length, min_width, min_height = min_size
+
+        trees = self._stmh_idrd(
+            main_tree, restrictions=restrictions, local=False,
+            with_filter=False, progress=progress
+        )
+
+        for tree in trees:
+            # Получение смежного остатка
+            if len(tree.root.adj_leaves) > 1:
+                raise ValueError('Смежных остатков более 1!')
+            adj_node = tree.root.adj_leaves[0]
+            # Обнуление размеров смежного остатка
+            adj_node.bin.length = 0
+            adj_node.bin.width = 0
+            # Обновление размеров вышестоящих узлов:
+            # Когда дошли до промежуточного узла:
+            # обновлять размеры с учетом ограничений на размеры
+            adj_node.upward_size_update(min_size=min_size, max_size=max_size)
+            root_size = tree.root.bin.size
+            if root_size[0] < min_length:
+                tree.root.bin.length = min_length
+            if root_size[1] < min_width:
+                tree.root.bin.width = min_width
+            if root_size[2] < min_height:
+                tree.root.bin.height = min_height
+
+            # TODO: Проблема в том, что тип разреза не обновляется
+            # может случиться так, что резать нужно будет по другому! (в 7 примере)
+            tree.root.update_size()
+
+        if restrictions:
+            max_leaf_size = restrictions.get('max_size')
+        else:
+            max_leaf_size = None
+        trees = [
+            item for item in trees if not is_defective_tree(item, max_leaf_size)
+        ]
+        best = max(
+            trees,
+            key=lambda item: solution_efficiency(
+                item.root, list(dfs(item.root)), nd=True, is_p=True
+            )
+        )
+        return best
 
     def steps(self):
         leaves = self.tree.cc_leaves
