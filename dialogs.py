@@ -535,7 +535,6 @@ class OrderAddingDialog(QDialog):
                 # TODO: уведомить пользователя о том, что нет таких заготовок
                 progress.close()
                 return
-            sizes, tree, efficiency = self.predict_size(material, details)
             logging.info(
                 'Попытка расчета слитка под ПЗ %(name)s: '
                 '%(blanks)d заготовок, %(heights)d толщин',
