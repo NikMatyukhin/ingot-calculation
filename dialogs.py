@@ -519,6 +519,9 @@ class OrderAddingDialog(QDialog):
 
         if self.choice_proxy.rowCount(QModelIndex()):
             details = self.get_details_kit(material)
+            if details.is_empty():
+                # TODO: уведомить пользователя о том, что нет таких заготовок
+                return
             sizes, tree, efficiency = self.predict_size(material, details)
             data_row = {
                 'ingot_id': 0,
@@ -560,8 +563,8 @@ class OrderAddingDialog(QDialog):
                 # Если не совпадают сплав заготовки и выбранного слитка - пропускаем
                 if detail_fusion != material.name:
                     continue
-                id_index = self.model.index(sub_row, 10, parent)
                 # Если заготовка выбрана <ADDED == True>
+                id_index = self.model.index(sub_row, 11, parent)
                 if self.model.data(id_index, Qt.DisplayRole):
                     name: str = self.model.data(self.model.index(sub_row, 1, parent), Qt.DisplayRole)
                     length = int(self.model.data(self.model.index(sub_row, 4, parent), Qt.DisplayRole))
