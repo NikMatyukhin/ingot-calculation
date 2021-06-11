@@ -524,12 +524,18 @@ class OrderAddingDialog(QDialog):
         progress.forceShow()
         # order_name = current_order['order_name']
         # FIXME: получить имя заказа
+        # FIXME: а имени может и не быть, расчёт слитков происходит при добавлении заказа
         order_name = 'ЗАКАЗ'
         # ingot_size = current_ingot['ingot_size']
         progress.setLabelText('Процесс расчета слитка под ПЗ...') 
 
         if self.choice_proxy.rowCount(QModelIndex()):
             details = self.get_details_kit(material)
+            if details.is_empty():
+                # TODO: уведомить пользователя о том, что нет таких заготовок
+                progress.close()
+                return
+            sizes, tree, efficiency = self.predict_size(material, details)
             logging.info(
                 'Попытка расчета слитка под ПЗ %(name)s: '
                 '%(blanks)d заготовок, %(heights)d толщин',
@@ -556,7 +562,6 @@ class OrderAddingDialog(QDialog):
                 QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
                 return
             progress.close()
-
             data_row = {
                 'ingot_id': 0,
                 'fusion_id': self.fusions[fusion_name],
@@ -597,8 +602,8 @@ class OrderAddingDialog(QDialog):
                 # Если не совпадают сплав заготовки и выбранного слитка - пропускаем
                 if detail_fusion != material.name:
                     continue
-                id_index = self.model.index(sub_row, 10, parent)
                 # Если заготовка выбрана <ADDED == True>
+                id_index = self.model.index(sub_row, 11, parent)
                 if self.model.data(id_index, Qt.DisplayRole):
                     name: str = self.model.data(self.model.index(sub_row, 1, parent), Qt.DisplayRole)
                     length = int(self.model.data(self.model.index(sub_row, 4, parent), Qt.DisplayRole))

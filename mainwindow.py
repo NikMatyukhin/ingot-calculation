@@ -180,6 +180,7 @@ class OCIMainWindow(QMainWindow):
         
         self.ingot_model.order = current_order['order_id']
         self.ui.ingotsView.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
+        self.show_ingot_information(self.ui.ingotsView.currentIndex())
         self.complect_model.order = current_order['order_id']
         for column in range(self.complect_model.columnCount(QModelIndex())):
             self.ui.complectsView.resizeColumnToContents(column)
