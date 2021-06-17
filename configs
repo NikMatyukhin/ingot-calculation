@@ -14,3 +14,11 @@ clean_edge=2
 deformation=0.7
 max_rough_width=400
 max_clean_width=380
+
+[forging]
+min_height=70
+min_width=70
+min_depth=20
+max_height=180
+max_width=180
+max_depth=30

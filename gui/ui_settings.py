@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsmHLCik.ui'
+## Form generated from reading UI file 'settingsDoLihw.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -130,6 +130,44 @@ class Ui_Dialog(object):
         self.rolling.setAutoExclusive(True)
 
         self.verticalLayout_5.addWidget(self.rolling)
+
+        self.forging = QPushButton(self.leftBar)
+        self.forging.setObjectName(u"forging")
+        sizePolicy1.setHeightForWidth(self.forging.sizePolicy().hasHeightForWidth())
+        self.forging.setSizePolicy(sizePolicy1)
+        self.forging.setMinimumSize(QSize(100, 40))
+        self.forging.setMaximumSize(QSize(16777215, 40))
+        self.forging.setStyleSheet(u"QPushButton {\n"
+"	background-color: rgb(225, 225, 225);;\n"
+"	padding-left: 0px;\n"
+"	border: none;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"	background-color: rgb(217, 217, 217);\n"
+"	border-right: 3px solid gray;\n"
+"    padding-left: 3px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"	background-color: rgb(202, 202, 202);\n"
+"	border-right: 3px solid black;\n"
+"    padding-left: 3px;\n"
+"}\n"
+"\n"
+"QPushButton:checked {\n"
+"	background-color: rgb(217, 217, 217);\n"
+"	border-right: 3px solid black;\n"
+"    padding-left: 3px;\n"
+"}")
+        icon2 = QIcon()
+        icon2.addFile(u":/icons/anvil.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.forging.setIcon(icon2)
+        self.forging.setIconSize(QSize(25, 25))
+        self.forging.setCheckable(True)
+        self.forging.setAutoExclusive(True)
+
+        self.verticalLayout_5.addWidget(self.forging)
 
         self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
@@ -460,6 +498,150 @@ class Ui_Dialog(object):
         self.verticalLayout_7.addWidget(self.rollingSettings_3)
 
         self.stackedWidget.addWidget(self.rollingPage)
+        self.forgingPage = QWidget()
+        self.forgingPage.setObjectName(u"forgingPage")
+        self.forgingPage.setStyleSheet(u"QWidget#forgingPage {\n"
+"	background-color: rgb(255, 255, 255);\n"
+"}")
+        self.verticalLayout_2 = QVBoxLayout(self.forgingPage)
+        self.verticalLayout_2.setSpacing(0)
+        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.verticalLayout_2.setContentsMargins(20, 10, 20, 10)
+        self.forgingLabel_1 = QLabel(self.forgingPage)
+        self.forgingLabel_1.setObjectName(u"forgingLabel_1")
+        self.forgingLabel_1.setFont(font)
+        self.forgingLabel_1.setStyleSheet(u"QLabel {\n"
+"	background-color: rgb(234, 234, 234);\n"
+"}")
+
+        self.verticalLayout_2.addWidget(self.forgingLabel_1)
+
+        self.forgingSettings_3 = QFrame(self.forgingPage)
+        self.forgingSettings_3.setObjectName(u"forgingSettings_3")
+        self.forgingSettings_1 = QFormLayout(self.forgingSettings_3)
+        self.forgingSettings_1.setObjectName(u"forgingSettings_1")
+        self.forgingSettings_1.setHorizontalSpacing(0)
+        self.forgingSettings_1.setVerticalSpacing(10)
+        self.forgingSettings_1.setContentsMargins(10, 10, 10, 10)
+        self.label_16 = QLabel(self.forgingSettings_3)
+        self.label_16.setObjectName(u"label_16")
+        self.label_16.setMinimumSize(QSize(210, 0))
+        self.label_16.setMaximumSize(QSize(210, 16777215))
+
+        self.forgingSettings_1.setWidget(0, QFormLayout.LabelRole, self.label_16)
+
+        self.spinBox_13 = QSpinBox(self.forgingSettings_3)
+        self.spinBox_13.setObjectName(u"spinBox_13")
+        self.spinBox_13.setMaximumSize(QSize(80, 16777215))
+        self.spinBox_13.setMinimum(1)
+        self.spinBox_13.setMaximum(500)
+
+        self.forgingSettings_1.setWidget(0, QFormLayout.FieldRole, self.spinBox_13)
+
+        self.label_18 = QLabel(self.forgingSettings_3)
+        self.label_18.setObjectName(u"label_18")
+        self.label_18.setMinimumSize(QSize(210, 0))
+        self.label_18.setMaximumSize(QSize(210, 16777215))
+
+        self.forgingSettings_1.setWidget(1, QFormLayout.LabelRole, self.label_18)
+
+        self.spinBox_14 = QSpinBox(self.forgingSettings_3)
+        self.spinBox_14.setObjectName(u"spinBox_14")
+        self.spinBox_14.setMaximumSize(QSize(80, 16777215))
+        self.spinBox_14.setMinimum(1)
+        self.spinBox_14.setMaximum(500)
+
+        self.forgingSettings_1.setWidget(1, QFormLayout.FieldRole, self.spinBox_14)
+
+        self.label_17 = QLabel(self.forgingSettings_3)
+        self.label_17.setObjectName(u"label_17")
+        self.label_17.setMinimumSize(QSize(210, 0))
+        self.label_17.setMaximumSize(QSize(210, 16777215))
+
+        self.forgingSettings_1.setWidget(2, QFormLayout.LabelRole, self.label_17)
+
+        self.doubleSpinBox_5 = QDoubleSpinBox(self.forgingSettings_3)
+        self.doubleSpinBox_5.setObjectName(u"doubleSpinBox_5")
+        self.doubleSpinBox_5.setMaximumSize(QSize(80, 16777215))
+        self.doubleSpinBox_5.setDecimals(1)
+        self.doubleSpinBox_5.setMinimum(1.000000000000000)
+        self.doubleSpinBox_5.setMaximum(200.000000000000000)
+
+        self.forgingSettings_1.setWidget(2, QFormLayout.FieldRole, self.doubleSpinBox_5)
+
+
+        self.verticalLayout_2.addWidget(self.forgingSettings_3)
+
+        self.forgingLabel_2 = QLabel(self.forgingPage)
+        self.forgingLabel_2.setObjectName(u"forgingLabel_2")
+        self.forgingLabel_2.setFont(font)
+        self.forgingLabel_2.setStyleSheet(u"QLabel {\n"
+"	background-color: rgb(234, 234, 234);\n"
+"}")
+
+        self.verticalLayout_2.addWidget(self.forgingLabel_2)
+
+        self.forgingSettings_4 = QFrame(self.forgingPage)
+        self.forgingSettings_4.setObjectName(u"forgingSettings_4")
+        self.forgingSettings_2 = QFormLayout(self.forgingSettings_4)
+        self.forgingSettings_2.setObjectName(u"forgingSettings_2")
+        self.forgingSettings_2.setHorizontalSpacing(0)
+        self.forgingSettings_2.setVerticalSpacing(10)
+        self.forgingSettings_2.setContentsMargins(10, 10, 10, 10)
+        self.label_19 = QLabel(self.forgingSettings_4)
+        self.label_19.setObjectName(u"label_19")
+        self.label_19.setMinimumSize(QSize(210, 0))
+        self.label_19.setMaximumSize(QSize(210, 16777215))
+
+        self.forgingSettings_2.setWidget(0, QFormLayout.LabelRole, self.label_19)
+
+        self.label_21 = QLabel(self.forgingSettings_4)
+        self.label_21.setObjectName(u"label_21")
+        self.label_21.setMinimumSize(QSize(210, 0))
+        self.label_21.setMaximumSize(QSize(210, 16777215))
+
+        self.forgingSettings_2.setWidget(1, QFormLayout.LabelRole, self.label_21)
+
+        self.label_20 = QLabel(self.forgingSettings_4)
+        self.label_20.setObjectName(u"label_20")
+        self.label_20.setMinimumSize(QSize(210, 0))
+        self.label_20.setMaximumSize(QSize(210, 16777215))
+
+        self.forgingSettings_2.setWidget(2, QFormLayout.LabelRole, self.label_20)
+
+        self.doubleSpinBox_6 = QDoubleSpinBox(self.forgingSettings_4)
+        self.doubleSpinBox_6.setObjectName(u"doubleSpinBox_6")
+        self.doubleSpinBox_6.setMaximumSize(QSize(80, 16777215))
+        self.doubleSpinBox_6.setDecimals(1)
+        self.doubleSpinBox_6.setMinimum(1.000000000000000)
+        self.doubleSpinBox_6.setMaximum(200.000000000000000)
+
+        self.forgingSettings_2.setWidget(2, QFormLayout.FieldRole, self.doubleSpinBox_6)
+
+        self.spinBox_15 = QSpinBox(self.forgingSettings_4)
+        self.spinBox_15.setObjectName(u"spinBox_15")
+        self.spinBox_15.setMaximumSize(QSize(80, 16777215))
+        self.spinBox_15.setMinimum(1)
+        self.spinBox_15.setMaximum(500)
+
+        self.forgingSettings_2.setWidget(1, QFormLayout.FieldRole, self.spinBox_15)
+
+        self.spinBox_16 = QSpinBox(self.forgingSettings_4)
+        self.spinBox_16.setObjectName(u"spinBox_16")
+        self.spinBox_16.setMaximumSize(QSize(80, 16777215))
+        self.spinBox_16.setMinimum(1)
+        self.spinBox_16.setMaximum(500)
+
+        self.forgingSettings_2.setWidget(0, QFormLayout.FieldRole, self.spinBox_16)
+
+
+        self.verticalLayout_2.addWidget(self.forgingSettings_4)
+
+        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.verticalLayout_2.addItem(self.verticalSpacer)
+
+        self.stackedWidget.addWidget(self.forgingPage)
 
         self.horizontalLayout_6.addWidget(self.stackedWidget)
 
@@ -507,6 +689,7 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(QCoreApplication.translate("Dialog", u"\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
         self.cutting.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0441\u043a\u0440\u043e\u0439", None))
         self.rolling.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u043e\u043a\u0430\u0442", None))
+        self.forging.setText(QCoreApplication.translate("Dialog", u"\u041a\u043e\u0432\u043a\u0430", None))
         self.cuttingLabel_1.setText(QCoreApplication.translate("Dialog", u"\u041f\u043e\u0442\u0435\u0440\u0438 \u043f\u0440\u0438 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0435", None))
         self.label_10.setText(QCoreApplication.translate("Dialog", u"\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0442\u043e\u0440\u0446\u043e\u0432", None))
         self.doubleSpinBox.setSuffix(QCoreApplication.translate("Dialog", u" %", None))
@@ -539,6 +722,24 @@ class Ui_Dialog(object):
         self.spinBox_4.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.label.setText(QCoreApplication.translate("Dialog", u"\u0414\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u0430\u044f \u0434\u0435\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044f", None))
         self.doubleSpinBox_2.setSuffix(QCoreApplication.translate("Dialog", u" %", None))
+        self.forgingLabel_1.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u044b \u0441\u043b\u0438\u0442\u043a\u0430", None))
+        self.label_16.setText(QCoreApplication.translate("Dialog", u"\u0414\u043b\u0438\u043d\u0430", None))
+        self.spinBox_13.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
+        self.spinBox_13.setPrefix("")
+        self.label_18.setText(QCoreApplication.translate("Dialog", u"\u0428\u0438\u0440\u0438\u043d\u0430", None))
+        self.spinBox_14.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
+        self.spinBox_14.setPrefix("")
+        self.label_17.setText(QCoreApplication.translate("Dialog", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430", None))
+        self.doubleSpinBox_5.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
+        self.forgingLabel_2.setText(QCoreApplication.translate("Dialog", u"\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u044b \u0441\u043b\u0438\u0442\u043a\u0430", None))
+        self.label_19.setText(QCoreApplication.translate("Dialog", u"\u0414\u043b\u0438\u043d\u0430", None))
+        self.label_21.setText(QCoreApplication.translate("Dialog", u"\u0428\u0438\u0440\u0438\u043d\u0430", None))
+        self.label_20.setText(QCoreApplication.translate("Dialog", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430", None))
+        self.doubleSpinBox_6.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
+        self.spinBox_15.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
+        self.spinBox_15.setPrefix("")
+        self.spinBox_16.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
+        self.spinBox_16.setPrefix("")
         self.save.setText(QCoreApplication.translate("Dialog", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c", None))
         self.cancel.setText(QCoreApplication.translate("Dialog", u"\u041e\u0442\u043c\u0435\u043d\u0430", None))
     # retranslateUi
