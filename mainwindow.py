@@ -617,7 +617,8 @@ class OCIMainWindow(QMainWindow):
             cut_thickness = restrictions.get('cutting_thickness')
             doubling = cut_thickness >= max(tree.root.kit.keys())
         steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
-        progress.setRange(0, steps)
+        # Костыль. Умножение на константу для учета одинаковых веток
+        progress.setRange(0, int(2.5*steps))
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -627,7 +628,12 @@ class OCIMainWindow(QMainWindow):
         while level:
             step += 1
             new_level = deque([])
+            efs = []
             for _, tree_ in enumerate(level):
+                ef = solution_efficiency(
+                    tree_.root, list(dfs(tree_.root)), nd=False, is_p=True
+                )
+                efs.append(ef)
                 if with_filter and is_defective_tree(tree_, max_size=max_size):
                     # Додумать на сколько уменьшать
                     # min_height = min(map(lambda item: item.bin.height, tree_.root.cc_leaves))
@@ -640,6 +646,16 @@ class OCIMainWindow(QMainWindow):
                     result.append(tree_)
                 else:
                     new_level.append(tree_)
+            # фильтрация по средней эффективности
+            # нужна для сокращения количества деревьев / времени работы
+            avr_ef = sum(efs) / len(efs)
+            if len(new_level) > 100:
+                level = deque(
+                    [
+                        n for j, n in enumerate(new_level)
+                        if efs[j] >= avr_ef / 3
+                    ]
+                )
             level = new_level
             if not level:
                 break
@@ -658,6 +674,7 @@ class OCIMainWindow(QMainWindow):
                     level.append(tree)
             else:
                 _create_insert_template(node, level, tree, local, restrictions)
+            # print(f'{step = }; {len(level)}')
             if progress:
                 progress.setValue(step)
                 progress.setLabelText('Процесс раскроя.' + '.' * point_counter + ' ' * (2 - point_counter))
@@ -665,7 +682,7 @@ class OCIMainWindow(QMainWindow):
                 # print(f'{progress.wasCanceled() = }')
                 if progress.wasCanceled():
                     raise ForcedTermination('Процесс раскроя был прерван')
-
+        print(f'Кол-во шагов для {len(tree.root.kit.keys())} толщин: {steps}')
         # костыль для завершения прогресса
         if end_progress and step < steps and progress:
             progress.setValue(steps)
