@@ -6,7 +6,7 @@
     - Воронов Владимир Сергеевич
 """
 
-from random import random
+from random import uniform
 from itertools import accumulate
 from sequential_mh.tsh.rect import RectangleType
 
@@ -53,7 +53,13 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
         patch_rect(
             axes, (rect.x, rect.y), rect.rectangle.width,
             rect.rectangle.length,
-            color=(random(), random(), random()), ec='k', lw=0.5
+            color=(uniform(0.5, 1), uniform(0.5, 1), uniform(0.5, 1)), ec='k', lw=0.5
+        )
+    for rect in rectangles:
+        patch_rect(
+            axes, (rect.x, rect.y), rect.rectangle.width,
+            rect.rectangle.length,
+            color='k', fill=False, ec='k', lw=1
         )
     y = []
     x = list(accumulate([main_region.max_width/100 for _ in range(100)]))
