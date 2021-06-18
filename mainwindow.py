@@ -555,10 +555,14 @@ class OCIMainWindow(QMainWindow):
     def stmh_idrd(self, tree, with_filter: bool = True,
                   restrictions: dict = None, progress: QProgressDialog = None):
         is_main = True
+        # with cProfile.Profile() as pr:
+        #     try:
         trees = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress
         )
+            # finally:
+            #     pr.print_stats()
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -586,7 +590,8 @@ class OCIMainWindow(QMainWindow):
         # print('-' * 50)
         return best
 
-    def _stmh_idrd(self, tree, local: bool = False, with_filter: bool = True,
+    @staticmethod
+    def _stmh_idrd(tree, local: bool = False, with_filter: bool = True,
                    restrictions: dict = None,
                    progress: QProgressDialog = None, end_progress=True):
         """Последовательная древовидная метаэвристика.
@@ -618,7 +623,8 @@ class OCIMainWindow(QMainWindow):
             doubling = cut_thickness >= max(tree.root.kit.keys())
         steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
         # Костыль. Умножение на константу для учета одинаковых веток
-        progress.setRange(0, int(2.5*steps))
+        steps = int(4 * steps)
+        progress.setRange(0, steps)
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -634,6 +640,9 @@ class OCIMainWindow(QMainWindow):
                     tree_.root, list(dfs(tree_.root)), nd=False, is_p=True
                 )
                 efs.append(ef)
+                if step >= steps:
+                    steps = int(step * 1.1)
+                    progress.setRange(0, steps)
                 if with_filter and is_defective_tree(tree_, max_size=max_size):
                     # Додумать на сколько уменьшать
                     # min_height = min(map(lambda item: item.bin.height, tree_.root.cc_leaves))
@@ -653,7 +662,7 @@ class OCIMainWindow(QMainWindow):
                 level = deque(
                     [
                         n for j, n in enumerate(new_level)
-                        if efs[j] >= avr_ef / 3
+                        if efs[j] >= avr_ef / 2
                     ]
                 )
             level = new_level
@@ -682,7 +691,7 @@ class OCIMainWindow(QMainWindow):
                 # print(f'{progress.wasCanceled() = }')
                 if progress.wasCanceled():
                     raise ForcedTermination('Процесс раскроя был прерван')
-        print(f'Кол-во шагов для {len(tree.root.kit.keys())} толщин: {steps}')
+        print(f'Кол-во шагов для {len(tree.root.kit.keys())} толщин: {step} ({steps})')
         # костыль для завершения прогресса
         if end_progress and step < steps and progress:
             progress.setValue(steps)
@@ -706,10 +715,14 @@ class OCIMainWindow(QMainWindow):
         """
         min_length, min_width, min_height = min_size
 
+        # with cProfile.Profile() as pr:
+        #     try:
         trees = self._stmh_idrd(
             main_tree, restrictions=restrictions, local=False,
             with_filter=False, progress=progress
         )
+            # finally:
+            #     pr.print_stats()
 
         for tree in trees:
             # Получение смежного остатка
@@ -1067,6 +1080,7 @@ def number_of_steps(num_of_heights, doubling=True):
 
 
 if __name__ == '__main__':
+    # import cProfile
     oci_logger = setup_logging()
     logging.info('Приложение OCI запущено.')
     start = time.time()

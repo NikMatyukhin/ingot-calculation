@@ -13,7 +13,7 @@ from sequential_mh.bpp_dsc.tree import (
 from sequential_mh.bpp_dsc.stm import stmh_idrd
 from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 
-from sequential_mh.bpp_dsc.graph import plot, create_edges
+# from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 from sequential_mh.tsh import rect
 from sequential_mh.tsh.est import Estimator
@@ -29,10 +29,16 @@ def example_1():
         'name': 'Пример 12ц',
         'kit': [
             (77, 180, 3.3, 1), (77, 180, 3.3, 1),
-            (160, 93, 3, 1), (160, 93, 3, 1), (160, 93, 3, 1), (160, 93, 3, 1),
-            (200, 100, 1, 1), (420, 170, 1., 1), (420, 170, 1., 1),
-            (82, 180, 2.2, 1), (82, 180, 2.2, 1),
-            (415, 170, 0.5, 1), (420, 165, 0.5, 1),
+            (160, 93, 3, 1, Direction.P),
+            (160, 93, 3, 1, Direction.P),
+            # (160, 93, 3, 1, Direction.P),
+            (160, 93, 3, 1, Direction.P),
+            (160, 93, 3, 1),
+            (160, 93, 3, 1),
+            (160, 93, 3, 1),
+            (200, 100, 1., 1), (420, 170, 1., 1), (420, 170, 1., 1),
+            # (82, 180, 2.2, 1), (82, 180, 2.2, 1),
+            # (415, 170, 0.5, 1), (420, 165, 0.5, 1),
         ],
         'L0': 180,
         'W0': 160,
@@ -59,13 +65,13 @@ def example_2():
             (99, 118, 1, 1), (89, 118, 1, 1), (20, 190, 1, 1), (178, 38, 1, 1),
             (178, 38, 1, 1), (178, 38, 1, 1), (178, 38, 1, 1), (178, 30, 1, 1)
         ],
-        'L0': 200,
-        'W0': 150,
+        'L0': 190,
+        'W0': 140,
         'H0': 6,
         'cutting_thickness': 3,
-        'hem_after_3': 5,
-        'allowance': 2,
-        'end': 0.02,
+        'hem_after_3': 0,
+        'allowance': 0,
+        'end': 0.0,
     }
 
 
@@ -604,6 +610,9 @@ def example_21():
             (65, 180, 3.2, 1, Direction.A),
             (120, 180, 2.2, 1, Direction.A),
             (460, 180, 1.0, 1, Direction.A),
+            # (500, 180, 1.0, 1, Direction.A),
+            # (350, 180, 1.0, 1, Direction.A),
+            # (300, 180, 1.0, 1, Direction.A),
             (460, 180, 1.0, 1, Direction.A),
             (460, 180, 1.0, 1, Direction.A),
             (460, 180, 0.5, 1, Direction.A),
@@ -653,11 +662,28 @@ def example_22():
     }
 
 
+def example_23():
+    """Пример"""
+    return {
+        'name': 'Синтетический пример 1',
+        'kit': [
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 28,
+        'cutting_thickness': 4,
+        'hem_after_3': 0,
+        'hem_until_3': 0,
+        'allowance': 0,
+        'end': 0.0,
+    }
+
+
 EXAMPLES = [
     example_1, example_2, example_3, example_4, example_5, example_6,
     example_7, example_8, example_9, example_10, example_11, example_12,
     example_13, example_14, example_15, example_16, example_17, example_18,
-    example_19, example_20, example_21, example_22,
+    example_19, example_20, example_21, example_22, example_23
 ]
 
 
@@ -704,6 +730,18 @@ def main(example, use_graphviz=False, use_predict=False):
     material = Material('Сплав 1', 2.2, 1.)
     if 0 <= example - 1 < len(EXAMPLES):
         data = EXAMPLES[example - 1]()
+        if example - 1 == 22:
+            import json
+            with open('d:/article_icp/mini/problem_12_p.json', 'r') as f:
+                file_data = json.load(f)
+            rects = []
+            for r in file_data['rectangles']:
+                if r[3] in (2, 1):
+                    rects.append((r[1], r[2], r[3], 1))
+            data['kit'] = rects
+            # data['L0'], data['W0'], data['H0'] = file_data['ingot']
+            data['H0'] = 10
+            print('Файл считан:', len(data['kit']))
     else:
         raise ValueError(
             'Некорректный номер примера. '
@@ -748,10 +786,10 @@ def main(example, use_graphviz=False, use_predict=False):
     # _, res, nodes = optimal_configuration(tree, nd=True)
     # res.update_size()
 
-    if use_graphviz:
-        graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
-        create_edges(graph1, all_nodes1)
-        graph1.view()
+    # if use_graphviz:
+    #     graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
+    #     create_edges(graph1, all_nodes1)
+    #     graph1.view()
 
     for node in tree.root.cc_leaves:
         main_rect = rect.Rectangle.create_by_size(
@@ -782,7 +820,7 @@ def main(example, use_graphviz=False, use_predict=False):
 
 
 if __name__ == '__main__':
-    USE_GRAPHVIZ = True
+    USE_GRAPHVIZ = False
     USE_PREDICT = True
-    NUMBER = 21
+    NUMBER = 1
     main(NUMBER, USE_GRAPHVIZ, USE_PREDICT)
