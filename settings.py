@@ -22,6 +22,9 @@ class SettingsDialog(QDialog):
         self.ui.rolling.clicked.connect(
             lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.rollingPage)
         )
+        self.ui.forging.clicked.connect(
+            lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.forgingPage)
+        )
         self.ui.save.clicked.connect(self.save)
         self.ui.cancel.clicked.connect(self.reject)
 
@@ -61,6 +64,20 @@ class SettingsDialog(QDialog):
         self.ui.spinBox_3.setValue(self.settings.value(
             'rolling/max_clean_width', defaultValue=400, type=int))
 
+        self.ui.spinBox_13.setValue(self.settings.value(
+            'forging/min_height', defaultValue=70, type=int))
+        self.ui.spinBox_14.setValue(self.settings.value(
+            'forging/min_width', defaultValue=70, type=int))
+        self.ui.doubleSpinBox_5.setValue(self.settings.value(
+            'forging/min_depth', defaultValue=20.0, type=float))
+
+        self.ui.spinBox_16.setValue(self.settings.value(
+            'forging/max_height', defaultValue=180, type=int))
+        self.ui.spinBox_15.setValue(self.settings.value(
+            'forging/max_width', defaultValue=180, type=int))
+        self.ui.doubleSpinBox_6.setValue(self.settings.value(
+            'forging/max_depth', defaultValue=30.0, type=float))
+
     def save(self):
         """Сохранение настроек
 
@@ -96,6 +113,20 @@ class SettingsDialog(QDialog):
                                self.ui.spinBox_2.value())
         self.settings.setValue('rolling/max_clean_width',
                                self.ui.spinBox_3.value())
+
+        self.settings.setValue('forging/min_height',
+                               self.ui.spinBox_13.value())
+        self.settings.setValue('forging/min_width',
+                               self.ui.spinBox_14.value())
+        self.settings.setValue('forging/min_depth',
+                               self.ui.doubleSpinBox_5.value())
+
+        self.settings.setValue('forging/max_height',
+                               self.ui.spinBox_16.value())
+        self.settings.setValue('forging/max_width',
+                               self.ui.spinBox_15.value())
+        self.settings.setValue('forging/max_depth',
+                               self.ui.doubleSpinBox_6.value())
 
         self.saved = True
         self.accept()

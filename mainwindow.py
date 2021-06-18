@@ -73,7 +73,7 @@ class OCIMainWindow(QMainWindow):
 
         # Модель слитков (обновляется при изменении текущего заказа)
         # TODO: пока заказ не выбран пусть содержит свободные слитки,
-        #       чтобы потом показывать их на главном экране
+        #       чтобы потом показывать их на главном экране - пойдёт на склад
         self.ingot_model = IngotModel()
         self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
         self.ui.ingotsView.setModel(self.ingot_model)
@@ -916,7 +916,11 @@ class OCIMainWindow(QMainWindow):
             'allowance': self.cut_allowance,
             'end': round(self.end_face_loss, 4),
         }
-        window.set_settings(settings)
+        ingot_settings = {
+            'max_size': (self.ingot_max_height, self.ingot_max_width, self.ingot_max_depth),
+            'min_size': (self.ingot_min_height, self.ingot_min_width, self.ingot_min_depth),
+        }
+        window.set_settings(settings, ingot_settings)
         window.recordSavedSuccess.connect(self.confirm_order_adding)
         window.predictedIngotSaved.connect(self.save_tree)
         window.exec_()
@@ -948,6 +952,18 @@ class OCIMainWindow(QMainWindow):
             'rolling/max_rough_width', defaultValue=450, type=int)
         self.clean_roll_plate_width = self.settings.value(
             'rolling/max_clean_width', defaultValue=400, type=int)
+        self.ingot_min_height = self.settings.value(
+            'forging/min_height', defaultValue=70, type=int)
+        self.ingot_min_width = self.settings.value(
+            'forging/min_width', defaultValue=70, type=int)
+        self.ingot_min_depth = self.settings.value(
+            'forging/min_depth', defaultValue=20.0, type=float)
+        self.ingot_max_height = self.settings.value(
+            'forging/max_height', defaultValue=180, type=int)
+        self.ingot_max_width = self.settings.value(
+            'forging/max_width', defaultValue=180, type=int)
+        self.ingot_max_depth = self.settings.value(
+            'forging/max_depth', defaultValue=30.0, type=float)
 
     def write_settings(self):
         """Запись настроек в файл"""
@@ -977,6 +993,18 @@ class OCIMainWindow(QMainWindow):
             'rolling/max_rough_width', self.rough_roll_plate_width)
         self.settings.setValue(
             'rolling/max_clean_width', self.clean_roll_plate_width)
+        self.settings.setValue(
+            'forging/min_height', self.ingot_min_height)
+        self.settings.setValue(
+            'forging/min_width', self.ingot_min_width)
+        self.settings.setValue(
+            'forging/min_depth', self.ingot_min_depth)
+        self.settings.setValue(
+            'forging/max_height', self.ingot_max_height)
+        self.settings.setValue(
+            'forging/max_width', self.ingot_max_width)
+        self.settings.setValue(
+            'forging/max_depth', self.ingot_max_depth)
 
     def save_tree(self, order: Dict, ingot: Dict, tree: Tree = None):
         """Сохранение корневого узла дерева"""

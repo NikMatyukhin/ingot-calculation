@@ -192,6 +192,7 @@ class CuttingMapPainter:
         self.x = 0.0
         self.y = 0.0
         self.prev_item = None
+        self.prev_size = None
         self.prev_type = None
         self.source_point = None
         self.in_width = True
@@ -200,6 +201,11 @@ class CuttingMapPainter:
             if is_op_node(node):
                 if node.operation == Operations.rolling:
                     continue
+            elif is_bin_node(node):
+                if node.bin.size == self.prev_size:
+                    self.prev_size = None
+                    continue
+                self.prev_size = node.bin.size
             cur_item = self.createItem(node)
             if not cur_item:
                 continue

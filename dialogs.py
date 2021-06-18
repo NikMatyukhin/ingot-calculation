@@ -535,7 +535,6 @@ class OrderAddingDialog(QDialog):
                 # TODO: уведомить пользователя о том, что нет таких заготовок
                 progress.close()
                 return
-            sizes, tree, efficiency = self.predict_size(material, details)
             logging.info(
                 'Попытка расчета слитка под ПЗ %(name)s: '
                 '%(blanks)d заготовок, %(heights)d толщин',
@@ -627,7 +626,7 @@ class OrderAddingDialog(QDialog):
     def predict_size(self, material: Material, kit: Kit, progress=None):
         # TODO: считать из настроек максимальные параметры слитка
         #       без припусков на фрезеровку и погрешность!
-        max_size = (180, 180, 30)
+        max_size = self.ingot_settings['max_size']
         # max_length = 180
         # max_width = 180
         # max_height = 30
@@ -638,7 +637,7 @@ class OrderAddingDialog(QDialog):
 
         # TODO: считать из настроек минимальные параметры слитка
         #       без припусков на фрезеровку и погрешность!
-        min_size = (70, 70, 20)
+        min_size = self.ingot_settings['min_size']
         # min_length = 180
         # min_width = 180
         # min_height = 30
@@ -808,8 +807,9 @@ class OrderAddingDialog(QDialog):
                 QMessageBox.Ok
             )
 
-    def set_settings(self, settings: Dict):
+    def set_settings(self, settings: Dict, ingot_settings: Dict):
         self.settings = settings
+        self.ingot_settings = ingot_settings
 
 
 class IngotAddingDialog(QDialog):
