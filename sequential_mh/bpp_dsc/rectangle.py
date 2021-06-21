@@ -756,12 +756,24 @@ class Kit(ABCKit):
             empty_flag = False
             if height is None:
                 for _, group in self.blanks.items():
-                    for _, subgroup in group.items():
-                        empty_flag += bool(subgroup)
+                    for _, sg in group.items():
+                        if sg:
+                            empty_flag = True
+                            break
+                    # empty_flag = bool(sum(bool(sg) for _, sg in group.items()))
+                    # for _, subgroup in group.items():
+                    #     empty_flag += bool(subgroup)
             else:
                 if height in self.blanks:
                     for _, r_list in self.blanks[height].items():
-                        empty_flag += bool(r_list)
+                        if r_list:
+                            empty_flag = True
+                            break
+                    # empty_flag = bool(sum(
+                    #     bool(rl) for _, rl in self.blanks[height].items()
+                    # ))
+                    # for _, r_list in self.blanks[height].items():
+                    #     empty_flag += bool(r_list)
             return not empty_flag
         return True
 
@@ -769,11 +781,15 @@ class Kit(ABCKit):
         qty = 0
         if height is None:
             for _, group in self.blanks.items():
-                for _, subgroup in group.items():
-                    qty += len(subgroup)
+                qty = sum(len(sg) for _, sg in group.items())
+                # for _, subgroup in group.items():
+                #     qty += len(subgroup)
         else:
-            for _, subgroup in self.blanks[height].items():
-                qty += len(subgroup)
+            qty = sum(
+                len(sg) for _, sg in self.blanks[height].items()
+            )
+            # for _, subgroup in self.blanks[height].items():
+            #     qty += len(subgroup)
         return qty
 
     def qty_blank(self, blank):
