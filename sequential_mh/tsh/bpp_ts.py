@@ -157,9 +157,13 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                 square += empty_rect.square
                 x, y = empty_rect.blp
                 soft_type = 3
-                if region.limits[1] + region.start.x == empty_rect.trp.x:
+                if region.limits:
+                    y_lim, x_lim = region.limits
+                else:
+                    y_lim, x_lim = 0, 0
+                if x_lim + region.start.x == empty_rect.trp.x:
                     soft_type = 1
-                elif region.limits[0] + region.start.y == empty_rect.trp.y:
+                elif y_lim + region.start.y == empty_rect.trp.y:
                     soft_type = 2
                 if x == 0:
                     soft_type = 1
