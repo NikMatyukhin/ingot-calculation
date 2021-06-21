@@ -1,3 +1,4 @@
+import math
 from PySide6.QtWidgets import (
     QGraphicsItem, QGraphicsScene, QGraphicsView, QApplication, QWidget,
     QStyleOptionGraphicsItem, QGraphicsSceneHoverEvent, QMenu
@@ -239,7 +240,7 @@ class CuttingMapPainter:
         item = None
         if is_bin_node(node):
             h, w, d = node.bin.size
-            size = f'{round(h, 1)}x{round(w, 1)}x{round(d, 1)}'
+            size = f'{math.ceil(h)}x{math.ceil(w)}x{round(d, 1)}'
             type = node.bin.bin_type
             if type == BinType.ingot:
                 item = PlateGraphicsItem(

@@ -477,3 +477,19 @@ class OrderDataService (StandardDataService):
         cursor = connection.cursor()
         cursor.execute(sql)
         return cursor.fetchone()[0]
+
+    @staticmethod
+    @db_connector
+    def efficiency(connection, order_id: TableField) -> float:
+        field, value = parse_field(order_id)
+
+        sql = str('SELECT efficiency FROM ingots '
+                  f'WHERE {field}={value}')
+
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        ingots_efficiencies = [ingot[0] for ingot in cursor.fetchall()]
+        if 0.0 in ingots_efficiencies:
+            return 0.0
+        else:
+            return round(sum(ingots_efficiencies) / len(ingots_efficiencies), 2)

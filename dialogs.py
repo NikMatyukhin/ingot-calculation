@@ -522,11 +522,9 @@ class OrderAddingDialog(QDialog):
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowTitle('Рассчет слитка под ПЗ')
         progress.forceShow()
-        # order_name = current_order['order_name']
         # FIXME: получить имя заказа
         # FIXME: а имени может и не быть, расчёт слитков происходит при добавлении заказа
         order_name = 'ЗАКАЗ'
-        # ingot_size = current_ingot['ingot_size']
         progress.setLabelText('Процесс расчета слитка под ПЗ...') 
 
         if self.choice_proxy.rowCount(QModelIndex()):
@@ -627,9 +625,6 @@ class OrderAddingDialog(QDialog):
         # TODO: считать из настроек максимальные параметры слитка
         #       без припусков на фрезеровку и погрешность!
         max_size = self.ingot_settings['max_size']
-        # max_length = 180
-        # max_width = 180
-        # max_height = 30
         
         bin_ = Bin(*max_size, material=material)
         root = BinNode(bin_, kit=kit)
@@ -638,15 +633,12 @@ class OrderAddingDialog(QDialog):
         # TODO: считать из настроек минимальные параметры слитка
         #       без припусков на фрезеровку и погрешность!
         min_size = self.ingot_settings['min_size']
-        # min_length = 180
-        # min_width = 180
-        # min_height = 30
 
         # Дерево с рассчитанным слитком
         tree = self.parent().optimal_ingot_size(
             tree, min_size, max_size, self.settings, progress=progress
         )
-        efficiency = solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True)
+        efficiency = round(solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True), 2)
         # print(f'Эффективность после расчета: {efficiency}')
 
         # TODO: Получить из настроек погрешность и припуски на фрезеровку
@@ -777,14 +769,15 @@ class OrderAddingDialog(QDialog):
                     StandardDataService.update_record(
                         'orders',
                         {'order_id': order_id},
-                        status_id = 6
+                        status_id=6,
+                        efficiency=OrderDataService.efficiency({'order_id': order_id})
                     )
                 pack = {
                     'order_id': order_id,
                     'status_id': 6 if planned_status else 1,
                     'order_name': order_name,
                     'current_depth': 0.0,
-                    'efficiency': 0.0,
+                    'efficiency': OrderDataService.efficiency({'order_id': order_id}),
                     'creation_date': datetime.today().strftime("%d_%m_%Y")
                 }
                 self.recordSavedSuccess.emit(pack)
