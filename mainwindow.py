@@ -447,6 +447,7 @@ class OCIMainWindow(QMainWindow):
             QMessageBox.critical(
                 self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
             )
+            return
         else:
             progress.setLabelText('Завершение раскроя...')
             logging.info(
