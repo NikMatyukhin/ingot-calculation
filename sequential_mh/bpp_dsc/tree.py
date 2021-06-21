@@ -1029,8 +1029,9 @@ class OperationNode(Node):
         """Создание потомков при прокате"""
         if self.operation == Operations.rolling:
             vertical = OperationNode(Operations.v_rolling)
-            horizontal = OperationNode(Operations.h_rolling)
-            return vertical, horizontal
+            # horizontal = OperationNode(Operations.h_rolling)
+            # return vertical, horizontal
+            return vertical
             # return OperationNode(Operations.v_rolling)
             # if is_op_node(pparent) and pparent.operation == Operations.cutting:
             #     return OperationNode(Operations.v_rolling)
