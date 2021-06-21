@@ -281,8 +281,11 @@ class OrderSectionDelegate(QStyledItemDelegate):
         painter.setPen(palette.text().color())
         painter.drawText(name_rect, Qt.TextSingleLine, name_text)
 
+        efficiency = data_row['efficiency']
+        efficiency_text = str(efficiency) + '%' if efficiency > 0.0 else 'не указан'
         visible_info = {
             'status_name': 'Статус: ' + index.model().extradata(index, Qt.DisplayRole, 'status_name'),
+            'efficiency': 'Выход годного: ' + efficiency_text,
             'article_number': 'Изделий: ' + str(index.model().extradata(index, Qt.DisplayRole, 'article_number')) + ' шт',
             'detail_number': 'Заготовок: ' + str(index.model().extradata(index, Qt.DisplayRole, 'detail_number')) + ' шт',
         }

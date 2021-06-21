@@ -2,6 +2,7 @@ import sys
 import pickle
 import logging
 import time
+import math
 from typing import Dict, Union
 from itertools import chain
 from collections import Counter, deque
@@ -544,6 +545,12 @@ class OCIMainWindow(QMainWindow):
         StandardDataService.update_record(
             'ingots', {'ingot_id': ingot_id}, efficiency=data['efficiency']
         )
+        order_index = self.ui.searchResult_1.currentIndex()
+        order_efficiency = OrderDataService.efficiency({'order_id': order_index.data(Qt.DisplayRole)['order_id']})
+        self.order_model.setData(order_index, {'efficiency': order_efficiency}, Qt.EditRole)
+        StandardDataService.update_record(
+            'orders', {'order_id': order_index.data(Qt.DisplayRole)['order_id']}, efficiency=order_efficiency
+        )
         # TODO: теперь непонятно, что есть эффективность раскроя целого набора
         # self.order_model.setData(current_index, data, Qt.EditRole)
         # StandardDataService.update_record(
@@ -785,16 +792,16 @@ class OCIMainWindow(QMainWindow):
         pack = self.tree.cc_leaves[index]
         depth = pack.bin.height
         self.plan_painter.setBin(
-            round(pack.bin.length, 1),
-            round(pack.bin.width, 1),
+            math.ceil(pack.bin.length),
+            math.ceil(pack.bin.width),
             round(pack.bin.height, 1)
         )
         for blank in pack.result:
             rect = blank.rectangle
             self.plan_painter.addBlank(
-                round(rect.length, 1),
-                round(rect.width, 1),
-                round(rect.height, 1),
+                math.ceil(rect.length, 1),
+                math.ceil(rect.width, 1),
+                math.ceil(rect.height, 1),
                 round(blank.x, 1),
                 round(blank.y, 1),
                 rect.name

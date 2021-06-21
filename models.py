@@ -563,7 +563,7 @@ class IngotModel(ListModel):
                 'ingot_id': ingot[0],
                 'fusion_id': ingot[1],
                 'ingot_part': ingot[3],
-                'ingot_size': [ingot[4], ingot[5], ingot[6]],
+                'ingot_size': [round(ingot[4]), round(ingot[5]), round(ingot[6], 1)],
                 'status_id': ingot[7],
                 'efficiency': ingot[8]
             }
