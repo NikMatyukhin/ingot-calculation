@@ -561,8 +561,8 @@ class OCIMainWindow(QMainWindow):
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress
         )
-            # finally:
-            #     pr.print_stats()
+        # finally:
+        #     pr.print_stats()
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -623,7 +623,7 @@ class OCIMainWindow(QMainWindow):
             doubling = cut_thickness >= max(tree.root.kit.keys())
         steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
         # Костыль. Умножение на константу для учета одинаковых веток
-        steps = int(4 * steps)
+        # steps = int(2 * steps)
         progress.setRange(0, steps)
 
         if restrictions:
@@ -634,12 +634,14 @@ class OCIMainWindow(QMainWindow):
         while level:
             step += 1
             new_level = deque([])
-            efs = []
+            # efs = []
             for _, tree_ in enumerate(level):
-                ef = solution_efficiency(
-                    tree_.root, list(dfs(tree_.root)), nd=False, is_p=True
-                )
-                efs.append(ef)
+                # ef = solution_efficiency(
+                #     tree_.root, list(dfs(tree_.root)), nd=False, is_p=True
+                # )
+                # efs.append(ef)
+                # Костыль для небольшого увеличения прогресса
+                # в случае, когда он переполняется
                 if step >= steps:
                     steps = int(step * 1.1)
                     progress.setRange(0, steps)
@@ -657,15 +659,15 @@ class OCIMainWindow(QMainWindow):
                     new_level.append(tree_)
             # фильтрация по средней эффективности
             # нужна для сокращения количества деревьев / времени работы
-            avr_ef = sum(efs) / len(efs)
-            if len(new_level) > 100:
-                level = deque(
-                    [
-                        n for j, n in enumerate(new_level)
-                        if efs[j] >= avr_ef / 2
-                    ]
-                )
-            level = new_level
+            # avr_ef = sum(efs) / len(efs)
+            # if len(new_level) > 100:
+            #     level = deque(
+            #         [
+            #             n for j, n in enumerate(new_level)
+            #             if efs[j] >= avr_ef / 2
+            #         ]
+            #     )
+            level = deque(new_level)
             if not level:
                 break
 
@@ -721,8 +723,8 @@ class OCIMainWindow(QMainWindow):
             main_tree, restrictions=restrictions, local=False,
             with_filter=False, progress=progress
         )
-            # finally:
-            #     pr.print_stats()
+        # finally:
+        #     pr.print_stats()
 
         for tree in trees:
             # Получение смежного остатка
@@ -1070,12 +1072,15 @@ def number_of_steps(num_of_heights, doubling=True):
     :return: Количество операций в алгоритме
     :rtype: int
     """
+    # изначальная формула
     number_of_trees = 4 * (4 ** num_of_heights - 1) / 3
+    # экспериментально подобранная
+    number_of_trees = 4 * (2 ** num_of_heights - 1) / 2
     if doubling:
         number_of_trees *= 2
-        n = (4 ** num_of_heights * 2 - 2) / 3 + 1
+        n = (2 ** num_of_heights * 2 - 2) / 2 + 1
     else:
-        n = (4 ** num_of_heights - 1) / 3 + 1
+        n = (2 ** num_of_heights - 1) / 2 + 1
     return int(number_of_trees + n)
 
 
