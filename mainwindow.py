@@ -557,12 +557,18 @@ class OCIMainWindow(QMainWindow):
         is_main = True
         # with cProfile.Profile() as pr:
         #     try:
-        trees = self._stmh_idrd(
+        trees_vertical = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
-            with_filter=with_filter, progress=progress
+            with_filter=with_filter, progress=progress, end_progress=False,
+            direction=1
+        )
+        trees_horizontal = self._stmh_idrd(
+            tree, restrictions=restrictions, local=not is_main,
+            with_filter=with_filter, progress=progress, direction=2
         )
         # finally:
         #     pr.print_stats()
+        trees = [*trees_vertical, *trees_horizontal]
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -593,7 +599,8 @@ class OCIMainWindow(QMainWindow):
     @staticmethod
     def _stmh_idrd(tree, local: bool = False, with_filter: bool = True,
                    restrictions: dict = None,
-                   progress: QProgressDialog = None, end_progress=True):
+                   progress: QProgressDialog = None, end_progress=True,
+                   direction=1):
         """Последовательная древовидная метаэвристика.
 
         Построение деревьев растроя.
@@ -684,7 +691,10 @@ class OCIMainWindow(QMainWindow):
                 else:
                     level.append(tree)
             else:
-                _create_insert_template(node, level, tree, local, restrictions)
+                _create_insert_template(
+                    node, level, tree, local, restrictions,
+                    direction=direction
+                )
             # print(f'{step = }; {len(level)}')
             if progress:
                 progress.setValue(step)

@@ -1025,13 +1025,22 @@ class OperationNode(Node):
 
         return node
 
-    def _create_nodes_rolling(self, rolled_height, double_sided=True, **kwargs):
+    def _create_nodes_rolling(self, rolled_height, double_sided=True,
+                              direction=0, **kwargs):
         """Создание потомков при прокате"""
         if self.operation == Operations.rolling:
-            vertical = OperationNode(Operations.v_rolling)
-            # horizontal = OperationNode(Operations.h_rolling)
+            if direction == 0:
+                vertical = OperationNode(Operations.v_rolling)
+                horizontal = OperationNode(Operations.h_rolling)
+                return vertical, horizontal
+            if direction == 1:
+                vertical = OperationNode(Operations.v_rolling)
+                return vertical
+            if direction == 2:
+                horizontal = OperationNode(Operations.h_rolling)
+                return horizontal
             # return vertical, horizontal
-            return vertical
+            # return horizontal
             # return OperationNode(Operations.v_rolling)
             # if is_op_node(pparent) and pparent.operation == Operations.cutting:
             #     return OperationNode(Operations.v_rolling)
@@ -1729,7 +1738,7 @@ class Tree:
         self.root = root
 
     @staticmethod
-    def create_template(parent: BinNode, height, cut_thickness=None):
+    def create_template(parent: BinNode, height, cut_thickness=None, direction=0):
         nodes = deque([parent])
         parent_children = []
         while nodes:
@@ -1740,7 +1749,7 @@ class Tree:
                     continue
                 if is_cc_node(node):
                     continue
-            children = node.create(height, cut_thickness=cut_thickness)
+            children = node.create(height, cut_thickness=cut_thickness, direction=direction)
             if node is parent:
                 parent_children = children
                 parent.set_parent(children)
@@ -1752,8 +1761,10 @@ class Tree:
                 nodes.append(children)
         return parent_children
 
-    def create_template_branches(self, parent: BinNode, height, cut_thickness=None):
-        children = self.__class__.create_template(parent, height, cut_thickness=cut_thickness)
+    def create_template_branches(self, parent: BinNode, height, cut_thickness=None, direction=0):
+        children = self.__class__.create_template(
+            parent, height, cut_thickness=cut_thickness, direction=direction
+        )
         if not isinstance(children, (list, tuple)):
             children = [children]
         trees = []

@@ -277,7 +277,7 @@ def _pack(node, level, restrictions):
             max_branch[1].update_size(max_len=max_len)
 
 
-def _create_insert_template(node, level, tree, local, restrictions):
+def _create_insert_template(node, level, tree, local, restrictions, direction=0):
     if restrictions:
         max_len = restrictions.get('cutting_length')
         cut_thickness = restrictions.get('cutting_thickness')
@@ -307,7 +307,8 @@ def _create_insert_template(node, level, tree, local, restrictions):
         else:
             cut_thickness = None
         res = tree.create_template_branches(
-            new_parent, height, cut_thickness=cut_thickness
+            new_parent, height, cut_thickness=cut_thickness,
+            direction=direction
         )
         # 5.5) вставка шаблона с копированием нижестоящих узлов
         for new_tree, new_parent, branch in res:
