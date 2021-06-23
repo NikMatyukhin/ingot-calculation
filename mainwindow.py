@@ -837,9 +837,9 @@ class OCIMainWindow(QMainWindow):
         for blank in pack.result:
             rect = blank.rectangle
             self.plan_painter.addBlank(
-                math.ceil(rect.length, 1),
-                math.ceil(rect.width, 1),
-                math.ceil(rect.height, 1),
+                math.ceil(rect.length),
+                math.ceil(rect.width),
+                round(rect.height, 1),
                 round(blank.x, 1),
                 round(blank.y, 1),
                 rect.name
