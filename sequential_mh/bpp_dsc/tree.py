@@ -14,10 +14,13 @@ from enum import Enum
 from functools import partial
 from itertools import chain, product, count
 from operator import attrgetter
+from math import prod
 
 
 from .ph import ph_bpp
-from .support import deformation, is_subrectangle, is_subrectangle_with_def, dfs
+from .support import (
+    deformation, is_subrectangle, is_subrectangle_with_def, dfs
+)
 from .exception import (
     DirectionError, KitError, ParentNodeError, SizeError,
     ChildrenNodeError, OperationTypeError
@@ -1281,7 +1284,16 @@ class OperationNode(Node):
                     new_height = size[LENGTH] * new_height / new_length
                 else:
                     new_length = size[LENGTH]
-                parent.bin.length = size[LENGTH]
+                if new_length * new_width * new_height < prod(min_size):
+                    if parent.last_rolldir == Direction.V and new_length > min_size[LENGTH]:
+                        predict_height = min_size[HEIGHT] * min_size[LENGTH] / new_length
+                        if new_height < predict_height < min_size[HEIGHT]:
+                            new_height = predict_height
+                    else:
+                        new_width = new_width * new_height / min_size[HEIGHT]
+                        new_height = min_size[HEIGHT]
+                # parent.bin.length = size[LENGTH]
+                parent.bin.length = new_length
                 parent.bin.height = new_height
         elif self.operation == Operations.v_rolling:
             size = self.children.bin.size
@@ -1303,6 +1315,14 @@ class OperationNode(Node):
                     new_height = size[WIDTH] * new_height / new_width
                 else:
                     new_width = size[WIDTH]
+                if new_length * new_width * new_height < prod(min_size):
+                    if parent.last_rolldir == Direction.H and new_width > min_size[WIDTH]:
+                        predict_height = min_size[HEIGHT] * min_size[WIDTH] / new_width
+                        if new_height < predict_height < min_size[HEIGHT]:
+                            new_height = predict_height
+                    else:
+                        new_length = new_height * new_length / min_size[HEIGHT]
+                        new_height = min_size[HEIGHT]
                 parent.bin.width = new_width
                 parent.bin.length = new_length
                 parent.bin.height = new_height
