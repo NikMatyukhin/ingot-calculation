@@ -193,20 +193,28 @@ class CuttingMapPainter:
         self.x = 0.0
         self.y = 0.0
         self.prev_item = None
-        self.prev_size = None
         self.prev_type = None
         self.source_point = None
         self.in_width = True
         self.skip = False
-        for node in dfs(self.tree):
+        self.skip_counter = 0
+        tree_path = list(dfs(self.tree))
+        for index, node in enumerate(tree_path):
             if is_op_node(node):
-                if node.operation == Operations.rolling:
+               if node.operation == Operations.rolling:
                     continue
-            elif is_bin_node(node):
-                if node.bin.size == self.prev_size:
-                    self.prev_size = None
-                    continue
-                self.prev_size = node.bin.size
+            if self.skip_counter > 0:
+                self.skip_counter -= 1
+                continue
+            try:
+                op_node = tree_path[index + 1]
+                next_node = tree_path[index + 3]
+                if is_bin_node(node) and is_bin_node(next_node) and is_op_node(op_node) and not op_node.operation == Operations.cutting:
+                    if node.bin.size == next_node.bin.size:
+                        print(index, node.bin.size)
+                        self.skip_counter = 2
+            except IndexError:
+                pass
             cur_item = self.createItem(node)
             if not cur_item:
                 continue
@@ -327,7 +335,10 @@ class CuttingMapPainter:
             self.y += 80
         if pop:
             self.skip = True
-            self.cutting_nodes.pop()
+            try:
+                self.cutting_nodes.pop()
+            except IndexError:
+                pass
         if residue:
             try:
                 self.source_point = self.cutting_nodes[-1].bottom
