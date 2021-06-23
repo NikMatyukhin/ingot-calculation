@@ -48,5 +48,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install PySide6 pyyaml
     - name: Build
-      run: |
-        python ./setup.py build
+      uses: JackMcKew/pyinstaller-action-linux@main
+      with:
+        path: src
+#     - name: Build
+#       run: |
+#         python ./setup.py build
