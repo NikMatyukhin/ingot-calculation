@@ -77,6 +77,10 @@ class SettingsDialog(QDialog):
             'forging/max_width', defaultValue=180, type=int))
         self.ui.doubleSpinBox_6.setValue(self.settings.value(
             'forging/max_depth', defaultValue=30.0, type=float))
+        self.ui.doubleSpinBox_7.setValue(self.settings.value(
+            'forging/size_error', defaultValue=2.0, type=float))
+        self.ui.doubleSpinBox_4.setValue(self.settings.value(
+            'forging/allowance', defaultValue=1.5, type=float))
 
     def save(self):
         """Сохранение настроек
@@ -127,15 +131,10 @@ class SettingsDialog(QDialog):
                                self.ui.spinBox_15.value())
         self.settings.setValue('forging/max_depth',
                                self.ui.doubleSpinBox_6.value())
+        self.settings.setValue('forging/size_error',
+                               self.ui.doubleSpinBox_7.value())
+        self.settings.setValue('forging/allowance',
+                               self.ui.doubleSpinBox_4.value())
 
         self.saved = True
         self.accept()
-
-
-if __name__ == '__main__':
-    application = QApplication()
-
-    window = SettingsDialog()
-    window.show()
-
-    application.exec_()

@@ -642,8 +642,8 @@ class OrderAddingDialog(QDialog):
         # print(f'Эффективность после расчета: {efficiency}')
 
         # TODO: Получить из настроек погрешность и припуски на фрезеровку
-        size_error = 2
-        allowance = 1.5
+        size_error = self.ingot_settings['size_error']
+        allowance = self.ingot_settings['allowance']
 
         # Получение слитка с учетом погрешности и припусков
         length = tree.root.bin.length # + size_error + 2 * allowance

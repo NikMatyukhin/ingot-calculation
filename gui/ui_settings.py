@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsDoLihw.ui'
+## Form generated from reading UI file 'settingsJlXADh.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -637,6 +637,56 @@ class Ui_Dialog(object):
 
         self.verticalLayout_2.addWidget(self.forgingSettings_4)
 
+        self.label_14 = QLabel(self.forgingPage)
+        self.label_14.setObjectName(u"label_14")
+        self.label_14.setFont(font)
+        self.label_14.setStyleSheet(u"QLabel {\n"
+"	background-color: rgb(234, 234, 234);\n"
+"}")
+
+        self.verticalLayout_2.addWidget(self.label_14)
+
+        self.forgingSettings_5 = QFrame(self.forgingPage)
+        self.forgingSettings_5.setObjectName(u"forgingSettings_5")
+        self.forgingSettings_5.setFrameShape(QFrame.StyledPanel)
+        self.forgingSettings_5.setFrameShadow(QFrame.Raised)
+        self.formLayout_6 = QFormLayout(self.forgingSettings_5)
+        self.formLayout_6.setObjectName(u"formLayout_6")
+        self.formLayout_6.setHorizontalSpacing(0)
+        self.formLayout_6.setVerticalSpacing(10)
+        self.formLayout_6.setContentsMargins(10, 10, 10, 10)
+        self.label_15 = QLabel(self.forgingSettings_5)
+        self.label_15.setObjectName(u"label_15")
+        self.label_15.setMinimumSize(QSize(210, 0))
+        self.label_15.setMaximumSize(QSize(210, 16777215))
+
+        self.formLayout_6.setWidget(0, QFormLayout.LabelRole, self.label_15)
+
+        self.label_22 = QLabel(self.forgingSettings_5)
+        self.label_22.setObjectName(u"label_22")
+
+        self.formLayout_6.setWidget(1, QFormLayout.LabelRole, self.label_22)
+
+        self.doubleSpinBox_4 = QDoubleSpinBox(self.forgingSettings_5)
+        self.doubleSpinBox_4.setObjectName(u"doubleSpinBox_4")
+        self.doubleSpinBox_4.setMaximumSize(QSize(80, 16777215))
+        self.doubleSpinBox_4.setDecimals(1)
+        self.doubleSpinBox_4.setMinimum(1.000000000000000)
+        self.doubleSpinBox_4.setMaximum(100.000000000000000)
+
+        self.formLayout_6.setWidget(0, QFormLayout.FieldRole, self.doubleSpinBox_4)
+
+        self.doubleSpinBox_7 = QDoubleSpinBox(self.forgingSettings_5)
+        self.doubleSpinBox_7.setObjectName(u"doubleSpinBox_7")
+        self.doubleSpinBox_7.setMaximumSize(QSize(80, 16777215))
+        self.doubleSpinBox_7.setDecimals(1)
+        self.doubleSpinBox_7.setMinimum(1.000000000000000)
+
+        self.formLayout_6.setWidget(1, QFormLayout.FieldRole, self.doubleSpinBox_7)
+
+
+        self.verticalLayout_2.addWidget(self.forgingSettings_5)
+
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 
         self.verticalLayout_2.addItem(self.verticalSpacer)
@@ -740,6 +790,11 @@ class Ui_Dialog(object):
         self.spinBox_15.setPrefix("")
         self.spinBox_16.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.spinBox_16.setPrefix("")
+        self.label_14.setText(QCoreApplication.translate("Dialog", u"\u0424\u0440\u0435\u0437\u0438\u0440\u043e\u0432\u043a\u0430", None))
+        self.label_15.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u0438\u043f\u0443\u0441\u043a \u043d\u0430 \u0444\u0440\u0435\u0437\u0438\u0440\u043e\u0432\u043a\u0443", None))
+        self.label_22.setText(QCoreApplication.translate("Dialog", u"\u041f\u043e\u0433\u0440\u0435\u0448\u043d\u043e\u0441\u0442\u044c", None))
+        self.doubleSpinBox_4.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
+        self.doubleSpinBox_7.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.save.setText(QCoreApplication.translate("Dialog", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c", None))
         self.cancel.setText(QCoreApplication.translate("Dialog", u"\u041e\u0442\u043c\u0435\u043d\u0430", None))
     # retranslateUi

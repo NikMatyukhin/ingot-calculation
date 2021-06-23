@@ -842,9 +842,9 @@ class OCIMainWindow(QMainWindow):
         for blank in pack.result:
             rect = blank.rectangle
             self.plan_painter.addBlank(
-                math.ceil(rect.length, 1),
-                math.ceil(rect.width, 1),
-                math.ceil(rect.height, 1),
+                math.ceil(rect.length),
+                math.ceil(rect.width),
+                round(rect.height, 1),
                 round(blank.x, 1),
                 round(blank.y, 1),
                 rect.name
@@ -952,6 +952,8 @@ class OCIMainWindow(QMainWindow):
         ingot_settings = {
             'max_size': (self.ingot_max_height, self.ingot_max_width, self.ingot_max_depth),
             'min_size': (self.ingot_min_height, self.ingot_min_width, self.ingot_min_depth),
+            'size_error': self.size_error,
+            'allowance': self.allowance,
         }
         window.set_settings(settings, ingot_settings)
         window.recordSavedSuccess.connect(self.confirm_order_adding)
@@ -997,6 +999,10 @@ class OCIMainWindow(QMainWindow):
             'forging/max_width', defaultValue=180, type=int)
         self.ingot_max_depth = self.settings.value(
             'forging/max_depth', defaultValue=30.0, type=float)
+        self.size_error = self.settings.value(
+            'forging/size_error', defaultValue=2.0, type=float)
+        self.allowance = self.settings.value(
+            'forging/allowance', defaultValue=1.5, type=float)
 
     def write_settings(self):
         """Запись настроек в файл"""
@@ -1038,6 +1044,10 @@ class OCIMainWindow(QMainWindow):
             'forging/max_width', self.ingot_max_width)
         self.settings.setValue(
             'forging/max_depth', self.ingot_max_depth)
+        self.settings.setValue(
+            'forging/size_error', self.size_error)
+        self.settings.setValue(
+            'forging/allowance', self.allowance)
 
     def save_tree(self, order: Dict, ingot: Dict, tree: Tree = None):
         """Сохранение корневого узла дерева"""
