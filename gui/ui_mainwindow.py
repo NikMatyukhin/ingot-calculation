@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowIRDXoB.ui'
+## Form generated from reading UI file 'mainwindowCtamIt.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -436,7 +436,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 681, 1299))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, -240, 681, 1299))
         self.scrollAreaWidgetContents.setStyleSheet(u"* {\n"
 "	margin-right: 7px;\n"
 "}\n"
@@ -558,7 +558,6 @@ class Ui_MainWindow(object):
         self.ingotsView.setProperty("showDropIndicator", False)
         self.ingotsView.setSelectionMode(QAbstractItemView.SingleSelection)
         self.ingotsView.setFlow(QListView.LeftToRight)
-        self.ingotsView.setSpacing(5)
 
         self.verticalLayout_4.addWidget(self.ingotsView)
 

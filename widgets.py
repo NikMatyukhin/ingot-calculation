@@ -362,7 +362,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
         palette = QPalette(opt.palette)
         rect = QRect(opt.rect)
-        contentRect = QRect(rect.adjusted(margin, margin, margin, margin))
+        contentRect = QRect(rect.adjusted(margin * 2, margin, -margin * 2, -margin))
 
         # Настройка шрифта для плитки со слитком
         font = QFont(opt.font)
@@ -381,14 +381,14 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
         if opt.state & QStyle.State_Selected:
             painter.fillRect(rect, fill_color.darker(109))
-            painter.setPen(QPen(QBrush(QColor(255, 100, 0)), 2.0))
+            # painter.setPen(QPen(QBrush(QColor(255, 100, 0)), 2.0))
         elif opt.state & QStyle.State_MouseOver:
-            painter.fillRect(rect, fill_color.darker(103))
-            painter.setPen(palette.shadow().color())
+            painter.fillRect(rect, fill_color.darker(105))
+            # painter.setPen(palette.shadow().color())
         else:
             painter.fillRect(rect, fill_color)
-            painter.setPen(palette.shadow().color())
-        painter.drawRect(rect.adjusted(1, 1, -1, -1))
+        painter.setPen(palette.shadow().color())
+        painter.drawLine(rect.right(), rect.top(), rect.right(), rect.bottom())
         painter.setPen(Qt.black)
 
         # Надпись с партией слитка
@@ -403,14 +403,14 @@ class IngotSectionDelegate(QStyledItemDelegate):
         # Надпись с размерами слитка
         size = 'Размеры: ' + 'х'.join(map(str, data_row['ingot_size']))
         size_rect = QRect(self.textBox(font, size))
-        size_rect.moveTo(contentRect.left(), rect.bottom() - size_rect.height() - margin)
+        size_rect.moveTo(contentRect.left(), contentRect.bottom() - size_rect.height() - margin)
         painter.drawText(size_rect, Qt.TextSingleLine, size)
 
         # Надпись со сплавом слитка
         fusion_name = index.model().extradata(index, Qt.DisplayRole, 'fusion_name')
         fusion = 'Сплав: ' + fusion_name
         fusion_rect = QRect(self.textBox(font, fusion))
-        fusion_rect.moveTo(contentRect.left(), rect.bottom() - fusion_rect.height() - size_rect.height() - margin)
+        fusion_rect.moveTo(contentRect.left(), contentRect.bottom() - fusion_rect.height() - size_rect.height() - margin)
         painter.drawText(fusion_rect, Qt.TextSingleLine, fusion)
 
         # Иконка 
@@ -429,7 +429,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
             self.forgeIcon = QPixmap(':icons/forged.png')
         self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, mode = Qt.SmoothTransformation)
         icon_left_margin = contentRect.width() // 2 - free_height // 2
-        self.forgeIconPos = QPoint(rect.left() + icon_left_margin, contentRect.top() + margin + part_rect.height())
+        self.forgeIconPos = QPoint(contentRect.left() + icon_left_margin, contentRect.top() + margin + part_rect.height())
         painter.drawPixmap(self.forgeIconPos, self.forgeIcon)
 
         painter.restore()

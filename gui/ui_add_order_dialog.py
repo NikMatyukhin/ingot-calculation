@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_order_dialogakbnwA.ui'
+## Form generated from reading UI file 'add_order_dialogxWehJS.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -184,7 +184,6 @@ class Ui_Dialog(object):
         self.ingotsView.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.ingotsView.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.ingotsView.setFlow(QListView.LeftToRight)
-        self.ingotsView.setSpacing(5)
 
         self.verticalLayout_4.addWidget(self.ingotsView)
 
