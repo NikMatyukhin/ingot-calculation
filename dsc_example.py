@@ -13,7 +13,7 @@ from sequential_mh.bpp_dsc.tree import (
 from sequential_mh.bpp_dsc.stm import stmh_idrd
 from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 
-# from sequential_mh.bpp_dsc.graph import plot, create_edges
+from sequential_mh.bpp_dsc.graph import plot, create_edges
 
 from sequential_mh.tsh import rect
 from sequential_mh.tsh.est import Estimator
@@ -679,11 +679,38 @@ def example_23():
     }
 
 
+def example_24():
+    """Пример"""
+    return {
+        'name': '2400ц',
+        'kit': [
+            (430, 180, 0.5, 1),
+            (430, 180, 0.5, 1),
+            (430, 180, 0.5, 1),
+            (430, 180, 0.5, 1),
+            # (160, 93, 3.0, 1),
+            # (150, 180, 2.0, 1),
+            # (430, 100, 1.0, 1), (430, 100, 1.0, 1), (260, 180, 1.0, 1),
+            # (850, 120, 0.5, 1), (430, 180, 0.5, 1), (160, 100, 0.5, 1),
+        ],
+        'L0': 180,
+        'W0': 160,
+        'H0': 28,
+        'max_size': ((1200, 380), (1200, 400)),
+        'cutting_length': 1200,
+        'cutting_thickness': 4.2,
+        'hem_until_3': 4,
+        'hem_after_3': 2,
+        'allowance': 2,
+        'end': 0.02,
+    }
+
+
 EXAMPLES = [
     example_1, example_2, example_3, example_4, example_5, example_6,
     example_7, example_8, example_9, example_10, example_11, example_12,
     example_13, example_14, example_15, example_16, example_17, example_18,
-    example_19, example_20, example_21, example_22, example_23
+    example_19, example_20, example_21, example_22, example_23, example_24
 ]
 
 
@@ -730,18 +757,18 @@ def main(example, use_graphviz=False, use_predict=False):
     material = Material('Сплав 1', 2.2, 1.)
     if 0 <= example - 1 < len(EXAMPLES):
         data = EXAMPLES[example - 1]()
-        if example - 1 == 22:
-            import json
-            with open('d:/article_icp/mini/problem_12_p.json', 'r') as f:
-                file_data = json.load(f)
-            rects = []
-            for r in file_data['rectangles']:
-                if r[3] in (2, 1):
-                    rects.append((r[1], r[2], r[3], 1))
-            data['kit'] = rects
-            # data['L0'], data['W0'], data['H0'] = file_data['ingot']
-            data['H0'] = 10
-            print('Файл считан:', len(data['kit']))
+        # if example - 1 == 22:
+        #     import json
+        #     with open('d:/article_icp/mini/problem_12_p.json', 'r') as f:
+        #         file_data = json.load(f)
+        #     rects = []
+        #     for r in file_data['rectangles']:
+        #         if r[3] in (2, 1):
+        #             rects.append((r[1], r[2], r[3], 1))
+        #     data['kit'] = rects
+        #     # data['L0'], data['W0'], data['H0'] = file_data['ingot']
+        #     data['H0'] = 10
+        #     print('Файл считан:', len(data['kit']))
     else:
         raise ValueError(
             'Некорректный номер примера. '
@@ -778,10 +805,10 @@ def main(example, use_graphviz=False, use_predict=False):
     tree = Tree(root)
     tree = stmh_idrd(tree, restrictions=restrictions)
 
-    # if use_graphviz:
-    #     graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
-    #     create_edges(graph1, all_nodes1)
-    #     graph1.view()
+    if use_graphviz:
+        graph1, all_nodes1 = plot(tree.root, 'pdf/graph2.gv')
+        create_edges(graph1, all_nodes1)
+        graph1.view()
 
     # _, res, nodes = optimal_configuration(tree, nd=True)
     # res.update_size()
@@ -820,7 +847,7 @@ def main(example, use_graphviz=False, use_predict=False):
 
 
 if __name__ == '__main__':
-    USE_GRAPHVIZ = False
+    USE_GRAPHVIZ = True
     USE_PREDICT = True
-    NUMBER = 1
+    NUMBER = 24
     main(NUMBER, USE_GRAPHVIZ, USE_PREDICT)

@@ -735,14 +735,10 @@ class OCIMainWindow(QMainWindow):
         """
         min_length, min_width, min_height = min_size
 
-        # with cProfile.Profile() as pr:
-        #     try:
         trees = self._stmh_idrd(
             main_tree, restrictions=restrictions, local=False,
             with_filter=False, progress=progress
         )
-        # finally:
-        #     pr.print_stats()
 
         for tree in trees:
             # Получение смежного остатка
@@ -763,7 +759,6 @@ class OCIMainWindow(QMainWindow):
                 tree.root.bin.width = min_width
             if root_size[2] < min_height:
                 tree.root.bin.height = min_height
-
             # TODO: Проблема в том, что тип разреза не обновляется
             # может случиться так, что резать нужно будет по другому! (в 7 примере)
             tree.root.update_size()
