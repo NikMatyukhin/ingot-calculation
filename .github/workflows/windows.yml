@@ -49,4 +49,4 @@ jobs:
         pip install PySide6 pyyaml cx_Freeze
     - name: Build
       run: |
-        ls
+        dir
