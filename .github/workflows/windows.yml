@@ -49,4 +49,4 @@ jobs:
         pip install PySide6 pyyaml
     - name: Build
       run: |
-        python setup.py build
+        python ./setup.py build
