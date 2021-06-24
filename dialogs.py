@@ -415,7 +415,7 @@ class OrderAddingDialog(QDialog):
         if self.ui.treeView_1.hasFocus():
             if self.model.rowCount(QModelIndex()):
                 if self.ui.treeView_1.currentIndex().parent().isValid():
-                    add = menu.addAction('Добавить деталь')
+                    add = menu.addAction('Добавить заготовку')
                     add.triggered.connect(self.add_detail_to_complect)
                 else:
                     add = menu.addAction('Добавить изделие целиком')
@@ -423,7 +423,7 @@ class OrderAddingDialog(QDialog):
         if self.ui.treeView_2.hasFocus():
             if self.model.rowCount(QModelIndex()):
                 if self.ui.treeView_2.currentIndex().parent().isValid():
-                    delete = menu.addAction('Убрать деталь')
+                    delete = menu.addAction('Убрать заготовку')
                     delete.triggered.connect(self.remove_detail_from_complect)
                 else:
                     delete = menu.addAction('Убрать изделие целиком')
@@ -888,7 +888,7 @@ class IngotReadinessDialog(QDialog):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
         self.duration = 1500
-        self.tip = 'Укажите название партии'
+        self.tip = 'Укажите номер партии'
 
         self.ui.add.clicked.connect(self.confirm_readiness)
         self.ui.cancel.clicked.connect(self.reject)

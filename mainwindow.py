@@ -262,12 +262,13 @@ class OCIMainWindow(QMainWindow):
 
     def confirm_order_removing(self, index: QModelIndex):
         data_row = index.data(Qt.DisplayRole)
-        answer = QMessageBox.question(
-            self, 'Подтверждение удаления',
+        message = QMessageBox(QMessageBox.Question, 'Подтверждение удаления',
             f'Вы уверены, что хотите удалить заказ "{data_row["order_name"]}"?',
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+            QMessageBox.Yes | QMessageBox.Cancel, self
         )
-        if answer == QMessageBox.Yes:
+        message.setButtonText(QMessageBox.Yes, 'Да')
+        message.setButtonText(QMessageBox.Cancel, 'Отмена')
+        if message.exec() == QMessageBox.Yes:
             success = StandardDataService.delete_by_id(
                 'orders', {'order_id': data_row['order_id']}
             )

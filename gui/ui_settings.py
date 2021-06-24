@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsfdImwc.ui'
+## Form generated from reading UI file 'settingsTkBiCM.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -768,9 +768,9 @@ class Ui_Dialog(object):
         self.label_5.setText(QCoreApplication.translate("Dialog", u"\u0414\u043b\u0438\u043d\u0430 \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
         self.spinBox_5.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.rollingLabel_2.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u044b \u043b\u0438\u0441\u0442\u0430", None))
-        self.label_6.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0448\u0438\u0440\u0438\u043d\u0430 \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u044b", None))
+        self.label_6.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0448\u0438\u0440\u0438\u043d\u0430", None))
         self.spinBox_6.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.label_7.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0434\u043b\u0438\u043d\u0430 \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u044b", None))
+        self.label_7.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0434\u043b\u0438\u043d\u0430", None))
         self.spinBox_7.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.rollingLabel_3.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u043e\u0447\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
         self.label_4.setText(QCoreApplication.translate("Dialog", u"\u041f\u043e\u0440\u043e\u0433 \u0442\u043e\u043b\u0449\u0438\u043d\u044b \u0434\u043b\u044f \u0447\u0438\u0441\u0442. \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))

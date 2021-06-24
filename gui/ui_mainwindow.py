@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowCtamIt.ui'
+## Form generated from reading UI file 'mainwindowoihJos.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -436,7 +436,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, -240, 681, 1299))
+        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 681, 1299))
         self.scrollAreaWidgetContents.setStyleSheet(u"* {\n"
 "	margin-right: 7px;\n"
 "}\n"
@@ -716,7 +716,7 @@ class Ui_MainWindow(object):
         self.searchResult_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 83, 30))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 343, 437))
         self.verticalLayout_9 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_9.setSpacing(0)
         self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
@@ -812,7 +812,7 @@ class Ui_MainWindow(object):
         self.depthLine.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 98, 42))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 715, 42))
         self.horizontalLayout_7 = QHBoxLayout(self.scrollAreaWidgetContents_3)
         self.horizontalLayout_7.setSpacing(0)
         self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
@@ -894,7 +894,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         self.mainArea.setCurrentIndex(0)
-        self.orderInformationArea.setCurrentIndex(0)
+        self.orderInformationArea.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -921,7 +921,7 @@ class Ui_MainWindow(object):
 
         self.defaultLabel.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u043a\u0430\u0437 \u043d\u0435 \u0432\u044b\u0431\u0440\u0430\u043d", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"\u041d\u043e\u043c\u0435\u0440 \u0437\u0430\u043a\u0430\u0437\u0430", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u0434\u0435\u0442\u0430\u043b\u0438", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"\u0412\u044b\u0431\u0440\u0430\u043d\u043d\u044b\u0435 \u0437\u0430\u0433\u043e\u0442\u043e\u0432\u043a\u0438", None))
         self.saveComplect.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c", None))
         self.saveComplectAndRecreate.setText(QCoreApplication.translate("MainWindow", u"\u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c\n"
 "\u0438 \u043f\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u0442\u044c", None))
@@ -940,7 +940,7 @@ class Ui_MainWindow(object):
 "\u0417\u0430\u0431\u0440\u0430\u043a\u043e\u0432\u0430\u043d\u043d\u044b\u0445 \u0434\u0435\u0442\u0430\u043b\u0435\u0439:", None))
         self.searchName.setPlaceholderText(QCoreApplication.translate("MainWindow", u"\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0434\u0435\u0442\u0430\u043b\u0438...", None))
         self.closeOrder.setText(QCoreApplication.translate("MainWindow", u"\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u044c \u0437\u0430\u043a\u0430\u0437", None))
-        self.sourcePlate.setText(QCoreApplication.translate("MainWindow", u"\u0418\u0441\u0445\u043e\u0434\u043d\u0430\u044f\n"
-"\u043f\u043b\u0430\u0441\u0442\u0438\u043d\u0430", None))
+        self.sourcePlate.setText(QCoreApplication.translate("MainWindow", u"\u041a\u0430\u0440\u0442\u0430\n"
+"\u0440\u0430\u0441\u043a\u0440\u043e\u044f", None))
     # retranslateUi
 
