@@ -560,29 +560,32 @@ class OrderAddingDialog(QDialog):
                 )
                 QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
                 return
+            except Exception as exception:
+                QMessageBox.critical(
+                    self, 'Расчёт слитка завершился с ошибкой', f'{exception}', QMessageBox.Ok
+                )
+                return
+            else:
+                data_row = {
+                    'ingot_id': 0,
+                    'fusion_id': self.fusions[fusion_name],
+                    'ingot_part': None,
+                    'ingot_size': sizes,
+                    'status_id': 4
+                }
+                for row in range(self.ingot_model.rowCount()):
+                    ingot_index = self.ingot_model.index(row, 0, QModelIndex())
+                    if ingot_index.data(Qt.DisplayRole)['status_id'] == 1:
+                        continue
+                    if self.fusions[fusion_name] == ingot_index.data(Qt.DisplayRole)['fusion_id']:
+                        self.ingot_model.deleteRow(row, QModelIndex())
+                        break
+                self.ingot_model.appendRow(data_row)
+                self.predicted_ingots[self.fusions[fusion_name]] = {'tree': tree.root, 'efficiency': round(efficiency * 100, 2)}
             progress.close()
-            data_row = {
-                'ingot_id': 0,
-                'fusion_id': self.fusions[fusion_name],
-                'ingot_part': None,
-                'ingot_size': sizes,
-                'status_id': 4
-            }
-            for row in range(self.ingot_model.rowCount()):
-                ingot_index = self.ingot_model.index(row, 0, QModelIndex())
-                if ingot_index.data(Qt.DisplayRole)['status_id'] == 1:
-                    continue
-                if self.fusions[fusion_name] == ingot_index.data(Qt.DisplayRole)['fusion_id']:
-                    self.ingot_model.deleteRow(row, QModelIndex())
-                    break
-            self.ingot_model.appendRow(data_row)
-            self.predicted_ingots[self.fusions[fusion_name]] = {'tree': tree.root, 'efficiency': round(efficiency * 100, 2)}
         else:
             QMessageBox.critical(
-                self,
-                'Ошибка добавления',
-                'Должно быть добавлено хотя бы одно изделие!',
-                QMessageBox.Ok
+                self, 'Ошибка добавления', 'Должно быть добавлено хотя бы одно изделие!', QMessageBox.Ok
             )
 
     def get_details_kit(self, material: Material) -> Kit:

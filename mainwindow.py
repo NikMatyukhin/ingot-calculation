@@ -455,13 +455,13 @@ class OCIMainWindow(QMainWindow):
                 'Раскрой для заказа %(name)s успешно создан.',
                 {'name': order_name}
             )
+            current_order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+            current_ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
+            self.update_complect_statuses(current_order['order_id'], current_ingot['fusion_id'])
+            self.save_tree(current_order, current_ingot)
+            self.redraw_map(current_ingot)
         progress.close()
 
-        current_order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
-        current_ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
-        self.update_complect_statuses(current_order['order_id'], current_ingot['fusion_id'])
-        self.save_tree(current_order, current_ingot)
-        self.redraw_map(current_ingot)
 
     def redraw_map(self, ingot: Dict):
         self.map_scene.clear()
@@ -1012,9 +1012,9 @@ class OCIMainWindow(QMainWindow):
         self.ingot_min_depth = self.settings.value(
             'forging/min_depth', defaultValue=20.0, type=float)
         self.ingot_max_height = self.settings.value(
-            'forging/max_height', defaultValue=180, type=int)
+            'forging/max_height', defaultValue=185, type=int)
         self.ingot_max_width = self.settings.value(
-            'forging/max_width', defaultValue=180, type=int)
+            'forging/max_width', defaultValue=185, type=int)
         self.ingot_max_depth = self.settings.value(
             'forging/max_depth', defaultValue=30.0, type=float)
         self.size_error = self.settings.value(

@@ -72,9 +72,9 @@ class SettingsDialog(QDialog):
             'forging/min_depth', defaultValue=20.0, type=float))
 
         self.ui.spinBox_16.setValue(self.settings.value(
-            'forging/max_height', defaultValue=180, type=int))
+            'forging/max_height', defaultValue=185, type=int))
         self.ui.spinBox_15.setValue(self.settings.value(
-            'forging/max_width', defaultValue=180, type=int))
+            'forging/max_width', defaultValue=185, type=int))
         self.ui.doubleSpinBox_6.setValue(self.settings.value(
             'forging/max_depth', defaultValue=30.0, type=float))
         self.ui.doubleSpinBox_7.setValue(self.settings.value(
