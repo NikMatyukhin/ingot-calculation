@@ -83,7 +83,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             tailings = []
             variant, _, best = get_best_fig(
                 for_packing, region, main_region.rectangle, last_rolldir,
-                (y_hem[0], x_hem[0]), allowance, *region.start
+                (y_hem[0], x_hem[0]), result, allowance, *region.start
             )
             if best is None:
                 continue
@@ -303,7 +303,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
 
 
 def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
-                 hem, allowance=0, x0=0, y0=0):
+                 hem, packed=None, allowance=0, x0=0, y0=0):
     priority, orientation, best = 16, None, None
     w_0 = estimator.min_width_lim
     l_0 = estimator.min_length_lim
@@ -327,6 +327,15 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
         for j in range(1 + rect.is_rotatable):
             rect_w = size[(1 + j) % 2]
             rect_l = size[(0 + j) % 2]
+            if packed and (rect_w >= 350 or rect_l >= 350):
+                count = len(
+                    [
+                        item for item in packed 
+                        if rect.size[0] >= 350 or rect.size[1] >= 350
+                    ]
+                )
+                if count >= 2:
+                    continue
             # На большие листы ничего не размещается
             # trp = estimator.rectangle.trp
             # estimate_point = max(x0 + rect_w, trp.x), max(y0 + rect_l, trp.y)

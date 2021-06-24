@@ -563,19 +563,29 @@ class OCIMainWindow(QMainWindow):
     def stmh_idrd(self, tree, with_filter: bool = True,
                   restrictions: dict = None, progress: QProgressDialog = None):
         is_main = True
-        # with cProfile.Profile() as pr:
-        #     try:
+        doubling = False
+        start_step, steps = 0, 0
+        if restrictions:
+            cut_thickness = restrictions.get('cutting_thickness')
+            doubling = cut_thickness >= max(tree.root.kit.keys())
+        if progress:
+            steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
+            # Костыль. Умножение на константу для учета одинаковых веток
+            # print(f'Рассчитанное кол-во шагов: {steps}')
+            steps = int(4 * steps)
+            progress.setRange(0, steps)
         trees_vertical = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress, end_progress=False,
-            direction=1
+            direction=1, steps=steps
         )
+        if progress:
+            start_step = progress.value()
         trees_horizontal = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
-            with_filter=with_filter, progress=progress, direction=2
+            with_filter=with_filter, progress=progress, direction=2,
+            start_step=start_step, steps=steps
         )
-        # finally:
-        #     pr.print_stats()
         trees = [*trees_vertical, *trees_horizontal]
 
         if restrictions:
@@ -608,7 +618,7 @@ class OCIMainWindow(QMainWindow):
     def _stmh_idrd(tree, local: bool = False, with_filter: bool = True,
                    restrictions: dict = None,
                    progress: QProgressDialog = None, end_progress=True,
-                   direction=1):
+                   direction=1, start_step=0, steps=0):
         """Последовательная древовидная метаэвристика.
 
         Построение деревьев растроя.
@@ -630,16 +640,8 @@ class OCIMainWindow(QMainWindow):
         """
         level = deque([tree])
         result = []
-        step = 0
+        step = start_step
         point_counter = 2
-        doubling = False
-        if restrictions:
-            cut_thickness = restrictions.get('cutting_thickness')
-            doubling = cut_thickness >= max(tree.root.kit.keys())
-        steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
-        # Костыль. Умножение на константу для учета одинаковых веток
-        # steps = int(2 * steps)
-        progress.setRange(0, steps)
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -664,9 +666,9 @@ class OCIMainWindow(QMainWindow):
                     # Додумать на сколько уменьшать
                     # min_height = min(map(lambda item: item.bin.height, tree_.root.cc_leaves))
                     # steps -= number_of_steps(len([x for x in tree.root.kit.keys() if x < min_height]), doubling=False)
-                    steps -= 1
-                    progress.setRange(0, steps)
-                    progress.setValue(step - 1)
+                    # steps -= 1
+                    # progress.setRange(0, steps)
+                    # progress.setValue(step - 1)
                     continue
                 if is_empty_tree(tree_):
                     result.append(tree_)
@@ -735,10 +737,31 @@ class OCIMainWindow(QMainWindow):
         """
         min_length, min_width, min_height = min_size
 
-        trees = self._stmh_idrd(
+        doubling = False
+        start_step, steps = 0, 0
+        if restrictions:
+            cut_thickness = restrictions.get('cutting_thickness')
+            doubling = cut_thickness >= max(main_tree.root.kit.keys())
+        if progress:
+            steps = number_of_steps(len(main_tree.root.kit.keys()), doubling=doubling)
+            # Костыль. Умножение на константу для учета одинаковых веток
+            # print(f'Рассчитанное кол-во шагов: {steps}')
+            steps = int(6 * steps)
+            progress.setRange(0, steps)
+
+        trees_vertical = self._stmh_idrd(
             main_tree, restrictions=restrictions, local=False,
-            with_filter=False, progress=progress
+            with_filter=False, progress=progress, end_progress=False,
+            direction=1, steps=steps
         )
+        if progress:
+            start_step = progress.value()
+        trees_horizontal = self._stmh_idrd(
+            main_tree, restrictions=restrictions, local=False,
+            with_filter=False, progress=progress, direction=2,
+            start_step=start_step, steps=steps
+        )
+        trees = [*trees_vertical, *trees_horizontal]
 
         for tree in trees:
             # Получение смежного остатка
