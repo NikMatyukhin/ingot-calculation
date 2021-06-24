@@ -781,7 +781,7 @@ class Kit(ABCKit):
         qty = 0
         if height is None:
             for _, group in self.blanks.items():
-                qty = sum(len(sg) for _, sg in group.items())
+                qty += sum(len(sg) for _, sg in group.items())
                 # for _, subgroup in group.items():
                 #     qty += len(subgroup)
         else:
