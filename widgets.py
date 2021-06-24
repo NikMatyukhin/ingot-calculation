@@ -380,11 +380,10 @@ class IngotSectionDelegate(QStyledItemDelegate):
         painter.setFont(font)
 
         if opt.state & QStyle.State_Selected:
-            painter.fillRect(rect, fill_color.darker(109))
-            # painter.setPen(QPen(QBrush(QColor(255, 100, 0)), 2.0))
+            painter.fillRect(rect, fill_color.darker(115))
+            painter.fillRect(rect.adjusted(0, rect.height() - margin, 0, 0), QColor("#CD743D"))
         elif opt.state & QStyle.State_MouseOver:
             painter.fillRect(rect, fill_color.darker(105))
-            # painter.setPen(palette.shadow().color())
         else:
             painter.fillRect(rect, fill_color)
         painter.setPen(palette.shadow().color())

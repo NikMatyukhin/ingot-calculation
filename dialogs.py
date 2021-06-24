@@ -345,7 +345,7 @@ class OrderAddingDialog(QDialog):
             'Ведомость', 'Название', 'Аренда', 'Сплав', 'Длина', 'Ширина',
             'Толщина', 'Количество', 'Приоритет', 'Направление', 'ID', 'ADDED'
         ]
-        self.catalog_headers = self.headers[:3]
+        self.catalog_headers = self.headers[:4]
         self.added_headers = self.headers[:2] + self.headers[3:9]
         self.model = ComplectsModel(self.headers)
         
@@ -448,6 +448,7 @@ class OrderAddingDialog(QDialog):
             self.ui.treeView_2.resizeColumnToContents(column)
         # Колонка со сплавами по другому размер не меняет
         self.ui.treeView_2.setColumnWidth(3, 80)
+        self.ui.treeView_2.expandAll()
 
     def add_detail_to_complect(self):
         index = self.search_proxy.mapToSource(self.ui.treeView_1.currentIndex())
@@ -466,6 +467,7 @@ class OrderAddingDialog(QDialog):
             self.ui.treeView_2.resizeColumnToContents(column)
         # Колонка со сплавами по другому размер не меняет
         self.ui.treeView_2.setColumnWidth(3, 80)
+        self.ui.treeView_2.expandAll()
 
     def remove_article_from_complect(self):
         index = self.choice_proxy.mapToSource(self.ui.treeView_2.currentIndex())

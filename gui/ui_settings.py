@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'settingsJlXADh.ui'
+## Form generated from reading UI file 'settingsfdImwc.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
@@ -218,6 +218,7 @@ class Ui_Dialog(object):
         self.doubleSpinBox.setObjectName(u"doubleSpinBox")
         self.doubleSpinBox.setMaximumSize(QSize(80, 16777215))
         self.doubleSpinBox.setDecimals(0)
+        self.doubleSpinBox.setMinimum(1.000000000000000)
 
         self.formLayout_4.setWidget(0, QFormLayout.FieldRole, self.doubleSpinBox)
 
@@ -231,7 +232,8 @@ class Ui_Dialog(object):
         self.spinBox_11 = QSpinBox(self.cuttingSettings_1)
         self.spinBox_11.setObjectName(u"spinBox_11")
         self.spinBox_11.setMaximumSize(QSize(80, 16777215))
-        self.spinBox_11.setMaximum(3000)
+        self.spinBox_11.setMinimum(1)
+        self.spinBox_11.setMaximum(300)
 
         self.formLayout_4.setWidget(1, QFormLayout.FieldRole, self.spinBox_11)
 
@@ -245,7 +247,8 @@ class Ui_Dialog(object):
         self.spinBox_12 = QSpinBox(self.cuttingSettings_1)
         self.spinBox_12.setObjectName(u"spinBox_12")
         self.spinBox_12.setMaximumSize(QSize(80, 16777215))
-        self.spinBox_12.setMaximum(3000)
+        self.spinBox_12.setMinimum(1)
+        self.spinBox_12.setMaximum(300)
 
         self.formLayout_4.setWidget(2, QFormLayout.FieldRole, self.spinBox_12)
 
@@ -281,6 +284,7 @@ class Ui_Dialog(object):
         self.spinBox_8.setObjectName(u"spinBox_8")
         self.spinBox_8.setMaximumSize(QSize(80, 16777215))
         self.spinBox_8.setReadOnly(True)
+        self.spinBox_8.setMinimum(1)
         self.spinBox_8.setMaximum(3000)
 
         self.formLayout_5.setWidget(0, QFormLayout.FieldRole, self.spinBox_8)
@@ -296,7 +300,8 @@ class Ui_Dialog(object):
         self.spinBox_9.setObjectName(u"spinBox_9")
         self.spinBox_9.setMinimumSize(QSize(0, 0))
         self.spinBox_9.setMaximumSize(QSize(80, 16777215))
-        self.spinBox_9.setMaximum(3000)
+        self.spinBox_9.setMinimum(1)
+        self.spinBox_9.setMaximum(100)
 
         self.formLayout_5.setWidget(1, QFormLayout.FieldRole, self.spinBox_9)
 
@@ -309,6 +314,7 @@ class Ui_Dialog(object):
         self.doubleSpinBox_3.setObjectName(u"doubleSpinBox_3")
         self.doubleSpinBox_3.setMaximumSize(QSize(80, 16777215))
         self.doubleSpinBox_3.setDecimals(1)
+        self.doubleSpinBox_3.setMinimum(0.500000000000000)
 
         self.formLayout_5.setWidget(2, QFormLayout.FieldRole, self.doubleSpinBox_3)
 
@@ -356,6 +362,7 @@ class Ui_Dialog(object):
         self.spinBox_2.setObjectName(u"spinBox_2")
         self.spinBox_2.setMaximumSize(QSize(80, 16777215))
         self.spinBox_2.setReadOnly(True)
+        self.spinBox_2.setMinimum(1)
         self.spinBox_2.setMaximum(3000)
 
         self.formLayout_2.setWidget(0, QFormLayout.FieldRole, self.spinBox_2)
@@ -371,6 +378,7 @@ class Ui_Dialog(object):
         self.spinBox_3.setObjectName(u"spinBox_3")
         self.spinBox_3.setMaximumSize(QSize(80, 16777215))
         self.spinBox_3.setReadOnly(True)
+        self.spinBox_3.setMinimum(1)
         self.spinBox_3.setMaximum(3000)
 
         self.formLayout_2.setWidget(1, QFormLayout.FieldRole, self.spinBox_3)
@@ -386,16 +394,10 @@ class Ui_Dialog(object):
         self.spinBox_5.setObjectName(u"spinBox_5")
         self.spinBox_5.setMaximumSize(QSize(80, 16777215))
         self.spinBox_5.setReadOnly(True)
+        self.spinBox_5.setMinimum(1)
         self.spinBox_5.setMaximum(3000)
 
         self.formLayout_2.setWidget(2, QFormLayout.FieldRole, self.spinBox_5)
-
-        self.changeMachine = QPushButton(self.rollingSettings_1)
-        self.changeMachine.setObjectName(u"changeMachine")
-        self.changeMachine.setEnabled(False)
-        self.changeMachine.setMaximumSize(QSize(80, 16777215))
-
-        self.formLayout_2.setWidget(3, QFormLayout.FieldRole, self.changeMachine)
 
 
         self.verticalLayout_7.addWidget(self.rollingSettings_1)
@@ -496,6 +498,10 @@ class Ui_Dialog(object):
 
 
         self.verticalLayout_7.addWidget(self.rollingSettings_3)
+
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.verticalLayout_7.addItem(self.verticalSpacer_3)
 
         self.stackedWidget.addWidget(self.rollingPage)
         self.forgingPage = QWidget()
@@ -741,34 +747,33 @@ class Ui_Dialog(object):
         self.rolling.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u043e\u043a\u0430\u0442", None))
         self.forging.setText(QCoreApplication.translate("Dialog", u"\u041a\u043e\u0432\u043a\u0430", None))
         self.cuttingLabel_1.setText(QCoreApplication.translate("Dialog", u"\u041f\u043e\u0442\u0435\u0440\u0438 \u043f\u0440\u0438 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0435", None))
-        self.label_10.setText(QCoreApplication.translate("Dialog", u"\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0442\u043e\u0440\u0446\u043e\u0432", None))
+        self.label_10.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0437\u043c\u0435\u0440 \u0442\u043e\u0440\u0446\u0430", None))
         self.doubleSpinBox.setSuffix(QCoreApplication.translate("Dialog", u" %", None))
-        self.label_11.setText(QCoreApplication.translate("Dialog", u"\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u043a\u0440\u043e\u043c\u043a\u0438 (\u0434\u043e 3 \u043c\u043c)", None))
+        self.label_11.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0437\u043c\u0435\u0440 \u043a\u0440\u043e\u043c\u043a\u0438 (\u0434\u043e 3 \u043c\u043c)", None))
         self.spinBox_11.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.label_12.setText(QCoreApplication.translate("Dialog", u"\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u043a\u0440\u043e\u043c\u043a\u0438 (\u043f\u043e\u0441\u043b\u0435 3 \u043c\u043c)", None))
+        self.label_12.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0437\u043c\u0435\u0440 \u043a\u0440\u043e\u043c\u043a\u0438 (\u043f\u043e\u0441\u043b\u0435 3 \u043c\u043c)", None))
         self.spinBox_12.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.cuttingLabel_2.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u043e\u0447\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
-        self.label_8.setText(QCoreApplication.translate("Dialog", u"\u0428\u0438\u0440\u0438\u043d\u0430 \u043d\u043e\u0436\u0430 \u0433\u0438\u043b\u044c\u043e\u0442\u0438\u043d\u044b", None))
+        self.label_8.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0437\u043c\u0435\u0440 \u043d\u043e\u0436\u0430 \u0433\u0438\u043b\u044c\u043e\u0442\u0438\u043d\u044b", None))
         self.spinBox_8.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.label_9.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u0438\u043f\u0443\u0441\u043a \u043d\u0430 \u0440\u0430\u0437\u0440\u0435\u0437", None))
         self.spinBox_9.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.label_13.setText(QCoreApplication.translate("Dialog", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430 \u043d\u0430\u0447\u0430\u043b\u0430 \u0440\u0430\u0441\u043a\u0440\u043e\u044f", None))
+        self.label_13.setText(QCoreApplication.translate("Dialog", u"\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0442\u043e\u043b\u0449\u0438\u043d\u0430 \u0440\u0430\u0437\u0440\u0435\u0437\u0430", None))
         self.doubleSpinBox_3.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.rollingLabel_1.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0437\u043c\u0435\u0440\u044b \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
-        self.label_2.setText(QCoreApplication.translate("Dialog", u"\u041e\u0431\u044b\u0447\u043d\u044b\u0439 \u043f\u0440\u043e\u043a\u0430\u0442", None))
+        self.rollingLabel_1.setText(QCoreApplication.translate("Dialog", u"\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u044b \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
+        self.label_2.setText(QCoreApplication.translate("Dialog", u"\u0428\u0438\u0440\u0438\u043d\u0430 \u0447\u0435\u0440\u043d\u043e\u0432\u043e\u0433\u043e \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
         self.spinBox_2.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.label_3.setText(QCoreApplication.translate("Dialog", u"\u0427\u0438\u0441\u0442\u043e\u0432\u043e\u0439 \u043f\u0440\u043e\u043a\u0430\u0442", None))
+        self.label_3.setText(QCoreApplication.translate("Dialog", u"\u0428\u0438\u0440\u0438\u043d\u0430 \u0447\u0438\u0441\u0442\u043e\u0432\u043e\u0433\u043e \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
         self.spinBox_3.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.label_5.setText(QCoreApplication.translate("Dialog", u"\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0434\u043b\u0438\u043d\u0430 \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
+        self.label_5.setText(QCoreApplication.translate("Dialog", u"\u0414\u043b\u0438\u043d\u0430 \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
         self.spinBox_5.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.changeMachine.setText(QCoreApplication.translate("Dialog", u"\u0421\u0442\u0430\u043d\u043e\u043a", None))
-        self.rollingLabel_2.setText(QCoreApplication.translate("Dialog", u"\u0420\u0430\u0437\u043c\u0435\u0440\u044b \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u044b", None))
-        self.label_6.setText(QCoreApplication.translate("Dialog", u"\u0428\u0438\u0440\u0438\u043d\u0430 \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u044b", None))
+        self.rollingLabel_2.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0435 \u0440\u0430\u0437\u043c\u0435\u0440\u044b \u043b\u0438\u0441\u0442\u0430", None))
+        self.label_6.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0448\u0438\u0440\u0438\u043d\u0430 \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u044b", None))
         self.spinBox_6.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
-        self.label_7.setText(QCoreApplication.translate("Dialog", u"\u0414\u043b\u0438\u043d\u0430 \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u044b", None))
+        self.label_7.setText(QCoreApplication.translate("Dialog", u"\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0434\u043b\u0438\u043d\u0430 \u043f\u043b\u0430\u0441\u0442\u0438\u043d\u044b", None))
         self.spinBox_7.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.rollingLabel_3.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u043e\u0447\u0438\u0435 \u043d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438", None))
-        self.label_4.setText(QCoreApplication.translate("Dialog", u"\u0422\u043e\u043b\u0449\u0438\u043d\u0430 \u0447\u0438\u0441\u0442\u043e\u0432\u043e\u0433\u043e \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
+        self.label_4.setText(QCoreApplication.translate("Dialog", u"\u041f\u043e\u0440\u043e\u0433 \u0442\u043e\u043b\u0449\u0438\u043d\u044b \u0434\u043b\u044f \u0447\u0438\u0441\u0442. \u043f\u0440\u043e\u043a\u0430\u0442\u0430", None))
         self.spinBox_4.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.label.setText(QCoreApplication.translate("Dialog", u"\u0414\u043e\u043f\u0443\u0441\u0442\u0438\u043c\u0430\u044f \u0434\u0435\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u044f", None))
         self.doubleSpinBox_2.setSuffix(QCoreApplication.translate("Dialog", u" %", None))
@@ -790,8 +795,8 @@ class Ui_Dialog(object):
         self.spinBox_15.setPrefix("")
         self.spinBox_16.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.spinBox_16.setPrefix("")
-        self.label_14.setText(QCoreApplication.translate("Dialog", u"\u0424\u0440\u0435\u0437\u0438\u0440\u043e\u0432\u043a\u0430", None))
-        self.label_15.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u0438\u043f\u0443\u0441\u043a \u043d\u0430 \u0444\u0440\u0435\u0437\u0438\u0440\u043e\u0432\u043a\u0443", None))
+        self.label_14.setText(QCoreApplication.translate("Dialog", u"\u0424\u0440\u0435\u0437\u0435\u0440\u043e\u0432\u043a\u0430", None))
+        self.label_15.setText(QCoreApplication.translate("Dialog", u"\u041f\u0440\u0438\u043f\u0443\u0441\u043a \u043d\u0430 \u0444\u0440\u0435\u0437\u0435\u0440\u043e\u0432\u043a\u0443", None))
         self.label_22.setText(QCoreApplication.translate("Dialog", u"\u041f\u043e\u0433\u0440\u0435\u0448\u043d\u043e\u0441\u0442\u044c", None))
         self.doubleSpinBox_4.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
         self.doubleSpinBox_7.setSuffix(QCoreApplication.translate("Dialog", u" \u043c\u043c", None))
