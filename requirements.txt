@@ -1,5 +1,5 @@
-matplotlib  ; только для отладки
-graphviz    ; только для отладки
+# matplotlib  ; только для отладки
+# graphviz    ; только для отладки
 
 pylint
 pytest
