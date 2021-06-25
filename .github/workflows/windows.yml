@@ -12,7 +12,7 @@ on:
 
 jobs:
   linting:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.9
@@ -27,9 +27,9 @@ jobs:
     #    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Check
       run: |
-        echo python --version
-        echo python -m pylint --version
-        echo python -m flake8 --version
+        python --version
+        python -m pylint --version
+        python -m flake8 --version
   # - name: Lint with pylint
   #   run: |
   #     # stop the build if there are Python syntax errors or undefined names
