@@ -822,7 +822,7 @@ class IngotAddingDialog(QDialog):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
         self.duration = 1500
-        self.tip = 'Укажите название партии'
+        self.tip = 'Укажите номер партии'
 
         # Настройка списка со сплавами
         self.fusions = {}

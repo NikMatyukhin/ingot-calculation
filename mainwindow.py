@@ -1013,9 +1013,9 @@ class OCIMainWindow(QMainWindow):
         self.ingot_min_depth = self.settings.value(
             'forging/min_depth', defaultValue=20.0, type=float)
         self.ingot_max_height = self.settings.value(
-            'forging/max_height', defaultValue=185, type=int)
+            'forging/max_height', defaultValue=180, type=int)
         self.ingot_max_width = self.settings.value(
-            'forging/max_width', defaultValue=185, type=int)
+            'forging/max_width', defaultValue=180, type=int)
         self.ingot_max_depth = self.settings.value(
             'forging/max_depth', defaultValue=30.0, type=float)
         self.size_error = self.settings.value(
