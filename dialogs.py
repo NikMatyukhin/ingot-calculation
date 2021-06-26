@@ -329,7 +329,7 @@ class OrderAddingDialog(QDialog):
     """
 
     recordSavedSuccess = pyqtSignal(dict)
-    predictedIngotSaved = pyqtSignal(dict, dict, Tree)
+    predictedIngotSaved = pyqtSignal(dict, dict, BinNode)
 
     def __init__(self, parent):
         super(OrderAddingDialog, self).__init__(parent)
