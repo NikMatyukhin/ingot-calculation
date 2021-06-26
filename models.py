@@ -2,11 +2,11 @@ import typing
 import application_rc
 from typing import List, Dict, Any
 
-from PySide6.QtCore import (
-    Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, Slot, QObject,
+from PyQt5.QtCore import (
+    Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot, QObject,
     QAbstractListModel
 )
-from PySide6.QtGui import (
+from PyQt5.QtGui import (
     QBrush, QColor, QIcon
 )
 
@@ -782,30 +782,30 @@ class ProductInformationFilterProxyModel(QSortFilterProxyModel):
                 self.product_id_filter in product_id and \
                 self.designtaion_filter in designation
 
-    @Slot(str)
+    @pyqtSlot(str)
     def register(self, filter: str):
         self.product_id_filter = filter
         self.invalidateFilter()
 
-    @Slot(str)
+    @pyqtSlot(str)
     def designation(self, filter: str):
         self.designtaion_filter = filter
         self.invalidateFilter()
 
-    @Slot(str)
+    @pyqtSlot(str)
     def nomenclature(self, filter: str):
         self.nomenclature_filter = filter
         self.invalidateFilter()
 
-    @Slot(bool)
-    def rent(self, filter: str):
+    @pyqtSlot(int)
+    def rent(self, filter: int):
         if filter:
             self.rent_filter = 'Да'
         else:
             self.rent_filter = ''
         self.invalidateFilter()
 
-    @Slot(str)
+    @pyqtSlot(str)
     def type(self, filter: str):
         if filter == 'Все изделия':
             filter = ''
@@ -830,7 +830,7 @@ class ArticleInformationFilterProxyModel(QSortFilterProxyModel):
             return self.nomenclature_filter in nomenclature
         return True
 
-    @Slot(str)
+    @pyqtSlot(str)
     def nomenclature(self, filter: str):
         self.nomenclature_filter = filter
         self.invalidateFilter()

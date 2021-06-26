@@ -3,8 +3,8 @@ import application_rc
 from typing import List, Any
 from operator import itemgetter
 
-from PySide6.QtCore import Qt, QPointF, QModelIndex
-from PySide6.QtWidgets import (
+from PyQt5.QtCore import Qt, QPointF, QModelIndex
+from PyQt5.QtWidgets import (
     QApplication, QDialog, QTableWidgetItem, QMessageBox, QMenu, QTableWidget
 )
 

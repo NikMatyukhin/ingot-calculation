@@ -8,10 +8,10 @@ from itertools import chain
 from collections import Counter, deque
 from pathlib import Path
 
-from PySide6.QtCore import (
+from PyQt5.QtCore import (
     Qt, QSettings, QModelIndex
 )
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
     QMessageBox, QDialog, QVBoxLayout, QGraphicsScene, QLayout, QProgressDialog
 )

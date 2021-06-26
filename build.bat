@@ -1,3 +1,6 @@
 call venv\Scripts\activate.bat
-python setup.py build
+pyinstaller mainwindow.spec
+cd dist\mainwindow
+mkdir schemes
+break > dist\mainwindow\log\info.log
 call venv\Scripts\deactivate

@@ -5,15 +5,15 @@ import typing
 from datetime import datetime
 from typing import Dict, List, Union
 
-from PySide6.QtCore import (
-    QPoint, QTimer, Qt, Signal, QPointF, QModelIndex
+from PyQt5.QtCore import (
+    QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex
 )
-from PySide6.QtGui import (
-    QIntValidator, QAction
+from PyQt5.QtGui import (
+    QIntValidator
 )
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QDialog, QCompleter, QGraphicsScene, QMessageBox, QMenu, QToolTip, QWidget,
-    QGraphicsDropShadowEffect, QProgressDialog
+    QGraphicsDropShadowEffect, QProgressDialog, QAction
 )
 
 from sequential_mh.bpp_dsc.rectangle import (
@@ -54,7 +54,7 @@ class ProductDialog(QDialog):
     чтобы основное окно каталога обновило данные в модели.
     """
     
-    recordSavedSuccess = Signal(list)
+    recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
         super(ProductDialog, self).__init__(parent)
@@ -141,7 +141,7 @@ class ArticleDialog(QDialog):
     чтобы основное окно каталога обновило данные в модели.
     """
 
-    recordSavedSuccess = Signal(list)
+    recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
         super(ArticleDialog, self).__init__(parent)
@@ -223,7 +223,7 @@ class DetailDialog(QDialog):
     чтобы основное окно каталога обновило данные в модели.
     """
 
-    recordSavedSuccess = Signal(list)
+    recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
         super(DetailDialog, self).__init__(parent)
@@ -328,8 +328,8 @@ class OrderAddingDialog(QDialog):
     дальнейшую работу уже с ним, а не создание прочих заказов.
     """
 
-    recordSavedSuccess = Signal(dict)
-    predictedIngotSaved = Signal(dict, dict, Tree)
+    recordSavedSuccess = pyqtSignal(dict)
+    predictedIngotSaved = pyqtSignal(dict, dict, Tree)
 
     def __init__(self, parent):
         super(OrderAddingDialog, self).__init__(parent)

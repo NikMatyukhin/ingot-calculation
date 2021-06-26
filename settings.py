@@ -1,7 +1,7 @@
 from gui import ui_settings
 
-from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QDialog, QApplication
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import QDialog
 
 
 class SettingsDialog(QDialog):

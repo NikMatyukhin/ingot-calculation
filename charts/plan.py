@@ -1,10 +1,10 @@
 import random
-from PySide6.QtCore import QPoint, Qt, QRectF, QPointF
-from PySide6.QtWidgets import (
+from PyQt5.QtCore import QPoint, Qt, QRectF, QPointF
+from PyQt5.QtWidgets import (
     QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QWidget,
     QGraphicsSceneHoverEvent, QMenu, QGraphicsView
 )
-from PySide6.QtGui import (
+from PyQt5.QtGui import (
     QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QPolygonF, QTransform,
     QPolygonF
 )
