@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QDialog, QApplication
 class SettingsDialog(QDialog):
     """Класс окна с настройками"""
     def __init__(self, parent=None, settings: QSettings = QSettings()):
-        super(SettingsDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_settings.Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -43,7 +43,7 @@ class SettingsDialog(QDialog):
         self.ui.spinBox_6.setValue(self.settings.value(
             'cutting/min_width', defaultValue=50, type=int))
         self.ui.spinBox_8.setValue(self.settings.value(
-            'cutting/guilliotine', defaultValue=1200, type=int))
+            'cutting/guillotine', defaultValue=1200, type=int))
         self.ui.spinBox_7.setValue(self.settings.value(
             'cutting/min_height', defaultValue=100, type=int))
         self.ui.spinBox_5.setValue(self.settings.value(
@@ -94,7 +94,7 @@ class SettingsDialog(QDialog):
                                self.ui.doubleSpinBox.value() / 100)
         self.settings.setValue('cutting/cut_allowance',
                                self.ui.spinBox_9.value())
-        self.settings.setValue('cutting/guilliotine',
+        self.settings.setValue('cutting/guillotine',
                                self.ui.spinBox_8.value())
         self.settings.setValue('cutting/min_width',
                                self.ui.spinBox_6.value())

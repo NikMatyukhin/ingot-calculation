@@ -330,7 +330,7 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
             if packed and (rect_w >= 350 or rect_l >= 350):
                 count = len(
                     [
-                        item for item in packed 
+                        item for item in packed
                         if rect.size[0] >= 350 or rect.size[1] >= 350
                     ]
                 )

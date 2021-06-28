@@ -970,7 +970,7 @@ class OCIMainWindow(QMainWindow):
         self.minimum_plate_width = self.settings.value(
             'cutting/min_width', defaultValue=50, type=int)
         self.guillotine_width = self.settings.value(
-            'cutting/guilliotine', defaultValue=1200, type=int)
+            'cutting/guillotine', defaultValue=1200, type=int)
         self.minimum_plate_height = self.settings.value(
             'cutting/min_height', defaultValue=100, type=int)
         self.maximum_plate_height = self.settings.value(
