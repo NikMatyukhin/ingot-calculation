@@ -55,9 +55,8 @@ ListSizes = list[Sizes]
 
 
 class OCIMainWindow(QMainWindow):
-
     def __init__(self):
-        super(OCIMainWindow, self).__init__()
+        super().__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -178,7 +177,7 @@ class OCIMainWindow(QMainWindow):
         if not index.isValid():
             return
         current_order = index.data(Qt.DisplayRole)
-        
+
         self.ingot_model.order = current_order['order_id']
         self.ui.ingotsView.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
         self.show_ingot_information(self.ui.ingotsView.currentIndex())
@@ -191,16 +190,16 @@ class OCIMainWindow(QMainWindow):
         self.ui.complectsView.expandAll()
 
         status = current_order['status_id']
-        if status == 1 or status == 2:
+        if status in (1, 2):
             self.ui.label_5.hide()
             self.ui.label_6.hide()
-        elif status == 4 or status == 5:
+        elif status in (4, 5):
             self.ui.detailedPlan.hide()
 
         self.ui.label.setText('Заказ ' + current_order['order_name'])
 
         self.map_scene.clear()
-        
+
         current_ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
         if self.is_file_exist(current_order, current_ingot):
             self.load_tree(current_order, current_ingot)
@@ -340,8 +339,9 @@ class OCIMainWindow(QMainWindow):
                     {'detail_id': complect_counter[name]['detail_id']},
                     'status_id', 4
                 )
-                if success: model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
-            # Есди количество заготовок не совпадает с остатком
+                if success:
+                    model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
+            # Если количество заготовок не совпадает с остатком
             else:
                 # Заготовка <частично упакована>
                 success = OrderDataService.update_status(
@@ -349,7 +349,8 @@ class OCIMainWindow(QMainWindow):
                     {'detail_id': complect_counter[name]['detail_id']},
                     'status_id', 5
                 )
-                if success: model.setData(complect_counter[name]['status_id'], 5, Qt.EditRole)
+                if success:
+                    model.setData(complect_counter[name]['status_id'], 5, Qt.EditRole)
         # В конце проходимся по всем заготовкам чтобы найти пропущенные толщины
         for name in complect_counter:
             if complect_counter[name]['depth'] not in self.steps():
@@ -358,8 +359,9 @@ class OCIMainWindow(QMainWindow):
                     {'detail_id': complect_counter[name]['detail_id']},
                     'status_id', 4
                 )
-                if success: model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
-            # Если количесво неразмещённых заготовок равно нулю
+                if success:
+                    model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
+            # Если количество неразмещённых заготовок равно нулю
             elif name not in unplaced_counter:
                 # Заготовка <ожидает>
                 success = OrderDataService.update_status(
@@ -367,26 +369,27 @@ class OCIMainWindow(QMainWindow):
                     {'detail_id': complect_counter[name]['detail_id']},
                     'status_id', 1
                 )
-                if success: model.setData(complect_counter[name]['status_id'], 1, Qt.EditRole)
+                if success:
+                    model.setData(complect_counter[name]['status_id'], 1, Qt.EditRole)
 
     def save_complects(self):
         text = self.ui.saveComplect.text()
         if text.endswith('*'):
             order_id = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)['order_id']
             model = self.complect_model
-            
+
             for row in range(model.rowCount(QModelIndex())):
                 article_index = model.index(row, 1, QModelIndex())
                 article_id = model.data(article_index, Qt.DisplayRole)
-            
+
                 # HACK: без этого не работает
                 article_index = model.index(row, 0, QModelIndex())
-            
+
                 for sub_row in range(model.rowCount(article_index)):
                     detail_index = model.index(sub_row, 1, article_index)
                     amount_index = model.index(sub_row, 7, article_index)
                     priority_index = model.index(sub_row, 8, article_index)
-            
+
                     detail_id = model.data(detail_index, Qt.DisplayRole)
                     OrderDataService.update_complect(
                         {'order_id': order_id},
@@ -414,7 +417,7 @@ class OCIMainWindow(QMainWindow):
         details = None
         try:
             details = self.get_details_kit(material)
-        except Exception as exception: 
+        except Exception as exception:
             QMessageBox.critical(self, 'Ошибка сборки', f'{exception}', QMessageBox.Ok)
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
@@ -427,7 +430,7 @@ class OCIMainWindow(QMainWindow):
             'Попытка создания раскроя для заказа %(name)s.',
             {'name': order_name}
         )
-        progress.setLabelText('Процесс раскроя...') 
+        progress.setLabelText('Процесс раскроя...')
         try:
             logging.info(
                 'Заказ %(name)s: %(blanks)d заготовок, %(heights)d толщин, '
@@ -446,7 +449,7 @@ class OCIMainWindow(QMainWindow):
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
             return
-        except Exception as exception: 
+        except Exception as exception:
             QMessageBox.critical(
                 self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
             )
@@ -463,7 +466,6 @@ class OCIMainWindow(QMainWindow):
             self.save_tree(current_order, current_ingot)
             self.redraw_map(current_ingot)
         progress.close()
-
 
     def redraw_map(self, ingot: Dict):
         self.map_scene.clear()
@@ -608,12 +610,7 @@ class OCIMainWindow(QMainWindow):
                 item.root, list(dfs(item.root)), nd=True, is_p=True
             )
         )
-        total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
-        # print('Построение дерева завершено')
-        # (f'Общая эффективность: {total_efficiency:.4f}')
-        # (f'Взвешенная эффективность: {solution_efficiency(best.root, list(dfs(best.root)), nd=True):.4f}')
-        # print(f'Эффективность с приоритетами: {solution_efficiency(best.root, list(dfs(best.root)), is_p=True):.4f}')
-        # print('-' * 50)
+        # total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
         return best
 
     @staticmethod
@@ -653,15 +650,10 @@ class OCIMainWindow(QMainWindow):
         while level:
             step += 1
             new_level = deque([])
-            # efs = []
             for _, tree_ in enumerate(level):
-                # ef = solution_efficiency(
-                #     tree_.root, list(dfs(tree_.root)), nd=False, is_p=True
-                # )
-                # efs.append(ef)
                 # Костыль для небольшого увеличения прогресса
                 # в случае, когда он переполняется
-                if step >= steps:
+                if step >= steps and progress:
                     steps = int(step * 1.1)
                     progress.setRange(0, steps)
                 if with_filter and is_defective_tree(tree_, max_size=max_size):
@@ -676,16 +668,6 @@ class OCIMainWindow(QMainWindow):
                     result.append(tree_)
                 else:
                     new_level.append(tree_)
-            # фильтрация по средней эффективности
-            # нужна для сокращения количества деревьев / времени работы
-            # avr_ef = sum(efs) / len(efs)
-            # if len(new_level) > 100:
-            #     level = deque(
-            #         [
-            #             n for j, n in enumerate(new_level)
-            #             if efs[j] >= avr_ef / 2
-            #         ]
-            #     )
             level = deque(new_level)
             if not level:
                 break
@@ -722,6 +704,7 @@ class OCIMainWindow(QMainWindow):
 
         return result
 
+    @timeit
     def optimal_ingot_size(self, main_tree, min_size, max_size, restrictions, progress=None):
         """Определение размеров слитка
 
@@ -910,7 +893,7 @@ class OCIMainWindow(QMainWindow):
         return layout
 
     def clearLayout(self, layout: QLayout, take: int = 0, hidden: bool = False, last: int = 1):
-        """Метод для очистки слоёв компановки
+        """Метод для очистки слоёв компоновки
 
         :param layout: Слой с которого удаляются виджеты по заданным правилам
         :type layout: QLayout
@@ -988,7 +971,7 @@ class OCIMainWindow(QMainWindow):
         self.minimum_plate_width = self.settings.value(
             'cutting/min_width', defaultValue=50, type=int)
         self.guillotine_width = self.settings.value(
-            'cutting/guilliotine', defaultValue=1200, type=int)
+            'cutting/guillotine', defaultValue=1200, type=int)
         self.minimum_plate_height = self.settings.value(
             'cutting/min_height', defaultValue=100, type=int)
         self.maximum_plate_height = self.settings.value(
@@ -1031,7 +1014,7 @@ class OCIMainWindow(QMainWindow):
         self.settings.setValue(
             'cutting/cut_allowance', self.cut_allowance)
         self.settings.setValue(
-            'cutting/guilliotine', self.guillotine_width)
+            'cutting/guillotine', self.guillotine_width)
         self.settings.setValue(
             'cutting/min_width', self.minimum_plate_width)
         self.settings.setValue(
@@ -1074,11 +1057,11 @@ class OCIMainWindow(QMainWindow):
         file_name = self.get_file_name(order, ingot)
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
-        with abs_path.open(mode='wb') as f:
+        with abs_path.open(mode='wb') as file:
             if tree:
-                pickle.dump(tree, f)
+                pickle.dump(tree, file)
             else:
-                pickle.dump(self.tree, f)
+                pickle.dump(self.tree, file)
 
     def is_file_exist(self, order: Dict, ingot: Dict):
         file_name = self.get_file_name(order, ingot)
@@ -1133,14 +1116,13 @@ def number_of_steps(num_of_heights, doubling=True):
 
 
 if __name__ == '__main__':
-    # import cProfile
-    oci_logger = setup_logging()
+    setup_logging()
     logging.info('Приложение OCI запущено.')
     start = time.time()
     application = QApplication(sys.argv)
 
-    window = OCIMainWindow()
-    window.show()
+    main_window = OCIMainWindow()
+    main_window.show()
 
     exit_code = application.exec_()
 

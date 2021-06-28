@@ -1,4 +1,3 @@
-from enum import unique
 import math
 import logging
 import typing
@@ -41,6 +40,7 @@ from widgets import (
     IngotSectionDelegate
 )
 from exceptions import ForcedTermination
+from log import log_operation_info
 
 
 Number = Union[int, float]
@@ -49,7 +49,7 @@ Sizes = tuple[Number, Number, Number]
 
 class ProductDialog(QDialog):
     """Диалоговое окно добавления новой продукции.
-    
+
     После добавления новой продукции посылает сигнал с параметрами для того,
     чтобы основное окно каталога обновило данные в модели.
     """
@@ -57,17 +57,17 @@ class ProductDialog(QDialog):
     recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
-        super(ProductDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_add_product_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowTitle('Добавление продукции')
-        
+
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
         self.duration = 1500
         self.tip = "Поле необходимо заполнить"
-        
+
         # Валидация полей и установка дополнений
         self.ui.register_number.setValidator(QIntValidator(self.ui.register_number))
         type_list = ProductDataService.type_list()
@@ -81,7 +81,7 @@ class ProductDialog(QDialog):
 
     def confirm_adding(self):
         """Добавление данных о новой продукции в базу.
-        
+
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
         product_id = self.ui.register_number.text()
@@ -136,7 +136,7 @@ class ProductDialog(QDialog):
 
 class ArticleDialog(QDialog):
     """Диалоговое окно добавления нового изделия.
-    
+
     После добавления нового изделия посылает сигнал с параметрами для того,
     чтобы основное окно каталога обновило данные в модели.
     """
@@ -144,11 +144,11 @@ class ArticleDialog(QDialog):
     recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
-        super(ArticleDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_add_article_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowTitle('Добавление изделия')
-        
+
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
@@ -175,13 +175,13 @@ class ArticleDialog(QDialog):
 
     def confirm_adding(self):
         """Добавление данных о новом изделии в базу.
-        
+
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
         nomenclature = self.ui.nomenclature.text()
         rent = int(self.ui.rent.isChecked())
         product_id = int(self.ui.register_number.text())
-        type = self.ui.product_type.text()
+        type_ = self.ui.product_type.text()
 
         # Если заполнена номенклатура и номер ведомости
         if nomenclature:
@@ -195,7 +195,7 @@ class ArticleDialog(QDialog):
                     f'Изделие {nomenclature}\nуспешно добавлено!',
                     QMessageBox.Ok
                 )
-                self.recordSavedSuccess.emit([product_id, type, nomenclature, rent])
+                self.recordSavedSuccess.emit([product_id, type_, nomenclature, rent])
             else:
                 QMessageBox.critical(
                     self,
@@ -218,7 +218,7 @@ class ArticleDialog(QDialog):
 
 class DetailDialog(QDialog):
     """Диалоговое окно добавления новой заготовки.
-    
+
     После добавления новой заготовки посылает сигнал с параметрами для того,
     чтобы основное окно каталога обновило данные в модели.
     """
@@ -226,11 +226,11 @@ class DetailDialog(QDialog):
     recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
-        super(DetailDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_add_detail_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowTitle('Добавление заготовки')
-        
+
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
@@ -269,7 +269,7 @@ class DetailDialog(QDialog):
 
     def confirm_adding(self):
         """Добавление данных о новой заготовке в базу.
-        
+
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
         name = self.ui.name.text()
@@ -332,7 +332,7 @@ class OrderAddingDialog(QDialog):
     predictedIngotSaved = pyqtSignal(dict, dict, BinNode)
 
     def __init__(self, parent):
-        super(OrderAddingDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_add_order_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowFlags(Qt.Window)
@@ -348,7 +348,7 @@ class OrderAddingDialog(QDialog):
         self.catalog_headers = self.headers[:4]
         self.added_headers = self.headers[:2] + self.headers[3:9]
         self.model = ComplectsModel(self.headers)
-        
+
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel()
         self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
@@ -408,7 +408,7 @@ class OrderAddingDialog(QDialog):
         Отвечает за добавление и удаление заготовок и изделий из комплектации
         заказа (путём изменения флага ADDED у записи или записей).
 
-        :param point: Точка выхова контекстного меню
+        :param point: Точка вызова контекстного меню
         :type point: QPointF
         """
         menu = QMenu()
@@ -515,7 +515,7 @@ class OrderAddingDialog(QDialog):
 
     def calculate_ingot(self):
         sender = self.sender()
-        
+
         # По свойству objectName узнаём о выбранном сплаве
         fusion_name = sender.objectName()
         material = Material(fusion_name, 2.2, 1.)
@@ -527,7 +527,7 @@ class OrderAddingDialog(QDialog):
         # FIXME: получить имя заказа
         # FIXME: а имени может и не быть, расчёт слитков происходит при добавлении заказа
         order_name = 'ЗАКАЗ'
-        progress.setLabelText('Процесс расчета слитка под ПЗ...') 
+        progress.setLabelText('Процесс расчета слитка под ПЗ...')
 
         if self.choice_proxy.rowCount(QModelIndex()):
             details = self.get_details_kit(material)
@@ -535,32 +535,37 @@ class OrderAddingDialog(QDialog):
                 # TODO: уведомить пользователя о том, что нет таких заготовок
                 progress.close()
                 return
-            logging.info(
-                'Попытка расчета слитка под ПЗ %(name)s: '
-                '%(blanks)d заготовок, %(heights)d толщин',
-                {'name': order_name, 'blanks': details.qty(),
-                'heights': len(details.keys())}
+            log_operation_info(
+                'start_ic',
+                {
+                    'name': order_name, 'alloy': fusion_name,
+                    'blanks': details.qty(), 'heights': len(details.keys())
+                },
             )
             try:
                 sizes, tree, efficiency = self.predict_size(
                     material, details, progress=progress
                 )
-                logging.info(
-                    'Расчет слитка %(name)s успешно завершен. '
-                    'Размеры: %(length)d, %(width)d, %(height)d; '
-                    'эффективность: %(efficiency)d толщин',
-                    {'name': order_name, 'length': sizes[0],
-                    'width': sizes[1], 'height': sizes[2],
-                    'efficiency': efficiency}
+                log_operation_info(
+                    'end_ic',
+                    {
+                        'name': order_name, 'alloy': fusion_name,
+                        'size': f'{sizes[0]}x{sizes[1]}x{sizes[2]}',
+                        'efficiency': efficiency
+                    },
                 )
             except ForcedTermination:
-                logging.info(
-                    'Расчет слитка для заказа %(name)s прерван пользователем.',
-                    {'name': order_name}
+                log_operation_info(
+                    'user_inter_ic', {'name': order_name, 'alloy': fusion_name}
                 )
                 QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
                 return
             except Exception as exception:
+                log_operation_info(
+                    'error_ic', {
+                        'name': order_name, 'alloy': fusion_name, 'exception': exception
+                    }
+                )
                 QMessageBox.critical(
                     self, 'Расчёт слитка завершился с ошибкой', f'{exception}', QMessageBox.Ok
                 )
@@ -611,7 +616,7 @@ class OrderAddingDialog(QDialog):
                     length = int(self.model.data(self.model.index(sub_row, 4, parent), Qt.DisplayRole))
                     width = int(self.model.data(self.model.index(sub_row, 5, parent), Qt.DisplayRole))
                     depth = float(self.model.data(self.model.index(sub_row, 6, parent), Qt.DisplayRole))
-                    sizes: Sizes = [length, width, depth]
+                    sizes: Sizes = (length, width, depth)
                     amount = int(self.model.data(self.model.index(sub_row, 7, parent), Qt.DisplayRole))
                     priority = int(self.model.data(self.model.index(sub_row, 8, parent), Qt.DisplayRole))
                     direction_id = int(self.model.realdata(self.model.index(sub_row, 9, parent), Qt.DisplayRole))
@@ -630,7 +635,7 @@ class OrderAddingDialog(QDialog):
         # TODO: считать из настроек максимальные параметры слитка
         #       без припусков на фрезеровку и погрешность!
         max_size = self.ingot_settings['max_size']
-        
+
         bin_ = Bin(*max_size, material=material)
         root = BinNode(bin_, kit=kit)
         tree = Tree(root)
@@ -646,19 +651,14 @@ class OrderAddingDialog(QDialog):
         efficiency = round(solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True), 2)
         # print(f'Эффективность после расчета: {efficiency}')
 
-        # TODO: Получить из настроек погрешность и припуски на фрезеровку
-        size_error = self.ingot_settings['size_error']
-        allowance = self.ingot_settings['allowance']
+        # size_error = self.ingot_settings['size_error']
+        # allowance = self.ingot_settings['allowance']
 
         # Получение слитка с учетом погрешности и припусков
         length = tree.root.bin.length # + size_error + 2 * allowance
         width = tree.root.bin.width # + size_error + 2 * allowance
         height = tree.root.bin.height # + size_error + 2 * allowance
 
-        # print(f'Финальные размеры: {length, width, height}')
-        # print(f'Масса слитка (в гр): {length * width * height * material.density / 1000}')
-        # print(f'Масса слитка (в кг): {length * width * height * material.density / 1_000_000}')
-        # print(f'{material.density = }')
         return [math.ceil(length), math.ceil(width), math.ceil(height)], tree, efficiency
 
     def repeatable_fusions(self, indexes: List[QModelIndex]):
@@ -672,7 +672,7 @@ class OrderAddingDialog(QDialog):
 
     def confirm_adding(self):
         """Добавление данных о новом заказе в базу.
-        
+
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
         # Имя и статус складирования заказа - основа записи в базе данных
@@ -683,7 +683,7 @@ class OrderAddingDialog(QDialog):
             QMessageBox.critical(
                 self,
                 'Ошибка добавления',
-                f'Выбраны слитки одинаковых сплавов.',
+                'Выбраны слитки одинаковых сплавов.',
                 QMessageBox.Ok
             )
             return
@@ -811,9 +811,8 @@ class OrderAddingDialog(QDialog):
 
 
 class IngotAddingDialog(QDialog):
-
     def __init__(self, parent=None):
-        super(IngotAddingDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_add_ingot_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowTitle('Добавление слитка')
@@ -877,9 +876,8 @@ class IngotAddingDialog(QDialog):
 
 
 class IngotReadinessDialog(QDialog):
-
     def __init__(self, parent: typing.Optional[QWidget]) -> None:
-        super(IngotReadinessDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_ready_ingot_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowTitle('Подтверждение готовности')
@@ -899,7 +897,7 @@ class IngotReadinessDialog(QDialog):
         self.ui.width_label.setText(str(sizes[1]))
         self.ui.depth_label.setText(str(sizes[2]))
         self.ui.fusion_label.setText(fusion)
-    
+
     def get_batch(self):
         return self.ui.batch.text()
 
@@ -941,7 +939,7 @@ class IngotReadinessDialog(QDialog):
 
 class FullScreenWindow(QDialog):
     def __init__(self, parent: QWidget = None):
-        super(FullScreenWindow, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_full_screen.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowFlags(Qt.Window)

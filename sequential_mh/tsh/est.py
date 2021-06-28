@@ -162,10 +162,15 @@ class Estimator:
         def curve_value(x_, y_):
             return y_1 * x_1 * self.height / (self.g_height * x_) - y_
         x_1, y_1 = self.tlp.x, self.trp.y
-        if less_or_equal(x, x_1):
-            x = x_1
-        if less_or_equal(y, y_1):
-            y = y_1
+        x_correction = 0
+        y_correction = 0
+        if self.height == self.g_height:
+            x_correction = self.right_hem
+            y_correction = self.top_hem
+        if less_or_equal(x, x_1 - x_correction):
+            x = x_1 - x_correction
+        if less_or_equal(y, y_1 - y_correction):
+            y = y_1 - y_correction
         y_est = curve_value(x, y)
         x_est = curve_value(y, x)
         if y_est < 0 or x_est < 0:
