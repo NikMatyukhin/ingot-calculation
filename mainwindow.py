@@ -703,6 +703,7 @@ class OCIMainWindow(QMainWindow):
 
         return result
 
+    @timeit
     def optimal_ingot_size(self, main_tree, min_size, max_size, restrictions, progress=None):
         """Определение размеров слитка
 
