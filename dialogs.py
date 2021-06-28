@@ -1,4 +1,3 @@
-from enum import unique
 import math
 import logging
 import typing
@@ -41,6 +40,7 @@ from widgets import (
     IngotSectionDelegate
 )
 from exceptions import ForcedTermination
+from log import log_operation_info
 
 
 Number = Union[int, float]
@@ -535,32 +535,37 @@ class OrderAddingDialog(QDialog):
                 # TODO: уведомить пользователя о том, что нет таких заготовок
                 progress.close()
                 return
-            logging.info(
-                'Попытка расчета слитка под ПЗ %(name)s: '
-                '%(blanks)d заготовок, %(heights)d толщин',
-                {'name': order_name, 'blanks': details.qty(),
-                'heights': len(details.keys())}
+            log_operation_info(
+                'start_ic',
+                {
+                    'name': order_name, 'alloy': fusion_name,
+                    'blanks': details.qty(), 'heights': len(details.keys())
+                },
             )
             try:
                 sizes, tree, efficiency = self.predict_size(
                     material, details, progress=progress
                 )
-                logging.info(
-                    'Расчет слитка %(name)s успешно завершен. '
-                    'Размеры: %(length)d, %(width)d, %(height)d; '
-                    'эффективность: %(efficiency)d толщин',
-                    {'name': order_name, 'length': sizes[0],
-                    'width': sizes[1], 'height': sizes[2],
-                    'efficiency': efficiency}
+                log_operation_info(
+                    'end_ic',
+                    {
+                        'name': order_name, 'alloy': fusion_name,
+                        'size': f'{sizes[0]}x{sizes[1]}x{sizes[2]}',
+                        'efficiency': efficiency
+                    },
                 )
             except ForcedTermination:
-                logging.info(
-                    'Расчет слитка для заказа %(name)s прерван пользователем.',
-                    {'name': order_name}
+                log_operation_info(
+                    'user_inter_ic', {'name': order_name, 'alloy': fusion_name}
                 )
                 QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
                 return
             except Exception as exception:
+                log_operation_info(
+                    'error_ic', {
+                        'name': order_name, 'alloy': fusion_name, 'exception': exception
+                    }
+                )
                 QMessageBox.critical(
                     self, 'Расчёт слитка завершился с ошибкой', f'{exception}', QMessageBox.Ok
                 )
