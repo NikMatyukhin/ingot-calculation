@@ -416,7 +416,7 @@ class OCIMainWindow(QMainWindow):
         details = None
         try:
             details = self.get_details_kit(material)
-        except Exception as exception: 
+        except Exception as exception:
             QMessageBox.critical(self, 'Ошибка сборки', f'{exception}', QMessageBox.Ok)
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
@@ -429,7 +429,7 @@ class OCIMainWindow(QMainWindow):
             'Попытка создания раскроя для заказа %(name)s.',
             {'name': order_name}
         )
-        progress.setLabelText('Процесс раскроя...') 
+        progress.setLabelText('Процесс раскроя...')
         try:
             logging.info(
                 'Заказ %(name)s: %(blanks)d заготовок, %(heights)d толщин, '
