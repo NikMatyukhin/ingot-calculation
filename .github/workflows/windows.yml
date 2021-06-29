@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install grep
-    - run: |
+      run: |
         sudo apt install grep
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
