@@ -35,7 +35,7 @@ from charts.map import CuttingMapPainter
 from catalog import Catalog
 from settings import SettingsDialog
 from exceptions import ForcedTermination
-from log import setup_logging, timeit
+from log import setup_logging, timeit, log_operation_info
 
 from sequential_mh.bpp_dsc.rectangle import (
     Direction, Material, Blank, Kit, Bin
@@ -425,26 +425,28 @@ class OCIMainWindow(QMainWindow):
         progress.forceShow()
         order_name = current_order['order_name']
         ingot_size = current_ingot['ingot_size']
-        logging.info(
-            'Попытка создания раскроя для заказа %(name)s.',
-            {'name': order_name}
+        order_id = int(current_order['order_id'])
+        log_operation_info(
+            'create_cut', {'name': order_name, 'alloy': fusion_name},
+            identifier=order_id
         )
         progress.setLabelText('Процесс раскроя...')
         try:
-            logging.info(
-                'Заказ %(name)s: %(blanks)d заготовок, %(heights)d толщин, '
-                'слиток %(length)dх%(width)dх%(height)d',
+            log_operation_info(
+                'cut_info',
                 {
-                    'name': order_name, 'blanks': details.qty(),
-                    'heights': len(details.keys()),
-                    'length': ingot_size[0], 'width': ingot_size[1], 'height': ingot_size[2]
-                }
+                    'name': order_name, 'alloy': fusion_name,
+                    'size': 'x'.join(map(str, ingot_size)),
+                    'blanks': details.qty(), 'heights': len(details.keys())
+                }, identifier=order_id
             )
-            self.create_cut(ingot_size, details, material, progress=progress)
+            _, efficiency, total_efficiency = self.create_cut(
+                ingot_size, details, material, progress=progress
+            )
         except ForcedTermination:
-            logging.info(
-                'Раскрой для заказа %(name)s прерван пользователем.',
-                {'name': order_name}
+            log_operation_info(
+                'user_inter_cut', {'name': order_name, 'alloy': fusion_name},
+                identifier=order_id
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
             return
@@ -455,9 +457,12 @@ class OCIMainWindow(QMainWindow):
             return
         else:
             progress.setLabelText('Завершение раскроя...')
-            logging.info(
-                'Раскрой для заказа %(name)s успешно создан.',
-                {'name': order_name}
+            log_operation_info(
+                'end_cut',
+                {
+                    'name': order_name, 'alloy': fusion_name,
+                    'efficiency': efficiency, 'total_efficiency': total_efficiency
+                }, identifier=order_id
             )
             current_order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
             current_ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
@@ -543,15 +548,17 @@ class OCIMainWindow(QMainWindow):
 
         ingot_index = self.ui.ingotsView.currentIndex()
         ingot_id = ingot_index.data(Qt.DisplayRole)['ingot_id']
-        total_efficiency = 100 * solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
-        data = {'efficiency': round(total_efficiency, 2)}
+        efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
+        data = {'efficiency': round(100 * efficiency, 2)}
         self.ingot_model.setData(ingot_index, data, Qt.EditRole)
         StandardDataService.update_record(
             'ingots', {'ingot_id': ingot_id}, efficiency=data['efficiency']
         )
         order_index = self.ui.searchResult_1.currentIndex()
         order_efficiency = OrderDataService.efficiency({'order_id': order_index.data(Qt.DisplayRole)['order_id']})
-        self.order_model.setData(order_index, {'efficiency': order_efficiency}, Qt.EditRole)
+        self.order_model.setData(
+            order_index, {'efficiency': round(100 * order_efficiency, 2)}, Qt.EditRole
+        )
         StandardDataService.update_record(
             'orders', {'order_id': order_index.data(Qt.DisplayRole)['order_id']}, efficiency=order_efficiency
         )
@@ -561,6 +568,7 @@ class OCIMainWindow(QMainWindow):
         #     'orders', {'order_id': current_index.data(Qt.DisplayRole)['order_id']},
         #     efficiency = data['efficiency']
         # )
+        return tree, efficiency, order_efficiency
 
     @timeit
     def stmh_idrd(self, tree, with_filter: bool = True,
@@ -1126,7 +1134,7 @@ if __name__ == '__main__':
     exit_code = application.exec_()
 
     total_time = time.time() - start
-    print(f'{start = }, {total_time = }')
+    # print(f'{start = }, {total_time = }')
     logging.info(
         'Выход из приложения OCI. Время работы: %(time).2f мин.',
         {'time': total_time / 60}
