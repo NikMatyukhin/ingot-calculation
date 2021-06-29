@@ -34,6 +34,8 @@ jobs:
         python --version
         python -m pylint --version
         python -m flake8 --version
+        
+        echo "foo" | grep --color=auto foo
     - name: Lint with pylint
       run: |
         # stop the build if there are Python syntax errors or undefined names
