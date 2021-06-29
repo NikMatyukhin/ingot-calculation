@@ -1,5 +1,3 @@
-import application_rc
-
 from typing import List, Any
 from operator import itemgetter
 
@@ -8,9 +6,11 @@ from PyQt5.QtWidgets import (
     QApplication, QDialog, QTableWidgetItem, QMessageBox, QMenu, QTableWidget
 )
 
+import application_rc
+
 from gui import ui_catalog
 from service import (
-    ProductDataService, ArticleDataService, StandardDataService, 
+    ProductDataService, ArticleDataService, StandardDataService,
     DetailDataService
 )
 from models import CatalogModel, ProductInformationFilterProxyModel
@@ -19,9 +19,8 @@ from widgets import ListValuesDelegate
 
 
 class Catalog(QDialog):
-
     def __init__(self, parent=None):
-        super(Catalog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_catalog.Ui_Form()
         self.ui.setupUi(self)
 
@@ -84,8 +83,8 @@ class Catalog(QDialog):
 
         if not parent.isValid():
             product_id_index = self.model.index(index.row(), 0, parent)
-            id = self.model.data(product_id_index, Qt.DisplayRole)
-            details_list = DetailDataService.details_list({'product_id': id})
+            id_ = self.model.data(product_id_index, Qt.DisplayRole)
+            details_list = DetailDataService.details_list({'product_id': id_})
 
             for detail in details_list:
                 view.insertRow(view.rowCount())
@@ -125,7 +124,7 @@ class Catalog(QDialog):
 
         Отвечает за добавление и удаление заготовок и изделий.
 
-        :param point: Точка выхова контекстного меню
+        :param point: Точка вызова контекстного меню
         :type point: QPointF
         """
         menu = QMenu()
@@ -257,53 +256,53 @@ class Catalog(QDialog):
         id_item = self.ui.detailsView.item(it.row(), 8)
         if id_item:
             row, column, data = it.row(), it.column(), it.data(Qt.DisplayRole)
-            id = id_item.data(Qt.DisplayRole)
+            id_ = id_item.data(Qt.DisplayRole)
             if column == 0:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     name=data
                 )
             elif column == 1:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     fusion_id=self.fusions_id[self.fusions_names.index(data)]
                 )
             elif column == 2:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     height=int(data)
                 )
             elif column == 3:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     width=int(data)
                 )
             elif column == 4:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     depth=float(data)
                 )
             elif column == 5:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     amount=int(data)
                 )
             elif column == 6:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     priority=int(data)
                 )
             elif column == 7:
                 success = StandardDataService.update_record(
                     'details',
-                    {'detail_id': id},
+                    {'detail_id': id_},
                     direction_id=self.directions_id[
                         self.directions_names.index(data)]
                 )
@@ -315,15 +314,15 @@ class Catalog(QDialog):
     def confirm_article_adding(self, data: List[Any]):
         parent = self.proxy.mapToSource(self.ui.productsView.currentIndex())
 
-        key, type, nomenclature, rent = data
-        id = ArticleDataService.get_by_fields(
+        key, type_, nomenclature, rent = data
+        id_ = ArticleDataService.get_by_fields(
             'articles',
             product_id=key,
             nomenclature=nomenclature,
             rent=rent
         )
         rent = ['Нет', 'Да'][rent]
-        self.model.appendRow([None, type, nomenclature, rent, id], parent)
+        self.model.appendRow([None, type_, nomenclature, rent, id_], parent)
         self.proxy.invalidate()
 
     def confirm_detail_adding(self, data: List[Any]):
@@ -361,11 +360,11 @@ class Catalog(QDialog):
         index = self.proxy.mapToSource(self.ui.productsView.currentIndex())
         parent = self.model.parent(index)
         id_index = self.model.index(index.row(), 4, parent)
-        id = self.model.data(id_index, Qt.DisplayRole)
+        id_ = self.model.data(id_index, Qt.DisplayRole)
 
         success = StandardDataService.delete_by_id(
             'articles',
-            {'article_id': id}
+            {'article_id': id_}
         )
 
         if success:
@@ -381,11 +380,11 @@ class Catalog(QDialog):
 
     def confirm_detail_removing(self):
         row = self.ui.detailsView.currentRow()
-        id = self.ui.detailsView.item(row, 8).data(Qt.DisplayRole)
+        id_ = self.ui.detailsView.item(row, 8).data(Qt.DisplayRole)
 
         success = StandardDataService.delete_by_id(
             'details',
-            {'detail_id': id}
+            {'detail_id': id_}
         )
 
         if success:
@@ -403,7 +402,7 @@ class Catalog(QDialog):
 if __name__ == '__main__':
     application = QApplication()
 
-    window = Catalog()
-    window.show()
+    catalog_window = Catalog()
+    catalog_window.show()
 
     application.exec_()
