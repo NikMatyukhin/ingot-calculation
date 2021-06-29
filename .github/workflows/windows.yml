@@ -35,7 +35,7 @@ jobs:
         python -m pylint --version
         python -m flake8 --version
         
-        echo "foo" | grep --color=auto -c -E "foo"
+        echo "E1234" | grep --color=auto -c -E "E[0-9]{4}"
     - name: Lint with pylint
       run: |
         # stop the build if there are Python syntax errors or undefined names
