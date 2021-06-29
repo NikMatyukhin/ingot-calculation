@@ -2,16 +2,16 @@ import math
 import typing
 import application_rc
 
-from PySide6.QtCore import (
-    QPoint, Qt, Signal, QPropertyAnimation, QParallelAnimationGroup, QModelIndex,
+from PyQt5.QtCore import (
+    QPoint, Qt, pyqtSignal, QPropertyAnimation, QParallelAnimationGroup, QModelIndex,
     QAbstractAnimation, QAbstractItemModel, QObject, QRect, QSize, QEvent
 )
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
     QScrollArea, QItemDelegate, QStyleOptionViewItem, QComboBox, QPushButton,
     QStyledItemDelegate, QStyle
 )
-from PySide6.QtGui import (
+from PyQt5.QtGui import (
     QBrush, QPen, QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
 )
 
@@ -91,7 +91,7 @@ class ListValuesDelegate(QItemDelegate):
 
 class Section(QWidget):
 
-    clicked = Signal()
+    clicked = pyqtSignal()
 
     def __init__(self, id: int, name: str):
         super(Section, self).__init__()
@@ -222,7 +222,7 @@ class Section(QWidget):
 
 class OrderSectionDelegate(QStyledItemDelegate):
 
-    deleteIndexClicked = Signal(QModelIndex)
+    deleteIndexClicked = pyqtSignal(QModelIndex)
 
     def __init__(self, parent: typing.Optional[QObject] = None) -> None:
         super(OrderSectionDelegate, self).__init__(parent)
@@ -334,7 +334,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
 class IngotSectionDelegate(QStyledItemDelegate):
 
-    forgedIndexClicked = Signal(QModelIndex)
+    forgedIndexClicked = pyqtSignal(QModelIndex)
 
     def __init__(self, parent: typing.Optional[QObject] = None) -> None:
         super(IngotSectionDelegate, self).__init__(parent)
@@ -426,7 +426,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
                 self.forgeIcon = QPixmap(':icons/ingot-80-20.png')
         else:
             self.forgeIcon = QPixmap(':icons/forged.png')
-        self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, mode = Qt.SmoothTransformation)
+        self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, transformMode = Qt.SmoothTransformation)
         icon_left_margin = contentRect.width() // 2 - free_height // 2
         self.forgeIconPos = QPoint(contentRect.left() + icon_left_margin, contentRect.top() + margin + part_rect.height())
         painter.drawPixmap(self.forgeIconPos, self.forgeIcon)

@@ -1,5 +1,5 @@
-from PySide6.QtGui import (QIcon, QColor)
-from PySide6.QtWidgets import (QMainWindow, QVBoxLayout, QLabel,
+from PyQt5.QtGui import (QIcon, QColor)
+from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QLabel,
                                QGraphicsDropShadowEffect)
 
 from mainwindow import OCIMainWindow

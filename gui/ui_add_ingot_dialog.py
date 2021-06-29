@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'add_ingot_dialogaazsIX.ui'
+## Form generated from reading UI file 'add_ingot_dialogzjpdoZ.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 
 class Ui_Dialog(object):
@@ -55,6 +55,7 @@ class Ui_Dialog(object):
         self.height = QDoubleSpinBox(self.parameters)
         self.height.setObjectName(u"height")
         self.height.setDecimals(1)
+        self.height.setMinimum(1.000000000000000)
         self.height.setMaximum(1000.000000000000000)
         self.height.setValue(160.000000000000000)
 
@@ -71,6 +72,7 @@ class Ui_Dialog(object):
         self.width = QDoubleSpinBox(self.parameters)
         self.width.setObjectName(u"width")
         self.width.setDecimals(1)
+        self.width.setMinimum(1.000000000000000)
         self.width.setMaximum(1000.000000000000000)
         self.width.setValue(180.000000000000000)
 
@@ -87,6 +89,7 @@ class Ui_Dialog(object):
         self.depth = QDoubleSpinBox(self.parameters)
         self.depth.setObjectName(u"depth")
         self.depth.setDecimals(1)
+        self.depth.setMinimum(1.000000000000000)
         self.depth.setMaximum(1000.000000000000000)
         self.depth.setValue(28.000000000000000)
 

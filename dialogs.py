@@ -4,15 +4,15 @@ import typing
 from datetime import datetime
 from typing import Dict, List, Union
 
-from PySide6.QtCore import (
-    QPoint, QTimer, Qt, Signal, QPointF, QModelIndex
+from PyQt5.QtCore import (
+    QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex
 )
-from PySide6.QtGui import (
-    QIntValidator, QAction
+from PyQt5.QtGui import (
+    QIntValidator
 )
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QDialog, QCompleter, QGraphicsScene, QMessageBox, QMenu, QToolTip, QWidget,
-    QGraphicsDropShadowEffect, QProgressDialog
+    QGraphicsDropShadowEffect, QProgressDialog, QAction
 )
 
 from sequential_mh.bpp_dsc.rectangle import (
@@ -53,8 +53,8 @@ class ProductDialog(QDialog):
     После добавления новой продукции посылает сигнал с параметрами для того,
     чтобы основное окно каталога обновило данные в модели.
     """
-
-    recordSavedSuccess = Signal(list)
+    
+    recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -141,7 +141,7 @@ class ArticleDialog(QDialog):
     чтобы основное окно каталога обновило данные в модели.
     """
 
-    recordSavedSuccess = Signal(list)
+    recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -223,7 +223,7 @@ class DetailDialog(QDialog):
     чтобы основное окно каталога обновило данные в модели.
     """
 
-    recordSavedSuccess = Signal(list)
+    recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -328,8 +328,8 @@ class OrderAddingDialog(QDialog):
     дальнейшую работу уже с ним, а не создание прочих заказов.
     """
 
-    recordSavedSuccess = Signal(dict)
-    predictedIngotSaved = Signal(dict, dict, Tree)
+    recordSavedSuccess = pyqtSignal(dict)
+    predictedIngotSaved = pyqtSignal(dict, dict, BinNode)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -820,7 +820,7 @@ class IngotAddingDialog(QDialog):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
         self.duration = 1500
-        self.tip = 'Укажите название партии'
+        self.tip = 'Укажите номер партии'
 
         # Настройка списка со сплавами
         self.fusions = {}

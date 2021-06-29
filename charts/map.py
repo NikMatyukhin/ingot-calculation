@@ -1,10 +1,10 @@
 import math
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QGraphicsItem, QGraphicsScene, QGraphicsView, QApplication, QWidget,
     QStyleOptionGraphicsItem, QGraphicsSceneHoverEvent, QMenu
 )
-from PySide6.QtCore import Qt, QRectF, QPointF, QLineF, QSizeF
-from PySide6.QtGui import (
+from PyQt5.QtCore import Qt, QRectF, QPointF, QLineF, QSizeF
+from PyQt5.QtGui import (
     QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QTransform, QPixmap,
     QPolygonF, QIcon
 )

@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'mainwindowoihJos.ui'
+## Form generated from reading UI file 'mainwindowITUiXe.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.0.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 import application_rc
 
@@ -716,7 +716,7 @@ class Ui_MainWindow(object):
         self.searchResult_2.setWidgetResizable(True)
         self.scrollAreaWidgetContents_2 = QWidget()
         self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 343, 437))
+        self.scrollAreaWidgetContents_2.setGeometry(QRect(0, 0, 83, 30))
         self.verticalLayout_9 = QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_9.setSpacing(0)
         self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
@@ -812,7 +812,7 @@ class Ui_MainWindow(object):
         self.depthLine.setWidgetResizable(True)
         self.scrollAreaWidgetContents_3 = QWidget()
         self.scrollAreaWidgetContents_3.setObjectName(u"scrollAreaWidgetContents_3")
-        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 715, 42))
+        self.scrollAreaWidgetContents_3.setGeometry(QRect(0, 0, 98, 42))
         self.horizontalLayout_7 = QHBoxLayout(self.scrollAreaWidgetContents_3)
         self.horizontalLayout_7.setSpacing(0)
         self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
@@ -894,7 +894,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         self.mainArea.setCurrentIndex(0)
-        self.orderInformationArea.setCurrentIndex(1)
+        self.orderInformationArea.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)

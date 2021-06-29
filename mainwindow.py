@@ -8,10 +8,10 @@ from itertools import chain
 from collections import Counter, deque
 from pathlib import Path
 
-from PySide6.QtCore import (
+from PyQt5.QtCore import (
     Qt, QSettings, QModelIndex
 )
-from PySide6.QtWidgets import (
+from PyQt5.QtWidgets import (
     QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
     QMessageBox, QDialog, QVBoxLayout, QGraphicsScene, QLayout, QProgressDialog
 )
@@ -261,13 +261,14 @@ class OCIMainWindow(QMainWindow):
 
     def confirm_order_removing(self, index: QModelIndex):
         data_row = index.data(Qt.DisplayRole)
-        message = QMessageBox(QMessageBox.Question, 'Подтверждение удаления',
-            f'Вы уверены, что хотите удалить заказ "{data_row["order_name"]}"?',
-            QMessageBox.Yes | QMessageBox.Cancel, self
-        )
-        message.setButtonText(QMessageBox.Yes, 'Да')
-        message.setButtonText(QMessageBox.Cancel, 'Отмена')
-        if message.exec() == QMessageBox.Yes:
+        message = QMessageBox(self)
+        message.setWindowTitle('Подтверждение удаления')
+        message.setText(f'Вы уверены, что хотите удалить заказ "{data_row["order_name"]}"?')
+        message.setIcon(QMessageBox.Icon.Question)
+        answer = message.addButton('Да', QMessageBox.ButtonRole.AcceptRole)
+        message.addButton('Отмена', QMessageBox.ButtonRole.RejectRole)
+        message.exec()
+        if answer == message.clickedButton():
             success = StandardDataService.delete_by_id(
                 'orders', {'order_id': data_row['order_id']}
             )
@@ -1004,9 +1005,9 @@ class OCIMainWindow(QMainWindow):
         self.ingot_min_depth = self.settings.value(
             'forging/min_depth', defaultValue=20.0, type=float)
         self.ingot_max_height = self.settings.value(
-            'forging/max_height', defaultValue=185, type=int)
+            'forging/max_height', defaultValue=180, type=int)
         self.ingot_max_width = self.settings.value(
-            'forging/max_width', defaultValue=185, type=int)
+            'forging/max_width', defaultValue=180, type=int)
         self.ingot_max_depth = self.settings.value(
             'forging/max_depth', defaultValue=30.0, type=float)
         self.size_error = self.settings.value(
