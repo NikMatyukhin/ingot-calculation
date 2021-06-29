@@ -1,3 +1,5 @@
+from math import prod
+
 import sqlite3
 from collections import namedtuple
 from abc import ABC, abstractmethod
@@ -483,12 +485,32 @@ class OrderDataService (StandardDataService):
     def efficiency(connection, order_id: TableField) -> float:
         field, value = parse_field(order_id)
 
+        # size_ingots_sql = (
+        #     'SELECT ingots.width, ingots.height, ingots.depth, fusions.density '
+        #     'FROM ingots '
+        #     'LEFT JOIN fusions ON fusions.fusion_id = ingots.fusion_id '
+        #     f'WHERE {field}={value}'
+        # )
+        # size_blanks_sql = (
+        #     'SELECT details.width, details.height, details.depth, fusions.density '
+        #     'FROM complects '
+        #     'LEFT JOIN details ON details.detail_id = complects.detail_id '
+        #     'LEFT JOIN fusions ON fusions.fusion_id = details.fusion_id '
+        #     'LEFT JOIN complects_statuses ON complects.status_id == complects_statuses.status_id '
+        #     f'WHERE {field}={value} AND complects_statuses.name="Ожидает"'
+        # )
+
         sql = str('SELECT efficiency FROM ingots '
                   f'WHERE {field}={value}')
 
         cursor = connection.cursor()
+        # cursor.execute(size_ingots_sql)
         cursor.execute(sql)
         ingots_efficiencies = [ingot[0] for ingot in cursor.fetchall()]
+        # total_ingots_mass = sum(prod(size) for size in cursor.fetchall())
+        # cursor.execute(size_blanks_sql)
+        # total_blanks_mass = sum(prod(size) for size in cursor.fetchall())
+        # return total_blanks_mass / total_ingots_mass
         if 0.0 in ingots_efficiencies:
             return 0.0
         else:
