@@ -562,9 +562,8 @@ class OrderAddingDialog(QDialog):
                 return
             except Exception as exception:
                 log_operation_info(
-                    'error_ic', {
-                        'name': order_name, 'alloy': fusion_name, 'exception': exception
-                    }
+                    'error_ic', {'name': order_name, 'alloy': fusion_name},
+                    message=exception
                 )
                 QMessageBox.critical(
                     self, 'Расчёт слитка завершился с ошибкой', f'{exception}', QMessageBox.Ok
