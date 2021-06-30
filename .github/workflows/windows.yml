@@ -11,42 +11,51 @@ on:
 
 
 jobs:
-  # linting:
-  #   runs-on: windows-latest
-  # steps:
-  # - uses: actions/checkout@v2
-  # - name: Set up Python 3.9
-  #   uses: actions/setup-python@main
-  #   with:
-  #     python-version: 3.9
-  # - name: Install dependencies
-  #   run: |
-  #     python -m pip install --upgrade pip
-  #     pip install pylint flake8
-  #     if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-  # - name: Lint with pylint
-  #   run: |
-  #     # stop the build if there are Python syntax errors or undefined names
-  #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-  #     # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-  #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-
-  # testing:
-  #   runs-on: windows-latest
-
-  build:
-    runs-on: windows-latest
+  syntax_linting:
+    runs-on: ubuntu-latest
     steps:
-    - name: Set up Python 3.9
-      uses: actions/setup-python@main
-      # with:
-      #   python-version: 3.9
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install PySide6 pyyaml cx_Freeze
-    # - name: Build
-    #   run: |
-    #     dir
+      - uses: actions/checkout@v2
+      - name: Install grep
+        run: |
+          sudo apt install grep
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint flake8
+          pip install -r requirements.txt
+          # if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Check
+        run: |
+          grep --version
+          python --version
+          python -m pylint --version
+          python -m flake8 --version
+          # проверка работы grep
+          # echo "E1234" | grep --color=auto -c -E "[EF][0-9]{4}"
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      # - name: Hard lint with pylint
+      #  run: |
+      #    # проверка синтаксических и критических ошибок
+      #    for var in $(find . -name "*.py" -not -path "./.venv/*" -not -path "./gui/*" -not -path "./dsc_example.py" -not -path "./test.py")
+      #    do
+      #    echo " $var"
+      #    ! pylint --rcfile=.pylintrc --disable=all --enable=E $var | grep -c -E "[EF][0-9]{4}"
+      #    done
+      - name: Hard lint PEP8 with pylint
+        run: |
+          # проверка стиля кодирования по PEP8
+          for var in $(find . -name "*.py" -not -path "./.venv/*" -not -path "./gui/*" -not -path "./dsc_example.py" -not -path "./test.py")
+          do
+          echo " $var"
+          ! pylint --rcfile=.pylintrc --disable=all --enable=C $var | grep -c -E "C[0-9]{4}"
+          done
