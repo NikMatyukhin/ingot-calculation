@@ -41,7 +41,7 @@ jobs:
           # stop the build if there are Python syntax errors or undefined names
           # flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # проверка синтаксических и критических ошибок
-          for var in $(find . -name "*.py" -not -path "./.venv/*" -not -path "./gui/*" -not -path "./dsc_example.py")
+          for var in $(find . -name "*.py" -not -path "./.venv/*" -not -path "./gui/*" -not -path "./dsc_example.py" -not -path "./test.py")
           do
           echo " $var"
           ! pylint --rcfile=.pylintrc --disable=all --enable=E $var | grep -c -E "[EF][0-9]{4}"
