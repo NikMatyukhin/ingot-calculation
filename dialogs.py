@@ -65,7 +65,7 @@ class ArticleDialog(QDialog):
 
         # Валидация полей и установка дополнений
         self.ui.regnum.setValidator(QIntValidator(self.ui.regnum))
-        product_completer = QCompleter(CatalogDataService.type_list(), self)
+        product_completer = QCompleter(list(CatalogDataService.type_list()), self)
         product_completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.ui.type.setCompleter(product_completer)
 

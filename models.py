@@ -445,9 +445,11 @@ class TableModel(QAbstractItemModel):
     def index(self, row: int, column: int, parent: QModelIndex) -> QModelIndex:
         if parent.isValid():
             return QModelIndex()
-        
-        item = self.__items_data[row][column]
-        return self.createIndex(row, column, item)
+        if 0 <= row < len(self.__items_data) and 0 <= column < len(self.__headers):
+            print('index -> ', row, column)
+            item = self.__items_data[row][column]
+            return self.createIndex(row, column, item)
+        return QModelIndex()
     
     def rowCount(self, parent: QModelIndex) -> int:
         return len(self.__items_data)
@@ -456,7 +458,7 @@ class TableModel(QAbstractItemModel):
         return len(self.__headers)
     
     def appendRow(self, data: list, index: QModelIndex) -> bool:
-        if not self.insertRow(1, index):
+        if not self.insertRow(self.rowCount(QModelIndex()), index):
             return False
         self.__items_data[-1] = data
 

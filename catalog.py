@@ -202,6 +202,7 @@ class Catalog(QDialog):
 
         success = StandardDataService.delete_by_id('details', Field('id', id))
         if success:
+            print('success -> ', index.row())
             self.details_model.removeRow(index.row(), QModelIndex())
         else:
             QMessageBox.critical(self, 'Ошибка удаления', 'SqlDatabaseError: can not remove record.', QMessageBox.Ok)

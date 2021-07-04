@@ -237,7 +237,7 @@ class CatalogDataService(StandardDataService):
         cursor = connection.cursor()
         cursor.execute('SELECT DISTINCT type FROM articles')
         
-        return cursor.fetchall()
+        return list(map(itemgetter(0), cursor.fetchall()))
 
 class OrderDataService(StandardDataService):
 
