@@ -64,7 +64,7 @@ class ArticleDialog(QDialog):
         self.timer.timeout.connect(self.cooldown)
 
         # Валидация полей и установка дополнений
-        self.ui.register.setValidator(QIntValidator(self.ui.register))
+        self.ui.regnum.setValidator(QIntValidator(self.ui.regnum))
         product_completer = QCompleter(CatalogDataService.type_list(), self)
         product_completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.ui.type.setCompleter(product_completer)
@@ -77,7 +77,7 @@ class ArticleDialog(QDialog):
 
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
-        id = self.ui.register_number.text()
+        id = self.ui.regnum.text()
         type = self.ui.type.text()
         name = self.ui.name.text()
 
@@ -96,9 +96,9 @@ class ArticleDialog(QDialog):
         self.recordSavedSuccess.emit([id, name, None])
 
     def highlight(self):
-        if not self.ui.register_number.text():
-            QToolTip.showText(self.ui.register_number.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.register_number)
-            self.ui.register_number.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
+        if not self.ui.regnum.text():
+            QToolTip.showText(self.ui.regnum.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.regnum)
+            self.ui.regnum.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
         if not self.ui.type.text():
             QToolTip.showText(self.ui.type.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.type)
             self.ui.type.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
@@ -107,7 +107,7 @@ class ArticleDialog(QDialog):
             self.ui.name.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
 
     def cooldown(self):
-        self.ui.register_number.setStyleSheet('')
+        self.ui.regnum.setStyleSheet('')
         self.ui.type.setStyleSheet('')
         self.ui.name.setStyleSheet('')
 
