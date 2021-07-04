@@ -1,10 +1,12 @@
+from logging import currentframe
 import math
 import typing
 import application_rc
 
 from PyQt5.QtCore import (
-    QPoint, Qt, pyqtSignal, QPropertyAnimation, QParallelAnimationGroup, QModelIndex,
-    QAbstractAnimation, QAbstractItemModel, QObject, QRect, QSize, QEvent
+    QPoint, Qt, pyqtSignal, QPropertyAnimation, QParallelAnimationGroup,
+    QAbstractAnimation, QAbstractItemModel, QObject, QRect, QSize, QEvent,
+    QLocale, QModelIndex
 )
 from PyQt5.QtWidgets import (
     QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
@@ -15,7 +17,7 @@ from PyQt5.QtGui import (
     QBrush, QPen, QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
 )
 
-from service import StandardDataService
+from service import StandardDataService, Field
 from models import IngotModel
 
 
@@ -63,30 +65,35 @@ class ExclusiveButton(QPushButton):
             }''')
 
 
-class ListValuesDelegate(QItemDelegate):
+class ListValuesDelegate(QStyledItemDelegate):
 
-    def __init__(self, names_list, parent: typing.Optional[QObject] = None):
+    def __init__(self, values: dict, parent: typing.Optional[QObject] = None):
         super(ListValuesDelegate, self).__init__(parent)
-        self.names = names_list
+        self.values = values
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem,
-                     index: QModelIndex) -> QWidget:
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
         editor = QComboBox(parent)
-        editor.addItems(self.names)
+        editor.addItems(list(self.values.keys()))
         return editor
 
     def setEditorData(self, editor: QWidget, index: QModelIndex):
-        value = index.model().data(index, Qt.EditRole)
-        editor.setCurrentIndex(self.names.index(value))
+        value: int = index.model().data(index, Qt.DisplayRole)
+        for name in self.values:
+            if int(value) == self.values[name]:
+                editor.setCurrentText(name)
+                break
 
-    def setModelData(self, editor: QWidget, model: QAbstractItemModel,
-                     index: QModelIndex):
-        value = editor.currentText()
-        model.setData(index, value, Qt.EditRole)
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel,index: QModelIndex):
+        value: str = editor.currentText()
+        model.setData(index, self.values[value], Qt.EditRole)
 
-    def updateEditorGeometry(self, editor: QWidget,
-                             option: QStyleOptionViewItem, index: QModelIndex):
+    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         editor.setGeometry(option.rect)
+    
+    def displayText(self, value: typing.Any, locale: QLocale) -> str:
+        for name in self.values:
+            if int(value) == self.values[name]:
+                return name
 
 
 class Section(QWidget):
@@ -223,40 +230,38 @@ class Section(QWidget):
 class OrderSectionDelegate(QStyledItemDelegate):
 
     deleteIndexClicked = pyqtSignal(QModelIndex)
+    margin = 5   
 
     def __init__(self, parent: typing.Optional[QObject] = None) -> None:
         super(OrderSectionDelegate, self).__init__(parent)
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem,
-              index: QModelIndex) -> None:
-
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
 
-        palette = QPalette(opt.palette)
         rect = QRect(opt.rect)
+        palette = QPalette(opt.palette)
         title_font = QFont(opt.font)
-        title_font.setPointSize(11)
         small_font = QFont(opt.font)
+        contentRect = QRect(rect.adjusted(self.margin, self.margin, self.margin, self.margin))
+        
+        title_font.setPointSize(11)
         small_font.setPointSize(self.informationFontPointSize(title_font))
-
-        margin = 5
-        contentRect = QRect(rect.adjusted(margin, margin, margin, margin))
+        
         bottomEdge = rect.bottom()
         lastIndex = (index.model().rowCount() - 1) == index.row()
         self.deleteIcon = QPixmap(':icons/remove.png').scaled(15, 15, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.deleteIconPos = QPoint(contentRect.right() - self.deleteIcon.width() - margin * 2,
-                               contentRect.top())
+        self.deleteIconPos = QPoint(contentRect.right() - self.deleteIcon.width() - self.margin * 2, contentRect.top())
 
         painter.save()
         painter.setClipping(True)
         painter.setClipRect(rect)
 
-        status_id = index.data(Qt.DisplayRole)['status_id']
-        if status_id == 6:
+        order = index.data(Qt.DisplayRole)
+
+        fill_color = palette.light().color()
+        if order['status_id'] == 3:
             fill_color = QColor('#77e07e')
-        else:
-            fill_color = palette.light().color()
         if opt.state & QStyle.State_Selected:
             painter.fillRect(rect, fill_color.darker(115))
         elif opt.state & QStyle.State_MouseOver:
@@ -265,29 +270,28 @@ class OrderSectionDelegate(QStyledItemDelegate):
             painter.fillRect(rect, fill_color)
 
         painter.setPen(palette.dark().color())
-
         if lastIndex:
             painter.drawLine(rect.left(), bottomEdge, rect.right(), bottomEdge)
         else:
-            painter.drawLine(margin, bottomEdge, rect.right(), bottomEdge)    
-
-        data_row = index.data(Qt.DisplayRole)
-
-        name_text = 'Заказ ' + data_row['order_name']
-        name_rect = QRect(self.textBox(title_font, name_text))
-        name_rect.moveTo(contentRect.left(), contentRect.top())
+            painter.drawLine(self.margin, bottomEdge, rect.right(), bottomEdge)    
 
         painter.setFont(title_font)
         painter.setPen(palette.text().color())
+
+        name_text = 'Заказ ' + order['name']
+        name_rect = QRect(self.textBox(title_font, name_text))
+        name_rect.moveTo(contentRect.left(), contentRect.top())
+
         painter.drawText(name_rect, Qt.TextSingleLine, name_text)
 
-        efficiency = data_row['efficiency']
-        efficiency_text = str(efficiency) + '%' if efficiency > 0.0 else 'не указан'
+        efficiency_text = str(order['efficiency']) + '%' if order['efficiency'] > 0.0 else 'Не указан'
+        status_text = StandardDataService.get_by_id('orders_statuses', Field('id', order['status_id']))[1]
+              
         visible_info = {
-            'status_name': 'Статус: ' + index.model().extradata(index, Qt.DisplayRole, 'status_name'),
-            'efficiency': 'Выход годного: ' + efficiency_text,
-            'article_number': 'Изделий: ' + str(index.model().extradata(index, Qt.DisplayRole, 'article_number')) + ' шт',
-            'detail_number': 'Заготовок: ' + str(index.model().extradata(index, Qt.DisplayRole, 'detail_number')) + ' шт',
+            'status_name': f'Статус: {status_text}',
+            'efficiency': f'Выход годного: {efficiency_text}',
+            'article_number': f'Изделий: {order["articles"]} шт',
+            'detail_number': f'Заготовок: {order["details"]} шт',
         }
         columns = 2
         rows = math.ceil(len(visible_info) / columns)
@@ -299,8 +303,8 @@ class OrderSectionDelegate(QStyledItemDelegate):
             row_text = visible_info[key]
             row_rect = QRect(self.textBox(small_font, row_text))
             
-            margin_left = 160 * int((row + 1) > rows) + margin
-            margin_top = 20 * int(row % rows) + name_rect.bottom() + margin 
+            margin_left = 160 * int((row + 1) > rows) + self.margin
+            margin_top = 20 * int(row % rows) + name_rect.bottom() + self.margin 
             
             row_rect.moveTo(margin_left, margin_top)
             painter.drawText(row_rect, Qt.TextSingleLine, row_text)
@@ -335,100 +339,72 @@ class OrderSectionDelegate(QStyledItemDelegate):
 class IngotSectionDelegate(QStyledItemDelegate):
 
     forgedIndexClicked = pyqtSignal(QModelIndex)
+    margin = 5
 
     def __init__(self, parent: typing.Optional[QObject] = None) -> None:
         super(IngotSectionDelegate, self).__init__(parent)
     
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem,
-              index: QModelIndex) -> None:
-        """Метод отрисовки делегата для модели слитков.
-
-        Отрисовывается номер партии (в случае, если слиток запланирован, то 
-        вместо номера троеточие), иконка слитка (если запланирован, то иконка 
-        загрузки), размеры и сплав.
-
-        :param painter: Объект отрисовщика
-        :type painter: QPainter
-        :param option: Настройки отрисовки
-        :type option: QStyleOptionViewItem
-        :param index: Индекс текущего объекта в модели данных
-        :type index: QModelIndex
-        """
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
 
-        # Отступ от границ плитки внутрь и наружу
-        margin = 5
-
         palette = QPalette(opt.palette)
         rect = QRect(opt.rect)
-        contentRect = QRect(rect.adjusted(margin * 2, margin, -margin * 2, -margin))
-
-        # Настройка шрифта для плитки со слитком
+        contentRect = QRect(rect.adjusted(self.margin * 2, self.margin, -self.margin * 2, -self.margin))
         font = QFont(opt.font)
+
         font.setPointSize(8)
         # font.setBold(True)
-        # font.setFontFamily('serif')
 
-        # Получение данных о текущем слитке
-        data_row = index.data(Qt.DisplayRole)
-        fill_color = QColor(index.model().extradata(index, Qt.DisplayRole, 'background'))
+        ingot = index.data(Qt.DisplayRole)
+        fill_color = palette.light().color()
+        if ingot['status_id'] in [3, 4]:
+            fill_color = QColor('#77e07e') 
 
         painter.save()
         painter.setClipping(True)
         painter.setClipRect(rect)
-        painter.setFont(font)
 
         if opt.state & QStyle.State_Selected:
             painter.fillRect(rect, fill_color.darker(115))
-            painter.fillRect(rect.adjusted(0, rect.height() - margin, 0, 0), QColor("#CD743D"))
+            painter.fillRect(rect.adjusted(0, rect.height() - self.margin, 0, 0), QColor("#CD743D"))
         elif opt.state & QStyle.State_MouseOver:
             painter.fillRect(rect, fill_color.darker(105))
         else:
             painter.fillRect(rect, fill_color)
+        
         painter.setPen(palette.shadow().color())
         painter.drawLine(rect.right(), rect.top(), rect.right(), rect.bottom())
+        
+        painter.setFont(font)
         painter.setPen(Qt.black)
 
         # Надпись с партией слитка
-        if data_row['status_id'] not in [3, 4]:
-            part = 'Партия: №' + str(data_row['ingot_part'])
-        else:
-            part = 'Партия не указана'
-        part_rect = QRect(self.textBox(font, part))
-        part_rect.moveTo(contentRect.left(), contentRect.top())
-        painter.drawText(part_rect, Qt.TextSingleLine, part)
+        batch = 'Партия: №' + str(ingot['batch']) if ingot['status_id'] not in [3, 4] else 'Партия: не указана'
+        batch_rect = QRect(self.textBox(font, batch))
+        batch_rect.moveTo(contentRect.left(), contentRect.top())
+        painter.drawText(batch_rect, Qt.TextSingleLine, batch)
 
         # Надпись с размерами слитка
-        size = 'Размеры: ' + 'х'.join(map(str, data_row['ingot_size']))
+        size = 'Размеры: ' + 'х'.join(map(str, ingot['size']))
         size_rect = QRect(self.textBox(font, size))
-        size_rect.moveTo(contentRect.left(), contentRect.bottom() - size_rect.height() - margin)
+        size_rect.moveTo(contentRect.left(), contentRect.bottom() - size_rect.height() - self.margin)
         painter.drawText(size_rect, Qt.TextSingleLine, size)
 
         # Надпись со сплавом слитка
-        fusion_name = index.model().extradata(index, Qt.DisplayRole, 'fusion_name')
-        fusion = 'Сплав: ' + fusion_name
+        fusion = 'Сплав: ' + StandardDataService.get_by_id('fusions', Field('id', ingot['fusion_id']))[1]
         fusion_rect = QRect(self.textBox(font, fusion))
-        fusion_rect.moveTo(contentRect.left(), contentRect.bottom() - fusion_rect.height() - size_rect.height() - margin)
+        fusion_rect.moveTo(contentRect.left(), contentRect.bottom() - fusion_rect.height() - size_rect.height() - self.margin)
         painter.drawText(fusion_rect, Qt.TextSingleLine, fusion)
 
         # Иконка 
-        free_height = fusion_rect.top() - part_rect.bottom() - margin * 2
+        free_height = fusion_rect.top() - batch_rect.bottom() - self.margin * 2
         free_height = min(contentRect.width(), free_height)
-        if data_row['status_id'] not in [3, 4]:
-            if fusion_name == 'ПлРд 90-10 ДС':
-                self.forgeIcon = QPixmap(':icons/ingot-90-10-DC.png')
-            elif fusion_name == 'ПлРд 90-10':
-                self.forgeIcon = QPixmap(':icons/ingot-90-10.png')
-            elif fusion_name == 'ПлРд 80-30':
-                self.forgeIcon = QPixmap(':icons/ingot-80-30.png')
-            elif fusion_name == 'ПлРд 80-20':
-                self.forgeIcon = QPixmap(':icons/ingot-80-20.png')
-        else:
-            self.forgeIcon = QPixmap(':icons/forged.png')
-        self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, transformMode = Qt.SmoothTransformation)
+        if ingot['status_id'] != 2:
+            self.forgeIcon = QPixmap(':icons/ingot.svg')
+        self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, aspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio, transformMode = Qt.TransformationMode.SmoothTransformation)
         icon_left_margin = contentRect.width() // 2 - free_height // 2
-        self.forgeIconPos = QPoint(contentRect.left() + icon_left_margin, contentRect.top() + margin + part_rect.height())
+        self.forgeIconPos = QPoint(contentRect.left() + icon_left_margin, contentRect.top() + self.margin + batch_rect.height())
         painter.drawPixmap(self.forgeIconPos, self.forgeIcon)
 
         painter.restore()
@@ -446,12 +422,8 @@ class IngotSectionDelegate(QStyledItemDelegate):
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
         if event.type() == QEvent.MouseButtonRelease:
             forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos)
-            data_row = index.data(Qt.DisplayRole)
-            status_data = StandardDataService.get_by_id(
-                'ingots_statuses',
-                {'status_id': data_row['status_id']}
-            )
-            if(forgeIconRect.contains(event.pos()) and status_data[0] == 3):
+            ingot = index.data(Qt.DisplayRole)
+            if(forgeIconRect.contains(event.pos()) and ingot['status_id'] == 3):
                 self.forgedIndexClicked.emit(index)
         return super().editorEvent(event, model, option, index)
 

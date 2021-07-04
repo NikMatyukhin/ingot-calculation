@@ -1,6 +1,5 @@
-import typing
 import application_rc
-from typing import List, Dict, Any
+from typing import Any, Optional
 
 from PyQt5.QtCore import (
     Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot, QObject,
@@ -11,13 +10,13 @@ from PyQt5.QtGui import (
 )
 
 from service import (
-    StandardDataService, OrderDataService
+    Field, StandardDataService, OrderDataService
 )
 
 
 class TreeItem:
 
-    def __init__(self, data: list, parent: typing.Optional[QObject] = None):
+    def __init__(self, data: list, parent: Optional[QObject] = None):
         self.__item_data = data
         self.__parent_item = parent
         self.__child_items = []
@@ -157,11 +156,10 @@ class TreeItem:
 
 class TreeModel(QAbstractItemModel):
 
-    def __init__(self, headers, parent=None):
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
         super(TreeModel, self).__init__(parent)
         self.root_data = headers
         self.root_item = TreeItem(self.root_data)
-        self.__warning = QIcon(':icons/warning.png')
 
     def get_item(self, index: QModelIndex) -> TreeItem:
         """Получение объекта-узла дерева по его индексу.
@@ -276,20 +274,9 @@ class TreeModel(QAbstractItemModel):
         """
         if not index.isValid():
             return None
-
-        if role != Qt.DisplayRole and role != Qt.EditRole and \
-           role != Qt.DecorationRole and role != Qt.ToolTipRole:
+        if role != Qt.DisplayRole:
             return None
-
         item = index.internalPointer()
-
-        if item.childCount() == index.column() == 0:
-            if item.parent() is self.root_item:
-                if role == Qt.DecorationRole:
-                    return self.__warning
-                elif role == Qt.ToolTipRole:
-                    return 'Не подвязан ни один артикул'
-
         return item.data(index.column())
 
     def headerData(self, section: int, orientation: Qt.Orientation,
@@ -351,11 +338,11 @@ class TreeModel(QAbstractItemModel):
             return result
         return False
 
-    def appendRow(self, data: List[Any], index: QModelIndex) -> bool:
+    def appendRow(self, data: list, index: QModelIndex) -> bool:
         """Добавление к модели строки данных data для родителя index.
 
         :param data: Данные объекта-узла
-        :type data: List[Any]
+        :type data: list
         :param index: Индекс родительского узла
         :type index: QModelIndex
         :return: Результат операции добавления
@@ -415,30 +402,109 @@ class TreeModel(QAbstractItemModel):
         pass
 
 
+class TableModel(QAbstractItemModel):
+    
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
+        super(TableModel, self).__init__(parent)
+        self.__headers = headers
+        self.__items_data = []
+    
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.NoItemFlags
+
+        return QAbstractItemModel.flags(self, index)
+
+    def parent(self, index: QModelIndex) -> QModelIndex:
+        return QModelIndex()
+
+    def data(self, index: QModelIndex, role: int) -> Any:
+        if index.isValid() and role == Qt.DisplayRole or role == Qt.EditRole:
+            return self.__items_data[index.row()][index.column()]
+        return None
+    
+    def setData(self, index: QModelIndex, value: Any, role: int) -> bool:
+        if index.isValid() and role == Qt.EditRole:
+            self.__items_data[index.row()][index.column()] = value
+            self.dataChanged.emit(index, index, [role])
+            return True
+        return False
+    
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> Any:
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self.__headers[section]
+        return None
+    
+    def setHeaderData(self, section: int, orientation: Qt.Orientation, value: Any, role: int) -> bool:
+        if orientation == Qt.Horizontal and role == Qt.EditRole:
+            self.__headers[section] = value
+            self.headerDataChanged(Qt.Horizontal, section, section)
+            return True
+        return False
+
+    def index(self, row: int, column: int, parent: QModelIndex) -> QModelIndex:
+        if parent.isValid():
+            return QModelIndex()
+        
+        item = self.__items_data[row][column]
+        return self.createIndex(row, column, item)
+    
+    def rowCount(self, parent: QModelIndex) -> int:
+        return len(self.__items_data)
+    
+    def columnCount(self, parent: QModelIndex) -> int:
+        return len(self.__headers)
+    
+    def appendRow(self, data: list, index: QModelIndex) -> bool:
+        if not self.insertRow(1, index):
+            return False
+        self.__items_data[-1] = data
+
+    def insertRow(self, row: int, parent: QModelIndex) -> bool:
+        self.beginInsertRows(parent, row, row)
+        self.__items_data.append([])
+        self.endInsertRows()
+        return True
+
+    def removeRow(self, row: int, parent: QModelIndex) -> bool:
+        self.beginRemoveRows(parent, row, row)
+        self.__items_data.pop(row)
+        self.endRemoveRows()
+        return True
+
+    def clear(self):
+        self.beginResetModel()
+        self.__items_data.clear()
+        self.endResetModel()
+
+    def setupModelData(self):
+        pass
+
+
 class ListModel(QAbstractListModel):
     
-    def __init__(self, parent: typing.Optional[QObject]) -> None:
+    def __init__(self, parent: Optional[QObject]) -> None:
         super(ListModel, self).__init__(parent)
         self.items_data = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self.items_data)
     
-    def data(self, index: QModelIndex, role: int) -> typing.Any:
+    def data(self, index: QModelIndex, role: int) -> Any:
         if not index.isValid():
             return None
         if role == Qt.DisplayRole:
             return self.items_data[index.row()]
         return None
     
-    def setData(self, index: QModelIndex, value: Dict, role: int) -> bool:
+    def setData(self, index: QModelIndex, value: dict, role: int) -> bool:
         if index.isValid() and role == Qt.EditRole:
             self.items_data[index.row()].update(value)
             self.dataChanged.emit(index, index, [role])
             return True
         return False
 
-    def appendRow(self, data: Dict, index: QModelIndex = QModelIndex()) -> bool:
+    def appendRow(self, data: dict, index: QModelIndex = QModelIndex()) -> bool:
         if not self.insertRows(0, 1, index):
             return False
         self.items_data[-1] = data
@@ -467,49 +533,33 @@ class ListModel(QAbstractListModel):
 
 class OrderModel(ListModel):
 
-    def __init__(self, parent: typing.Optional[QObject] = None):
+    def __init__(self, status: Field, parent: Optional[QObject] = None):
         super(OrderModel, self).__init__(parent)
+        self.__status = status
         self.setupModelData()
 
-    def extradata(self, index: QModelIndex, role: int, field: str = None) -> typing.Any:
-        if not index.isValid():
-            return None
-        if role == Qt.DisplayRole:
-            if field:
-                data_row = self.items_data[index.row()]
-                try:
-                    value = data_row[field]
-                except KeyError:
-                    if field == 'status_name':
-                        value = StandardDataService.get_by_id('orders_statuses', {'status_id': data_row['status_id']})[1]
-                    elif field == 'detail_number':
-                        value = OrderDataService.details_count({'order_id': data_row['order_id']})
-                    elif field == 'article_number':
-                        value = OrderDataService.articles_count({'order_id': data_row['order_id']})
-                    else:
-                        value = 'Ошибка!'
-                return value
-            else:
-                return self.items_data[index.row()]
-        return None
-
     def setupModelData(self):
-        for order in OrderDataService.get_table_2():
+        # TODO: строка для подгрузки заказов по статусу (нужно в будущем)
+        # for order in OrderDataService.get_table(self.__status):
+        for order in OrderDataService.get_table():
             data_row = {
-                'order_id': order[0],
-                'status_id': order[2],
-                'order_name': order[3],
-                'current_depth': order[4],
+                'id': order[0],
+                'status_id': order[1],
+                'name': order[2],
+                'date': order[3],
+                'step': order[4],
                 'efficiency': order[5],
-                'creation_date': order[7],
+                'articles': order[6],
+                'details': order[7],
             }
             self.appendRow(data_row)
 
 
 class IngotModel(ListModel):
 
-    def __init__(self, parent: typing.Optional[QObject] = None) -> None:
+    def __init__(self, category: OrderDataService.Category, parent: Optional[QObject] = None) -> None:
         super(IngotModel, self).__init__(parent)
+        self.__category = category
         self.__order_id = None
         self.setupModelData()
 
@@ -525,26 +575,6 @@ class IngotModel(ListModel):
     @order.deleter
     def order(self):
         self.__order_id = None
-    
-    def extradata(self, index: QModelIndex, role: int, field: str = None) -> typing.Any:
-        if not index.isValid():
-            return None
-        if role == Qt.DisplayRole:
-            if field:
-                data_row = self.items_data[index.row()]
-                try:
-                    value = data_row[field]
-                except KeyError:
-                    if field == 'fusion_name':
-                        value = StandardDataService.get_by_id('fusions', {'fusion_id': data_row['fusion_id']})[1]
-                    elif field == 'background':
-                        value = StandardDataService.get_by_id('ingots_statuses', {'status_id': data_row['status_id']})[2]
-                    else:
-                        value = 'Ошибка!'
-                return value
-            else:
-                return self.items_data[index.row()]
-        return None
 
     def clear(self):
         self.beginResetModel()
@@ -555,97 +585,155 @@ class IngotModel(ListModel):
         if self.items_data:
             self.clear()
         if self.__order_id:
-            result = OrderDataService.ingots({'order_id': self.__order_id})
+            result = OrderDataService.ingots(Field('order_id', self.__order_id))
         else:
-            result = OrderDataService.vacancy_ingots()
+            result = OrderDataService.ware_ingots(self.__category)
         for ingot in result:
             data_row = {
-                'ingot_id': ingot[0],
-                'fusion_id': ingot[1],
-                'ingot_part': ingot[3],
-                'ingot_size': [round(ingot[4]), round(ingot[5]), round(ingot[6], 1)],
-                'status_id': ingot[7],
-                'efficiency': ingot[8]
+                'id': ingot[0],
+                'fusion_id': ingot[2],
+                'status_id': ingot[3],
+                'size': [ingot[4], ingot[5], round(ingot[6], 1)],
+                'batch': ingot[7],
+                'efficiency': ingot[8],
             }
             self.appendRow(data_row)
 
 
-class CatalogModel(TreeModel):
+class CatalogArticlesModel(TreeModel):
 
-    def __init__(self, headers: list, parent: typing.Optional[QObject] = None):
-        super(CatalogModel, self).__init__(headers, parent)
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
+        super(CatalogArticlesModel, self).__init__(headers, parent)
+        self.__warning = QIcon(':icons/warning.png')
         self.setupModelData()
 
-    def setData(self, index: QModelIndex, value: object, role: int) -> bool:
-        parent = self.parent(index)
-        if not parent.isValid():
-            if index.column() == 3 and role == Qt.EditRole:
-                return False
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.NoItemFlags
 
-        if index.isValid() and role == Qt.EditRole:
-            item = self.get_item(index)
-            result = item.setData(index.column(), value)
-            if result:
-                self.dataChanged.emit(index, index, [role])
-            return result
-        return False
+        if index.column() == 0:
+            return QAbstractItemModel.flags(self, index)
+
+        return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+
+    def data(self, index: QModelIndex, role: int) -> Any:
+        if not index.isValid():
+            return None
+
+        if role != Qt.DisplayRole and role != Qt.EditRole and \
+           role != Qt.DecorationRole and role != Qt.ToolTipRole:
+            return None
+
+        item = index.internalPointer()
+
+        # HACK: для отображения иконки у изделия не должно быть заготовок,
+        #       а сама иконка появляется всегда в первой колонке
+        if item.childCount() == index.column() == 0:
+            if role == Qt.DecorationRole:
+                return self.__warning
+            elif role == Qt.ToolTipRole:
+                return 'Нет привязанных заготовок'
+
+        return item.data(index.column())
+
+    def setData(self, index: QModelIndex, value: object, role: int) -> bool:
+        if not index.isValid():
+            return False
+
+        if role != Qt.EditRole:
+            return False
+
+        item = self.get_item(index)
+        if item.setData(index.column(), value):
+            self.dataChanged.emit(index, index, [role])
+
+        return True
 
     def setupModelData(self):
-        for line in StandardDataService.get_table('products'):
-            key, type, designation = line
-            self.appendRow([key, type, designation, None, None], QModelIndex())
+        for line in sorted(StandardDataService.get_table('articles')):
+            self.appendRow(line, QModelIndex())
+            for sub_line in StandardDataService.get_by_field('details', Field('article_id', line[0])):
+                self.appendRow([None, sub_line[4], sub_line[0]], self.index(0, 0, QModelIndex()))
 
-            sub = StandardDataService.get_by_field('articles', product_id=key)
-            parent = self.index(0, 0, QModelIndex())
 
-            for sub_line in sub:
-                id, key, nomen, rent = sub_line
-                rent = ['Нет', 'Да'][rent]
-                self.appendRow([None, type, nomen, rent, id], parent)
+class CatalogDetailsModel(TableModel):
+    
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
+        super(CatalogDetailsModel, self).__init__(headers, parent)
+        self.__article_id = None
+    
+    @property
+    def article(self):
+        return self.__article_id
+
+    @article.setter
+    def article(self, value):
+        self.__article_id = value
+        self.setupModelData()
+    
+    @article.deleter
+    def article(self):
+        self.__article_id = None
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.NoItemFlags
+        if index.column == 8:
+            return QAbstractItemModel.flags(self, index)
+        return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+
+    def data(self, index: QModelIndex, role: int) -> Any:
+        if not index.isValid():
+            return None
+
+        if role != Qt.DisplayRole and role != Qt.EditRole:
+            return None
+
+        return super().data(index, role)
+
+    def setupModelData(self):
+        if self.rowCount(QModelIndex()):
+            self.clear()
+
+        for line in StandardDataService.get_by_field('details', Field('article_id', self.__article_id)):
+            id, _, fusion_id, direction_id, name, l, w, h, a, p = line
+            self.appendRow([name, fusion_id, l, w, h, a, p, direction_id, id], QModelIndex())
 
 
 class ComplectsModel(TreeModel):
 
-    def __init__(self, headers: list, parent: typing.Optional[QObject] = None):
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
         super(ComplectsModel, self).__init__(headers, parent)
         self.setupModelData()
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         if not index.isValid():
             return Qt.NoItemFlags
-        if index.column() == 7 or index.column() == 8:
+        if index.column() == 6 or index.column() == 7:
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
         return QAbstractItemModel.flags(self, index)
 
     def data(self, index: QModelIndex, role: int) -> Any:
         if not index.isValid():
             return None
-        if role != Qt.DisplayRole and role != Qt.EditRole:
+        if role != Qt.DisplayRole and role != Qt.EditRole and role != Qt.TextAlignmentRole:
             return None
-        item = index.internalPointer()
-        if index.parent().isValid():
-            if index.column() == 3:
-                fusion = StandardDataService.get_by_id('fusions',{'fusion_id': item.data(3)})[1]
-                return fusion if fusion else 'Ошибка!'
-        return item.data(index.column())
 
-    def realdata(self, index: QModelIndex, role: int) -> Any:
-        if not index.isValid():
-            return None
-        if role != Qt.DisplayRole and role != Qt.EditRole and role != Qt.BackgroundRole and role != Qt.ForegroundRole:
-            return None
         item = index.internalPointer()
+        
+        if role == Qt.TextAlignmentRole and index.column() not in [1, 2, 8]:
+            return Qt.AlignHCenter
+
         return item.data(index.column())
 
     def setupModelData(self):
         for article in StandardDataService.get_table('articles'):
-            article_id, product_id, nomen, rent = article
-            rent = ['Нет', 'Да'][rent]
-            self.appendRow([product_id, nomen, rent, None, None, None, None, None, None, None, article_id, False], QModelIndex())
+            article_id, name, _ = article
+            self.appendRow([article_id, name, None, None, None, None, None, None, None, None, False], QModelIndex())
 
             # Получение индекса только что добавленной записи изделия
             parent = self.index(0, 0, QModelIndex())
-            detail = StandardDataService.get_by_field('details', product_id=product_id)
+            detail = StandardDataService.get_by_field('details', Field('article_id', article_id))
             
             # Для удаления из списка изеделий без заготовок
             if not detail:
@@ -653,13 +741,13 @@ class ComplectsModel(TreeModel):
             
             # Выполнение для всех деталей, связанных с заданной ведомостью
             for sub_line in detail:
-                detail_id, _, fusion_id, name, l, w, d, amount, priority, direction_id = sub_line
-                self.appendRow([product_id, name, None, fusion_id, l, w, d, amount, priority, direction_id, detail_id, False], parent)
+                detail_id, _, fusion_id, direction_id, name, l, w, d, amount, priority = sub_line
+                self.appendRow([article_id, name, fusion_id, l, w, d, amount, priority, direction_id, detail_id, False], parent)
 
 
 class OrderInformationComplectsModel(TreeModel):
 
-    def __init__(self, headers: list, parent: typing.Optional[QObject] = None):
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
         super(OrderInformationComplectsModel, self).__init__(headers, parent=parent)
         self.__order_id = None
 
@@ -686,36 +774,30 @@ class OrderInformationComplectsModel(TreeModel):
     def data(self, index: QModelIndex, role: int) -> Any:
         if not index.isValid():
             return None
-        if role != Qt.DisplayRole and role != Qt.EditRole and role != Qt.BackgroundRole and role != Qt.ForegroundRole:
+        if role != Qt.DisplayRole and role != Qt.EditRole and role != Qt.TextAlignmentRole and role != Qt.BackgroundRole:
             return None
+
         item = index.internalPointer()
-        status_id = item.data(2)
-        fusion_id = item.data(3)
-        direction_id = item.data(9)
-        if index.parent().isValid():
-            if role == Qt.BackgroundRole:
-                background = StandardDataService.get_by_id('complects_statuses', {'status_id': status_id})[2]
-                return QBrush(QColor(background))
-            if role == Qt.ForegroundRole:
-                foreground = StandardDataService.get_by_id('complects_statuses', {'status_id': status_id})[3]
-                return QBrush(QColor(foreground))
-            if index.column() == 2:
-                status = StandardDataService.get_by_id('complects_statuses', {'status_id': status_id})[1]
-                return status if status else 'Ошибка!'
-            if index.column() == 3:
-                fusion = StandardDataService.get_by_id('fusions', {'fusion_id': fusion_id})[1]
-                return fusion if fusion else 'Ошибка!'
-            if index.column() == 9:
-                direction = StandardDataService.get_by_id('directions', {'direction_id': direction_id})[1]
-                return direction if direction else 'Ошибка!'
-        return item.data(index.column())
-    
-    def realdata(self, index: QModelIndex, role: int) -> Any:
-        if not index.isValid():
-            return None
-        if role != Qt.DisplayRole and role != Qt.EditRole and role != Qt.BackgroundRole and role != Qt.ForegroundRole:
-            return None
-        item = index.internalPointer()
+
+        if role == Qt.TextAlignmentRole:
+            if index.column() in [4, 5, 6, 7, 8]:
+                return Qt.AlignHCenter
+            else:
+                return Qt.AlignLeft
+
+        if role == Qt.BackgroundRole:
+            if item.data(2):    
+                if int(item.data(2)) == 2:
+                    return QColor('#a2ff85')
+                if int(item.data(2)) == 3:
+                    return QColor('#fa6464')
+                if int(item.data(2)) == 4:
+                    return QColor('#ffff88')
+                if int(item.data(2)) == 5:
+                    return QColor('#ffb34d')
+                if int(item.data(2)) == 6:
+                    return QColor('#bbdaff')
+
         return item.data(index.column())
 
     def clear(self):
@@ -726,113 +808,41 @@ class OrderInformationComplectsModel(TreeModel):
     def setupModelData(self):
         if self.root_item.childCount():
             self.clear()
-        data = OrderDataService.complects({'order_id': self.__order_id})
-        for article in data:
-            article_id, nomenclature = article
-            self.appendRow([nomenclature, article_id, None, None, None, None, None, None, None, None], QModelIndex())
+        
+        complects = OrderDataService.complects(Field('order_id', self.__order_id))
+        for article in complects:
+            article_id, name = article
+            self.appendRow([name, article_id, None, None, None, None, None, None, None, None], QModelIndex())
 
             # Получение индекса только что добавленной записи изделия
             parent = self.index(0, 0, QModelIndex())
-            detail = data[article]            
+            detail = complects[article]            
 
             # Выполнение для всех деталей, связанных с заданной ведомостью
             for sub_line in detail:
-                detail_id, fusion_id, name, l, w, d, amount, priority, direction_id, status_id = sub_line
+                detail_id, fusion_id, direction_id, status_id, name, l, w, d, amount, priority = sub_line
                 self.appendRow([name, detail_id, status_id, fusion_id, l, w, d, amount, priority, direction_id], parent)
 
 
-class ProductInformationFilterProxyModel(QSortFilterProxyModel):
-
+class CatalogFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
-        super(ProductInformationFilterProxyModel, self).__init__(parent)
-        self.product_id_filter = ''
-        self.designtaion_filter = ''
-        self.nomenclature_filter = ''
-        self.rent_filter = ''
-        self.type_filter = ''
-
-    def filterAcceptsRow(self, sourceRow: int,
-                         sourceParent: QModelIndex) -> bool:
-        index = self.sourceModel().index(sourceRow, 0, sourceParent)
-        if index.parent().isValid():
-            nomenclature = self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 2, sourceParent),
-                Qt.DisplayRole
-            )
-            rent = self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 3, sourceParent),
-                Qt.DisplayRole
-            )
-            return self.nomenclature_filter in nomenclature and \
-                self.rent_filter in rent
-        else:
-            product_id = str(self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 0, QModelIndex()),
-                Qt.DisplayRole)
-            )
-            product_type = self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 1, QModelIndex()),
-                Qt.DisplayRole
-            )
-            designation = self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 2, QModelIndex()),
-                Qt.DisplayRole
-            )
-            return self.type_filter in product_type and \
-                self.product_id_filter in product_id and \
-                self.designtaion_filter in designation
-
-    @pyqtSlot(str)
-    def register(self, filter: str):
-        self.product_id_filter = filter
-        self.invalidateFilter()
-
-    @pyqtSlot(str)
-    def designation(self, filter: str):
-        self.designtaion_filter = filter
-        self.invalidateFilter()
-
-    @pyqtSlot(str)
-    def nomenclature(self, filter: str):
-        self.nomenclature_filter = filter
-        self.invalidateFilter()
-
-    @pyqtSlot(int)
-    def rent(self, filter: int):
-        if filter:
-            self.rent_filter = 'Да'
-        else:
-            self.rent_filter = ''
-        self.invalidateFilter()
-
-    @pyqtSlot(str)
-    def type(self, filter: str):
-        if filter == 'Все изделия':
-            filter = ''
-        self.type_filter = filter
-        self.invalidateFilter()
-
-
-class ArticleInformationFilterProxyModel(QSortFilterProxyModel):
-
-    def __init__(self, parent=None):
-        super(ArticleInformationFilterProxyModel, self).__init__(parent)
-        self.nomenclature_filter = ''
+        super(CatalogFilterProxyModel, self).__init__(parent)
+        self.name_filter = str('')
 
     def filterAcceptsRow(self, sourceRow: int,
                          sourceParent: QModelIndex) -> bool:
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.parent().isValid():
-            nomenclature = self.sourceModel().data(
+            name = self.sourceModel().data(
                 self.sourceModel().index(sourceRow, 1, QModelIndex()),
                 Qt.DisplayRole
             )
-            return self.nomenclature_filter in nomenclature
+            return self.name_filter in name
         return True
 
     @pyqtSlot(str)
-    def nomenclature(self, filter: str):
-        self.nomenclature_filter = filter
+    def name(self, filter: str):
+        self.name_filter = filter
         self.invalidateFilter()
 
 
@@ -842,13 +852,6 @@ class OrderComplectsFilterProxyModel(QSortFilterProxyModel):
                          sourceParent: QModelIndex) -> bool:
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.parent().isValid():
-            return self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 11, QModelIndex()),
-                Qt.DisplayRole
-            )
+            return self.sourceModel().data(self.sourceModel().index(sourceRow, 10, QModelIndex()), Qt.DisplayRole)
         else:
-            return self.sourceModel().data(
-                self.sourceModel().index(sourceRow, 11, index.parent()),
-                Qt.DisplayRole
-            )
-        return False
+            return self.sourceModel().data(self.sourceModel().index(sourceRow, 10, index.parent()), Qt.DisplayRole)

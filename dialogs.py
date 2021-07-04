@@ -2,14 +2,12 @@ import math
 import logging
 import typing
 from datetime import datetime
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 from PyQt5.QtCore import (
-    QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex
+    QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex, QObject
 )
-from PyQt5.QtGui import (
-    QIntValidator
-)
+from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
     QDialog, QCompleter, QGraphicsScene, QMessageBox, QMenu, QToolTip, QWidget,
     QGraphicsDropShadowEffect, QProgressDialog, QAction
@@ -24,17 +22,16 @@ from sequential_mh.bpp_dsc.tree import (
 # from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 from sequential_mh.bpp_dsc.support import dfs
 from gui import (
-    ui_add_product_dialog, ui_add_article_dialog, ui_add_detail_dialog,
+    ui_add_article_dialog, ui_add_detail_dialog,
     ui_add_order_dialog, ui_add_ingot_dialog, ui_full_screen,
     ui_ready_ingot_dialog
 )
 from service import (
-    DirectionDataService, FusionDataService, OrderDataService,
-    ProductDataService, StandardDataService
+    OrderDataService, StandardDataService, CatalogDataService, Field
 )
 from models import (
-   ArticleInformationFilterProxyModel, OrderComplectsFilterProxyModel,
-   ComplectsModel, IngotModel
+   OrderComplectsFilterProxyModel, ComplectsModel, IngotModel, 
+   CatalogFilterProxyModel
 )
 from widgets import (
     IngotSectionDelegate
@@ -47,7 +44,7 @@ Number = Union[int, float]
 Sizes = tuple[Number, Number, Number]
 
 
-class ProductDialog(QDialog):
+class ArticleDialog(QDialog):
     """Диалоговое окно добавления новой продукции.
 
     После добавления новой продукции посылает сигнал с параметрами для того,
@@ -56,95 +53,8 @@ class ProductDialog(QDialog):
     
     recordSavedSuccess = pyqtSignal(list)
 
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.ui = ui_add_product_dialog.Ui_Dialog()
-        self.ui.setupUi(self)
-        self.setWindowTitle('Добавление продукции')
-
-        # Таймер для подсветки ошибки
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.cooldown)
-        self.duration = 1500
-        self.tip = "Поле необходимо заполнить"
-
-        # Валидация полей и установка дополнений
-        self.ui.register_number.setValidator(QIntValidator(self.ui.register_number))
-        type_list = ProductDataService.type_list()
-        product_completer = QCompleter(type_list, self)
-        product_completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self.ui.product_type.setCompleter(product_completer)
-
-        self.ui.add.clicked.connect(self.confirm_adding)
-        self.ui.ok.clicked.connect(self.accept)
-        self.ui.cancel.clicked.connect(self.reject)
-
-    def confirm_adding(self):
-        """Добавление данных о новой продукции в базу.
-
-        Данные собираются с формы диалогового окна и проверяются на заполнение.
-        """
-        product_id = self.ui.register_number.text()
-        product_type = self.ui.product_type.text()
-        designation = self.ui.designation.text()
-
-        # Если номер ведомости, тип и описание заполнены, то можно добавлять
-        if product_id and product_type and designation:
-            success = StandardDataService.save_record(
-                'products',
-                product_id=product_id,
-                product_type=product_type,
-                designation=designation
-            )
-            if success:
-                QMessageBox.information(
-                    self,
-                    f'Продукция {product_id}',
-                    f'Продукция с номером ведомости №{product_id}\n'
-                    'успешно добавлена!',
-                    QMessageBox.Ok
-                )
-                self.recordSavedSuccess.emit([product_id, product_type, designation])
-            else:
-                QMessageBox.critical(
-                    self,
-                    'Ошибка добавления',
-                    f'Продукция с номером ведомости №{product_id}\n'
-                    'не была добавлена в базу из-за программной ошибки!',
-                    QMessageBox.Ok
-                )
-        else:
-            self.timer.start(self.duration)
-            self.highlight()
-
-    def highlight(self):
-        if not self.ui.register_number.text():
-            QToolTip.showText(self.ui.register_number.mapToGlobal(QPoint(0, 0)), self.tip, self.ui.register_number, msecShowTime=self.duration)
-            self.ui.register_number.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
-        if not self.ui.product_type.text():
-            QToolTip.showText(self.ui.product_type.mapToGlobal(QPoint(0, 0)), self.tip, self.ui.product_type, msecShowTime=self.duration)
-            self.ui.product_type.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
-        if not self.ui.designation.text():
-            QToolTip.showText(self.ui.designation.mapToGlobal(QPoint(0, 0)), self.tip, self.ui.designation, msecShowTime=self.duration)
-            self.ui.designation.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
-
-    def cooldown(self):
-        self.ui.register_number.setStyleSheet('')
-        self.ui.product_type.setStyleSheet('')
-        self.ui.designation.setStyleSheet('')
-
-
-class ArticleDialog(QDialog):
-    """Диалоговое окно добавления нового изделия.
-
-    После добавления нового изделия посылает сигнал с параметрами для того,
-    чтобы основное окно каталога обновило данные в модели.
-    """
-
-    recordSavedSuccess = pyqtSignal(list)
-
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, parent: Optional[QObject] = None):
+        super(ArticleDialog, self).__init__(parent)
         self.ui = ui_add_article_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowTitle('Добавление изделия')
@@ -152,68 +62,54 @@ class ArticleDialog(QDialog):
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
-        self.duration = 1500
-        self.tip = "Укажите артикул"
+
+        # Валидация полей и установка дополнений
+        self.ui.register.setValidator(QIntValidator(self.ui.register))
+        product_completer = QCompleter(CatalogDataService.type_list(), self)
+        product_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.ui.type.setCompleter(product_completer)
 
         self.ui.add.clicked.connect(self.confirm_adding)
-        self.ui.ok.clicked.connect(self.accept)
         self.ui.cancel.clicked.connect(self.reject)
 
-    def set_title_data(self, v1: str, v2: str, v3: str):
-        """Установка данных о продукции.
-
-        :param v1: Номер ведомости
-        :type v1: str
-        :param v2: Описание продукции
-        :type v2: str
-        :param v3: Тип продукции
-        :type v3: str
-        """
-        self.ui.register_number.setText(v1)
-        self.ui.designation.setText(v2)
-        self.ui.product_type.setText(v3)
-
     def confirm_adding(self):
-        """Добавление данных о новом изделии в базу.
+        """Добавление данных о новой продукции в базу.
 
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
-        nomenclature = self.ui.nomenclature.text()
-        rent = int(self.ui.rent.isChecked())
-        product_id = int(self.ui.register_number.text())
-        type_ = self.ui.product_type.text()
+        id = self.ui.register_number.text()
+        type = self.ui.type.text()
+        name = self.ui.name.text()
 
-        # Если заполнена номенклатура и номер ведомости
-        if nomenclature:
-            success = StandardDataService.save_record(
-                'articles', product_id=product_id, nomenclature=nomenclature, rent=rent
-            )
-            if success:
-                QMessageBox.information(
-                    self,
-                    f'Продукция {product_id}',
-                    f'Изделие {nomenclature}\nуспешно добавлено!',
-                    QMessageBox.Ok
-                )
-                self.recordSavedSuccess.emit([product_id, type_, nomenclature, rent])
-            else:
-                QMessageBox.critical(
-                    self,
-                    'Ошибка добавления',
-                    f'Изделие {nomenclature}\nне было добавлено в базу '
-                    'из-за программной ошибки!',
-                    QMessageBox.Ok
-                )
-        else:
-            self.timer.start(self.duration)
+        # Если номер ведомости, тип и описание заполнены, то можно добавлять
+        if not id or not type or not name:
+            self.timer.start(1500)
             self.highlight()
+            return
+        
+        id = StandardDataService.save_record('articles', id=id, type=type, name=name)
+        if not id:
+            QMessageBox.critical(self, 'Ошибка добавления', f'Изделие не было добавлено в базу!', QMessageBox.Ok)
+            return
+        
+        QMessageBox.information(self, f'Изделие {id}', f'Изделие №{id} успешно добавлено!', QMessageBox.Ok)
+        self.recordSavedSuccess.emit([id, name, None])
 
     def highlight(self):
-        QToolTip.showText(self.ui.nomenclature.mapToGlobal(QPoint(0, 0)), self.tip, self.ui.nomenclature, msecShowTime=self.duration)
-        self.ui.nomenclature.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
+        if not self.ui.register_number.text():
+            QToolTip.showText(self.ui.register_number.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.register_number)
+            self.ui.register_number.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
+        if not self.ui.type.text():
+            QToolTip.showText(self.ui.type.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.type)
+            self.ui.type.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
+        if not self.ui.name.text():
+            QToolTip.showText(self.ui.name.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.name)
+            self.ui.name.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
 
     def cooldown(self):
-        self.ui.nomenclature.setStyleSheet('')
+        self.ui.register_number.setStyleSheet('')
+        self.ui.type.setStyleSheet('')
+        self.ui.name.setStyleSheet('')
 
 
 class DetailDialog(QDialog):
@@ -225,95 +121,62 @@ class DetailDialog(QDialog):
 
     recordSavedSuccess = pyqtSignal(list)
 
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, name: str, id: int, parent: Optional[QObject] = None):
+        super(DetailDialog, self).__init__(parent)
         self.ui = ui_add_detail_dialog.Ui_Dialog()
         self.ui.setupUi(self)
-        self.setWindowTitle('Добавление заготовки')
+        self.setWindowTitle(f'Добавление заготовки - {name}')
+        
+        # Идентификатор изделия, к которому привязываются заготовки
+        self.article_id = id
 
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.cooldown)
-        self.duration = 1500
-        self.tip = "Укажите название заготовки"
-
-        # Настройка списка со сплавами
-        self.fusions = {}
-        for fusion in FusionDataService.fusions_list():
-            self.fusions[fusion['name']] = fusion['fusion_id']
-        self.ui.fusions.addItems(list(self.fusions.keys()))
 
         # Настройка списка с направлениями
-        self.directions = {}
-        for direction in DirectionDataService.directions_list():
-            self.directions[direction['name']] = direction['direction_id']
-        self.ui.directions.addItems(list(self.directions.keys()))
+        self.directions_list = CatalogDataService.directions_list()
+        self.ui.direction.addItems(list(self.directions_list.keys()))
+
+        # Настройка списка со сплавами
+        self.fusions_list = CatalogDataService.fusions_list()
+        self.ui.fusion.addItems(list(self.fusions_list.keys()))
 
         self.ui.add.clicked.connect(self.confirm_adding)
-        self.ui.ok.clicked.connect(self.accept)
         self.ui.cancel.clicked.connect(self.reject)
-
-    def set_title_data(self, v1: str, v2: str, v3: str):
-        """Установка данных о продукции.
-
-        :param v1: Номер ведомости
-        :type v1: str
-        :param v2: Описание продукции
-        :type v2: str
-        :param v3: Тип продукции
-        :type v3: str
-        """
-        self.ui.register_number.setText(v1)
-        self.ui.designation.setText(v2)
-        self.ui.product_type.setText(v3)
+        self.timer.timeout.connect(self.cooldown)
 
     def confirm_adding(self):
-        """Добавление данных о новой заготовке в базу.
-
-        Данные собираются с формы диалогового окна и проверяются на заполнение.
-        """
         name = self.ui.name.text()
-        product_id = int(self.ui.register_number.text())
-        fusion = self.fusions[self.ui.fusions.currentText()]
-        height = self.ui.height.value()
-        width = self.ui.width.value()
-        depth = self.ui.depth.value()
-        direction = self.directions[self.ui.directions.currentText()]
-        priority = self.ui.priority.value()
+        article_id = self.article_id
+        fusion_id = self.fusions_list[self.ui.fusion.currentText()]
+        direction_id = self.directions_list[self.ui.direction.currentText()]
+        l = self.ui.length.value()
+        w = self.ui.width.value()
+        h = self.ui.height.value()
         amount = self.ui.amount.value()
+        priority = self.ui.priority.value()
 
-        # Если имя, габаритные размеры и количество заполнены, то добавляем
-        if name:
-            success = StandardDataService.save_record(
-                'details', name=name, product_id=product_id,
-                fusion_id=fusion, height=height, width=width, depth=depth,
-                amount=amount, priority=priority, direction_id=direction
-            )
-            if success:
-                QMessageBox.information(
-                    self,
-                    f'Продукция {product_id}',
-                    f'Деталь {name}\nуспешно добавлена!',
-                    QMessageBox.Ok
-                )
-                self.recordSavedSuccess.emit([
-                    name, self.ui.fusions.currentText(), height, width, depth, amount,
-                    priority, self.ui.directions.currentText(), product_id
-                ])
-            else:
-                QMessageBox.critical(
-                    self,
-                    'Ошибка добавления',
-                    f'Деталь {name}\nне была добавлена в базу '
-                    'из-за программной ошибки!',
-                    QMessageBox.Ok
-                )
-        else:
-            self.timer.start(self.duration)
+        # Если имя заполнено, то добавляем
+        if not name:
+            self.timer.start(1500)
             self.highlight()
+            return
+
+        detail_id = StandardDataService.save_record(
+            'details', name=name, article_id=article_id, fusion_id=fusion_id, 
+            direction_id=direction_id, length=l, width=w, height=h,
+            amount=amount, priority=priority
+        )
+        
+        if not detail_id:
+            QMessageBox.critical(self, 'Ошибка добавления', f'Деталь {name}не была добавлена в базу!', QMessageBox.Ok)
+            return
+
+        QMessageBox.information(self, f'Изделие {article_id}', f'Деталь "{name}" успешно добавлена!', QMessageBox.Ok)
+        self.recordSavedSuccess.emit([name, fusion_id, l, w, h, amount, priority, direction_id, detail_id])
 
     def highlight(self):
-        QToolTip.showText(self.ui.name.mapToGlobal(QPoint(0, 0)), self.tip, self.ui.name, msecShowTime=self.duration)
+        QToolTip.showText(self.ui.name.mapToGlobal(QPoint(0, 0)), "Укажите название заготовки", self.ui.name)
         self.ui.name.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
 
     def cooldown(self):
@@ -342,15 +205,15 @@ class OrderAddingDialog(QDialog):
         # ID (int) - идентификатор конкретного изделия или заготовки
         # ADDED (bool) - статус добавления этой заготовки или изделия в заказ
         self.headers = [
-            'Ведомость', 'Название', 'Аренда', 'Сплав', 'Длина', 'Ширина',
-            'Толщина', 'Количество', 'Приоритет', 'Направление', 'ID', 'ADDED'
+            'Ведомость', 'Название', 'Сплав', 'Длина', 'Ширина', 'Толщина',
+            'Количество', 'Приоритет', 'Направление', 'Идентификатор', 'Добавлено'
         ]
-        self.catalog_headers = self.headers[:4]
-        self.added_headers = self.headers[:2] + self.headers[3:9]
+        self.catalog_headers = self.headers[:3]
+        self.added_headers = self.headers[:9]
         self.model = ComplectsModel(self.headers)
 
         # Модель данных со свободными слитками
-        self.ingot_model = IngotModel()
+        self.ingot_model = IngotModel('unused')
         self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
         self.ui.ingotsView.setModel(self.ingot_model)
         self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
@@ -359,7 +222,7 @@ class OrderAddingDialog(QDialog):
         self.predicted_ingots = {}
 
         # Прокси-модель для поиска нужных изделий (фильтр по названию)
-        self.search_proxy = ArticleInformationFilterProxyModel()
+        self.search_proxy = CatalogFilterProxyModel()
         self.search_proxy.setSourceModel(self.model)
         self.ui.treeView_1.setModel(self.search_proxy)
 
@@ -370,29 +233,24 @@ class OrderAddingDialog(QDialog):
 
         # Назначение меню кнопке
         self.menu = QMenu()
-        self.fusions = {}
-        for fusion in FusionDataService.fusions_list():
-            self.fusions[fusion['name']] = fusion['fusion_id']
+        self.fusions = CatalogDataService.fusions_list()
+        for fusion in self.fusions:
             # Под каждый сплав создаётся отдельное событие выпадающего меню
-            action: QAction = self.menu.addAction(fusion[1])
-            action.setObjectName(fusion['name'])
+            action: QAction = self.menu.addAction(fusion)
+            action.setObjectName(fusion)
             action.triggered.connect(self.calculate_ingot)
         self.ui.pushButton.setMenu(self.menu)
 
         # Выравниваем ширину колонок левого представления под контент
         for column in range(self.model.columnCount(QModelIndex())):
             self.ui.treeView_1.resizeColumnToContents(column)
+        self.ui.treeView_2.setColumnWidth(1, 170)
+        self.ui.treeView_2.setColumnWidth(2, 120)
 
         # Скрываем ненужные нам колонки в соответствии со списками заголовков
         for index, column in enumerate(self.headers):
             self.ui.treeView_1.setColumnHidden(index, column not in self.catalog_headers)
             self.ui.treeView_2.setColumnHidden(index, column not in self.added_headers)
-
-        # Связываем сигналы и слоты
-        self.customContextMenuRequested.connect(self.showContextMenu)
-        self.ui.searchName.textChanged.connect(self.search_proxy.nomenclature)
-        self.ui.add.clicked.connect(self.confirm_adding)
-        self.ui.cancel.clicked.connect(self.reject)
 
         # Теневой эффект у разделителя окна
         self.shadow_effect = QGraphicsDropShadowEffect()
@@ -402,7 +260,13 @@ class OrderAddingDialog(QDialog):
         self.shadow_effect.setBlurRadius(13)
         self.ui.splitter.handle(1).setGraphicsEffect(self.shadow_effect)
 
-    def showContextMenu(self, point: QPointF):
+        # Связываем сигналы и слоты
+        self.customContextMenuRequested.connect(self.show_context_menu)
+        self.ui.searchName.textChanged.connect(self.search_proxy.name)
+        self.ui.add.clicked.connect(self.confirm_adding)
+        self.ui.cancel.clicked.connect(self.reject)
+
+    def show_context_menu(self, point: QPointF):
         """Метод вызова контекстного меню.
 
         Отвечает за добавление и удаление заготовок и изделий из комплектации
@@ -437,17 +301,17 @@ class OrderAddingDialog(QDialog):
         # HACK: если не перенести индекс на первую колонку, работать не будет
         index = self.model.index(index.row(), 0, parent)
 
-        parent_state_index = self.model.index(index.row(), 11, parent)
+        parent_state_index = self.model.index(index.row(), 10, parent)
         self.model.setData(parent_state_index, True, Qt.EditRole)
 
         for row in range(self.model.rowCount(index)):
-            child_state_index = self.model.index(row, 11, index)
+            child_state_index = self.model.index(row, 10, index)
             self.model.setData(child_state_index, True, Qt.EditRole)
 
         for column in range(self.model.columnCount(QModelIndex())):
             self.ui.treeView_2.resizeColumnToContents(column)
         # Колонка со сплавами по другому размер не меняет
-        self.ui.treeView_2.setColumnWidth(3, 80)
+        self.ui.treeView_2.setColumnWidth(2, 93)
         self.ui.treeView_2.expandAll()
 
     def add_detail_to_complect(self):
@@ -457,16 +321,16 @@ class OrderAddingDialog(QDialog):
         # HACK: если не перенести индекс на первую колонку, работать не будет
         index = self.model.index(index.row(), 0, parent)
 
-        child_state_index = self.model.index(index.row(), 11, parent)
+        child_state_index = self.model.index(index.row(), 10, parent)
         self.model.setData(child_state_index, True, Qt.EditRole)
 
-        parent_state_index = self.model.index(parent.row(), 11, QModelIndex())
+        parent_state_index = self.model.index(parent.row(), 10, QModelIndex())
         self.model.setData(parent_state_index, True, Qt.EditRole)
 
         for column in range(self.model.columnCount(QModelIndex())):
             self.ui.treeView_2.resizeColumnToContents(column)
         # Колонка со сплавами по другому размер не меняет
-        self.ui.treeView_2.setColumnWidth(3, 80)
+        self.ui.treeView_2.setColumnWidth(2, 93)
         self.ui.treeView_2.expandAll()
 
     def remove_article_from_complect(self):
@@ -476,12 +340,12 @@ class OrderAddingDialog(QDialog):
         # HACK: если не перенести индекс на первую колонку, работать не будет
         index = self.model.index(index.row(), 0, parent)
 
-        parent_state_index = self.model.index(index.row(), 11, parent)
+        parent_state_index = self.model.index(index.row(), 10, parent)
         self.model.setData(parent_state_index, False, Qt.EditRole)
 
         # Если убирается изделие, то убираются и все его заготовки
         for row in range(self.model.rowCount(index)):
-            child_state_index = self.model.index(row, 11, index)
+            child_state_index = self.model.index(row, 10, index)
             self.model.setData(child_state_index, False, Qt.EditRole)
 
     def remove_detail_from_complect(self):
@@ -492,11 +356,11 @@ class OrderAddingDialog(QDialog):
         index = self.model.index(index.row(), 0, parent)
 
         # Если является последней убираемой заготовкой, то убрать и изделие
-        child_state_index = self.model.index(index.row(), 11, parent)
+        child_state_index = self.model.index(index.row(), 10, parent)
         self.model.setData(child_state_index, False, Qt.EditRole)
         if not self.article_have_details(parent):
             row = parent.row()
-            parent_state_index = self.model.index(row, 11, QModelIndex())
+            parent_state_index = self.model.index(row, 10, QModelIndex())
             self.model.setData(parent_state_index, False, Qt.EditRole)
 
     def article_have_details(self, index: QModelIndex) -> bool:
@@ -509,7 +373,7 @@ class OrderAddingDialog(QDialog):
         """
         rows_states = []
         for row in range(self.model.rowCount(index)):
-            row_index = self.model.index(row, 11, index)
+            row_index = self.model.index(row, 10, index)
             rows_states.append(self.model.data(row_index, Qt.DisplayRole))
         return any(rows_states)
 
@@ -526,72 +390,73 @@ class OrderAddingDialog(QDialog):
         progress.forceShow()
         # FIXME: получить имя заказа
         # FIXME: а имени может и не быть, расчёт слитков происходит при добавлении заказа
-        order_name = 'ЗАКАЗ'
+        order_name = 'НОВЫЙ ЗАКАЗ'
         progress.setLabelText('Процесс расчета слитка под ПЗ...')
 
-        if self.choice_proxy.rowCount(QModelIndex()):
-            details = self.get_details_kit(material)
-            if details.is_empty():
-                # TODO: уведомить пользователя о том, что нет таких заготовок
-                progress.close()
-                return
+        if not self.choice_proxy.rowCount(QModelIndex()):
+            QMessageBox.critical(self, 'Ошибка добавления', 'Должно быть добавлено хотя бы одно изделие!', QMessageBox.Ok)
+            return
+        
+        details = self.get_details_kit(material)
+        if details.is_empty():
+            QMessageBox.information(self, 'Добавление слитка', 'Слитки такого сплава не найдены.', QMessageBox.Ok)
+            progress.close()
+            return
+        
+        log_operation_info(
+            'start_ic',
+            {
+                'name': order_name, 'alloy': fusion_name,
+                'blanks': details.qty(), 'heights': len(details.keys())
+            },
+        )
+        
+        try:
+            sizes, tree, efficiency = self.predict_size(
+                material, details, progress=progress
+            )
             log_operation_info(
-                'start_ic',
+                'end_ic',
                 {
                     'name': order_name, 'alloy': fusion_name,
-                    'blanks': details.qty(), 'heights': len(details.keys())
+                    'size': f'{sizes[0]}x{sizes[1]}x{sizes[2]}',
+                    'efficiency': efficiency
                 },
             )
-            try:
-                sizes, tree, efficiency = self.predict_size(
-                    material, details, progress=progress
-                )
-                log_operation_info(
-                    'end_ic',
-                    {
-                        'name': order_name, 'alloy': fusion_name,
-                        'size': f'{sizes[0]}x{sizes[1]}x{sizes[2]}',
-                        'efficiency': efficiency
-                    },
-                )
-            except ForcedTermination:
-                log_operation_info(
-                    'user_inter_ic', {'name': order_name, 'alloy': fusion_name}
-                )
-                QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
-                return
-            except Exception as exception:
-                log_operation_info(
-                    'error_ic', {
-                        'name': order_name, 'alloy': fusion_name, 'exception': exception
-                    }
-                )
-                QMessageBox.critical(
-                    self, 'Расчёт слитка завершился с ошибкой', f'{exception}', QMessageBox.Ok
-                )
-                return
-            else:
-                data_row = {
-                    'ingot_id': 0,
-                    'fusion_id': self.fusions[fusion_name],
-                    'ingot_part': None,
-                    'ingot_size': sizes,
-                    'status_id': 4
-                }
-                for row in range(self.ingot_model.rowCount()):
-                    ingot_index = self.ingot_model.index(row, 0, QModelIndex())
-                    if ingot_index.data(Qt.DisplayRole)['status_id'] == 1:
-                        continue
-                    if self.fusions[fusion_name] == ingot_index.data(Qt.DisplayRole)['fusion_id']:
-                        self.ingot_model.deleteRow(row, QModelIndex())
-                        break
-                self.ingot_model.appendRow(data_row)
-                self.predicted_ingots[self.fusions[fusion_name]] = {'tree': tree.root, 'efficiency': round(efficiency * 100, 2)}
-            progress.close()
-        else:
-            QMessageBox.critical(
-                self, 'Ошибка добавления', 'Должно быть добавлено хотя бы одно изделие!', QMessageBox.Ok
+        except ForcedTermination:
+            log_operation_info(
+                'user_inter_ic', {'name': order_name, 'alloy': fusion_name}
             )
+            QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
+            return
+        except Exception as exception:
+            log_operation_info(
+                'error_ic', {
+                    'name': order_name, 'alloy': fusion_name, 'exception': exception
+                }
+            )
+            QMessageBox.critical(
+                self, 'Расчёт слитка завершился с ошибкой', f'{exception}', QMessageBox.Ok
+            )
+            return
+        else:
+            data_row = {
+                'id': 0,
+                'status_id': 4,
+                'fusion_id': self.fusions[fusion_name],
+                'batch': None,
+                'size': sizes,
+            }
+            for row in range(self.ingot_model.rowCount()):
+                ingot_index = self.ingot_model.index(row, 0, QModelIndex())
+                if ingot_index.data(Qt.DisplayRole)['status_id'] == 1:
+                    continue
+                if self.fusions[fusion_name] == ingot_index.data(Qt.DisplayRole)['fusion_id']:
+                    self.ingot_model.deleteRow(row, QModelIndex())
+                    break
+            self.ingot_model.appendRow(data_row)
+            self.predicted_ingots[self.fusions[fusion_name]] = {'tree': tree.root, 'efficiency': round(efficiency * 100, 2)}
+        progress.close()
 
     def get_details_kit(self, material: Material) -> Kit:
         details = []
@@ -599,28 +464,33 @@ class OrderAddingDialog(QDialog):
         for row in range(self.choice_proxy.rowCount(QModelIndex())):
             parent_proxy_index = self.choice_proxy.index(row, 0, QModelIndex())
             parent = self.choice_proxy.mapToSource(parent_proxy_index)
+            
             # HACK: без этого работать не будет
             parent = self.model.index(parent.row(), 0, QModelIndex())
             parent_name_index = self.model.index(parent.row(), 1, QModelIndex())
             parent_name = self.model.data(parent_name_index, Qt.DisplayRole)
+            
             # Переходим по всем заготовкам в изделии
             for sub_row in range(self.model.rowCount(parent)):
-                detail_fusion = self.model.data(self.model.index(sub_row, 3, parent), Qt.DisplayRole)
+                fusion_id = int(self.model.data(self.model.index(sub_row, 2, parent), Qt.DisplayRole))
+                detail_fusion = StandardDataService.get_by_id('fusions', Field('id', fusion_id))[1]
+                
                 # Если не совпадают сплав заготовки и выбранного слитка - пропускаем
                 if detail_fusion != material.name:
                     continue
+                
                 # Если заготовка выбрана <ADDED == True>
-                id_index = self.model.index(sub_row, 11, parent)
-                if self.model.data(id_index, Qt.DisplayRole):
+                added_index = self.model.index(sub_row, 10, parent)
+                if self.model.data(added_index, Qt.DisplayRole):
                     name: str = self.model.data(self.model.index(sub_row, 1, parent), Qt.DisplayRole)
-                    length = int(self.model.data(self.model.index(sub_row, 4, parent), Qt.DisplayRole))
-                    width = int(self.model.data(self.model.index(sub_row, 5, parent), Qt.DisplayRole))
-                    depth = float(self.model.data(self.model.index(sub_row, 6, parent), Qt.DisplayRole))
-                    sizes: Sizes = (length, width, depth)
-                    amount = int(self.model.data(self.model.index(sub_row, 7, parent), Qt.DisplayRole))
-                    priority = int(self.model.data(self.model.index(sub_row, 8, parent), Qt.DisplayRole))
-                    direction_id = int(self.model.realdata(self.model.index(sub_row, 9, parent), Qt.DisplayRole))
-                    direction_code = 3 if direction_id == 1 else 2
+                    length = int(self.model.data(self.model.index(sub_row, 3, parent), Qt.DisplayRole))
+                    width = int(self.model.data(self.model.index(sub_row, 4, parent), Qt.DisplayRole))
+                    height = float(self.model.data(self.model.index(sub_row, 5, parent), Qt.DisplayRole))
+                    sizes: Sizes = (length, width, height)
+                    amount = int(self.model.data(self.model.index(sub_row, 6, parent), Qt.DisplayRole))
+                    priority = int(self.model.data(self.model.index(sub_row, 7, parent), Qt.DisplayRole))
+                    direction_id = int(self.model.data(self.model.index(sub_row, 8, parent), Qt.DisplayRole))
+                    direction_code = 3 if direction_id == 0 else 2
                     direction = Direction(direction_code)
                     # Создаём заготовки из полученных данных
                     for _ in range(amount):
@@ -680,130 +550,92 @@ class OrderAddingDialog(QDialog):
         selected_indexes = self.ui.ingotsView.selectedIndexes()
 
         if self.repeatable_fusions(selected_indexes):
-            QMessageBox.critical(
-                self,
-                'Ошибка добавления',
-                'Выбраны слитки одинаковых сплавов.',
-                QMessageBox.Ok
-            )
+            QMessageBox.critical(self, 'Ошибка добавления', 'Выбраны слитки одинаковых сплавов.', QMessageBox.Ok)
             return
 
         # Если заполнено имя, выбран хотя бы один слиток и изделие
-        if order_name and selected_indexes and self.choice_proxy.rowCount(QModelIndex()):
-            creation_date = datetime.today().strftime("%d_%m_%Y")
-            success = StandardDataService.save_record(
-                'orders',
-                status_id=1,
-                name=order_name,
-                date=creation_date
-            )
-            if success:
-                order_id = OrderDataService.max_id()
-                used_fusions = []
-                planned_status = False
-                # Проходим по всем выбранным слиткам
-                for index in selected_indexes:
-                    current_ingot = self.ingot_model.data(index, Qt.DisplayRole)
-                    # Если текущий слиток <эфемерный>, то добавляем в базу
-                    if current_ingot['status_id'] == 4:
-                        predicted_tree = self.predicted_ingots[current_ingot['fusion_id']]['tree']
-                        predicted_efficiency = self.predicted_ingots[current_ingot['fusion_id']]['efficiency']
-                        current_ingot['ingot_id'] = StandardDataService.save_record(
-                            'ingots',
-                            fusion_id=current_ingot['fusion_id'],
-                            height=current_ingot['ingot_size'][0],
-                            width=current_ingot['ingot_size'][1],
-                            depth=current_ingot['ingot_size'][2],
-                            order_id=order_id,
-                            status_id=3,
-                            efficiency=predicted_efficiency
-                        )
-                        self.predictedIngotSaved.emit({'order_id': order_id, 'creation_date': creation_date}, current_ingot, predicted_tree)
-                        planned_status = True
-                    # Если текущий слиток <слиток>, то обновляем связку
-                    else:
-                        StandardDataService.update_record(
-                            'ingots',
-                            {'ingot_id': current_ingot['ingot_id']},
-                            order_id=order_id
-                        )
-                    used_fusions.append(current_ingot['fusion_id'])
-
-                # Добавляем записи о комплектации заказа в целом
-                for row in range(self.choice_proxy.rowCount(QModelIndex())):
-                    parent_proxy_index = self.choice_proxy.index(row, 0, QModelIndex())
-                    parent = self.choice_proxy.mapToSource(parent_proxy_index)
-
-                    # HACK: без этого работать не будет
-                    parent = self.model.index(parent.row(), 0, QModelIndex())
-
-                    article_id_index = self.model.index(parent.row(), 10, QModelIndex())
-                    article_id = self.model.data(article_id_index, Qt.DisplayRole)
-
-                    # Добавляем записи о заготовках в заказе
-                    for sub_row in range(self.model.rowCount(parent)):
-                        added_index = self.model.index(sub_row, 11, parent)
-
-                        if not self.model.data(added_index, Qt.DisplayRole):
-                            continue
-                        amount_index = self.model.index(sub_row, 7, parent)
-                        amount = int(self.model.data(amount_index, Qt.DisplayRole))
-                        priority_index = self.model.index(sub_row, 8, parent)
-                        priority = int(self.model.data(priority_index, Qt.DisplayRole))
-                        detail_id_index = self.model.index(sub_row, 10, parent)
-                        detail_id = int(self.model.data(detail_id_index, Qt.DisplayRole))
-                        fusion_id_index = self.model.index(sub_row, 3, parent)
-                        fusion_id = int(self.model.realdata(fusion_id_index, Qt.DisplayRole))
-                        status_id = 1 if fusion_id in used_fusions else 6
-                        StandardDataService.save_record(
-                            'complects',
-                            order_id=order_id,
-                            article_id=article_id,
-                            detail_id=detail_id,
-                            amount=amount,
-                            priority=priority,
-                            status_id=status_id
-                        )
-                QMessageBox.information(
-                    self,
-                    'Добавление заказа',
-                    f'Заказ {order_name} был успешно добавлен в базу!',
-                    QMessageBox.Ok
-                )
-                if planned_status:
-                    StandardDataService.update_record(
-                        'orders',
-                        {'order_id': order_id},
-                        status_id=6,
-                        efficiency=OrderDataService.efficiency({'order_id': order_id})
-                    )
-                pack = {
-                    'order_id': order_id,
-                    'status_id': 6 if planned_status else 1,
-                    'order_name': order_name,
-                    'current_depth': 0.0,
-                    'efficiency': OrderDataService.efficiency({'order_id': order_id}),
-                    'creation_date': datetime.today().strftime("%d_%m_%Y")
-                }
-                self.recordSavedSuccess.emit(pack)
-                logging.info('Заказ %(name)s добавлен в базу.', {'name': order_name})
-                self.accept()
-            else:
-                QMessageBox.critical(
-                    self,
-                    'Ошибка добавления',
-                    f'Заказ {order_name} не был добавлен в базу!',
-                    QMessageBox.Ok
-                )
-        else:
+        if not order_name or not selected_indexes or not self.choice_proxy.rowCount(QModelIndex()):
             QMessageBox.critical(
-                self,
-                'Ошибка добавления',
+                self, 'Ошибка добавления',
                 'Поле названия заказа обязательно должно быть заполнено!\n'
                 'Должен быть выбран хотя бы один слиток!\n'
-                'Должно быть добавлено хотя бы одно изделие!',
-                QMessageBox.Ok
+                'Должно быть добавлено хотя бы одно изделие!', QMessageBox.Ok
             )
+
+        creation_date = datetime.today().strftime("%d_%m_%Y")
+        order_id = StandardDataService.save_record('orders', status_id=1, name=order_name, date=creation_date)
+        
+        if not order_id:
+            QMessageBox.critical(self, 'Ошибка добавления', f'Заказ {order_name} не был добавлен в базу!', QMessageBox.Ok)
+            return
+
+        used_fusions = []
+        order_status = 1
+        # Проходим по всем выбранным слиткам
+        for index in selected_indexes:
+            ingot = self.ingot_model.data(index, Qt.DisplayRole)
+            # Если текущий слиток <эфемерный>, то добавляем в базу
+            if ingot['status_id'] == 4:
+                predicted_tree = self.predicted_ingots[ingot['fusion_id']]['tree']
+                predicted_efficiency = self.predicted_ingots[ingot['fusion_id']]['efficiency']
+                ingot['ingot_id'] = StandardDataService.save_record(
+                    'ingots', length=ingot['size'][0], width=ingot['size'][1], height=ingot['size'][2],
+                    order_id=order_id, status_id=3, efficiency=predicted_efficiency, fusion_id=ingot['fusion_id']
+                )
+                self.predictedIngotSaved.emit({'id': order_id, 'date': creation_date}, ingot, predicted_tree)
+                order_status = 3
+            # Если текущий слиток <слиток>, то обновляем связку
+            else:
+                StandardDataService.update_record('ingots', Field('id', ingot['id']), order_id=order_id)
+            used_fusions.append(ingot['fusion_id'])
+
+        # Добавляем записи о комплектации заказа в целом
+        articles_count = 0
+        details_count = 0
+        for row in range(self.choice_proxy.rowCount(QModelIndex())):
+            parent_proxy_index = self.choice_proxy.index(row, 0, QModelIndex())
+            parent = self.choice_proxy.mapToSource(parent_proxy_index)
+
+            # HACK: без этого работать не будет
+            parent = self.model.index(parent.row(), 0, QModelIndex())
+
+            article_id_index = self.model.index(parent.row(), 0, QModelIndex())
+            article_id = self.model.data(article_id_index, Qt.DisplayRole)
+            articles_count += 1
+
+            # Добавляем записи о заготовках в заказе
+            for sub_row in range(self.model.rowCount(parent)):
+                added_index = self.model.index(sub_row, 10, parent)
+
+                if not self.model.data(added_index, Qt.DisplayRole):
+                    continue
+
+                amount_index = self.model.index(sub_row, 6, parent)
+                amount = int(self.model.data(amount_index, Qt.DisplayRole))
+                details_count += amount
+                priority_index = self.model.index(sub_row, 7, parent)
+                priority = int(self.model.data(priority_index, Qt.DisplayRole))
+                detail_id_index = self.model.index(sub_row, 9, parent)
+                detail_id = int(self.model.data(detail_id_index, Qt.DisplayRole))
+                fusion_id_index = self.model.index(sub_row, 2, parent)
+                fusion_id = int(self.model.data(fusion_id_index, Qt.DisplayRole))
+                status_id = 1 if fusion_id in used_fusions else 6
+                StandardDataService.save_record('complects', order_id=order_id, article_id=article_id,detail_id=detail_id, amount=amount, priority=priority, status_id=status_id)
+        order_efficiency = OrderDataService.efficiency(Field('id', order_id))
+        StandardDataService.update_record('orders', Field('id', order_id), status_id=order_status, efficiency=order_efficiency)
+        pack = {
+            'id': order_id,
+            'status_id': order_status,
+            'name': order_name,
+            'step': 0.0,
+            'efficiency': order_efficiency,
+            'date': creation_date,
+            'articles': articles_count,
+            'details': details_count,
+        }
+        self.recordSavedSuccess.emit(pack)
+        logging.info('Заказ %(name)s добавлен в базу.', {'name': order_name})
+        self.accept()
 
     def set_settings(self, settings: Dict, ingot_settings: Dict):
         self.settings = settings
@@ -820,13 +652,9 @@ class IngotAddingDialog(QDialog):
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
-        self.duration = 1500
-        self.tip = 'Укажите номер партии'
 
         # Настройка списка со сплавами
-        self.fusions = {}
-        for fusion in FusionDataService.fusions_list():
-            self.fusions[fusion['name']] = fusion['fusion_id']
+        self.fusions = CatalogDataService.fusions_list()
         self.ui.fusion.addItems(list(self.fusions.keys()))
 
         self.ui.add.clicked.connect(self.confirm_adding)
@@ -834,41 +662,25 @@ class IngotAddingDialog(QDialog):
 
     def confirm_adding(self):
         batch = self.ui.batch.text()
-        height = self.ui.height.value()
+        length = self.ui.length.value()
         width = self.ui.width.value()
-        depth = self.ui.depth.value()
+        height = self.ui.height.value()
         fusion = self.fusions[self.ui.fusion.currentText()]
 
-        if batch and height and width and depth:
-            success = StandardDataService.save_record(
-                'ingots',
-                fusion_id=fusion,
-                batch=batch,
-                height=height,
-                width=width,
-                depth=depth
-            )
-            if success:
-                QMessageBox.information(
-                    self,
-                    f'Партия {batch}',
-                    f'Слиток из партии {batch}\nуспешно добавлен!',
-                    QMessageBox.Ok
-                )
-            else:
-                QMessageBox.critical(
-                    self,
-                    'Ошибка добавления',
-                    f'Слиток из партии {batch} не был добавлен в базу\n'
-                    'из-за программной ошибки!',
-                    QMessageBox.Ok
-                )
-        else:
-            self.timer.start(self.duration)
+        if not batch:
+            self.timer.start(1500)
             self.highlight()
+            return
+        
+        success = StandardDataService.save_record('ingots', fusion_id=fusion, batch=batch, length=length, width=width, height=height)
+        if not success:
+            QMessageBox.critical(self, 'Ошибка добавления', f'Слиток из партии {batch} не был добавлен в базу!',QMessageBox.Ok)
+            return
+        
+        QMessageBox.information(self, f'Партия {batch}', f'Слиток из партии {batch}\nуспешно добавлен!', QMessageBox.Ok)
 
     def highlight(self):
-        QToolTip.showText(self.ui.batch.mapToGlobal(QPoint(0, 0)), self.tip, self.ui.batch, msecShowTime=self.duration)
+        QToolTip.showText(self.ui.batch.mapToGlobal(QPoint(0, 0)), 'Укажите номер партии', self.ui.batch)
         self.ui.batch.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
 
     def cooldown(self):
@@ -885,8 +697,6 @@ class IngotReadinessDialog(QDialog):
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.cooldown)
-        self.duration = 1500
-        self.tip = 'Укажите номер партии'
 
         self.ui.add.clicked.connect(self.confirm_readiness)
         self.ui.cancel.clicked.connect(self.reject)
@@ -903,34 +713,20 @@ class IngotReadinessDialog(QDialog):
 
     def confirm_readiness(self):
         batch = self.ui.batch.text()
-        if batch:
-            success = StandardDataService.update_record(
-                'ingots',
-                {'ingot_id': self.id},
-                status_id=1,
-                batch=batch
-            )
-            if success:
-                QMessageBox.information(
-                    self,
-                    f'Партия {batch}',
-                    f'Слиток из партии {batch}\nуспешно добавлен!',
-                    QMessageBox.Ok
-                )
-                self.accept()
-            else:
-                QMessageBox.critical(
-                    self,
-                    'Ошибка добавления',
-                    f'Слиток из партии {batch} не был добавлен в базу.',
-                    QMessageBox.Ok
-                )
-        else:
-            self.timer.start(self.duration)
+        if not batch:
+            self.timer.start(1500)
             self.highlight()
+            return
+        
+        success = StandardDataService.update_record('ingots', Field('id', self.id), status_id=1, batch=batch)
+        if not success:
+            QMessageBox.critical(self, 'Ошибка добавления', f'Слиток из партии {batch} не был добавлен в базу.', QMessageBox.Ok)
+            return
+
+        self.accept()
 
     def highlight(self):
-        QToolTip.showText(self.ui.batch.mapToGlobal(QPoint(0, 0)), self.tip, self.ui.batch, msecShowTime=self.duration)
+        QToolTip.showText(self.ui.batch.mapToGlobal(QPoint(0, 0)), 'Укажите номер партии', self.ui.batch)
         self.ui.batch.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
 
     def cooldown(self):
