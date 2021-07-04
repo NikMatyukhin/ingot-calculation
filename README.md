@@ -1,3 +1,7 @@
+[![Code Grade](https://www.code-inspector.com/project/24293/score/svg)](https://www.code-inspector.com)
+
+[![Code Grade](https://www.code-inspector.com/project/24293/status/svg)](https://www.code-inspector.com)
+
 # oci
 Оптимальный раскрой слитка
 

@@ -1,8 +1,8 @@
-matplotlib  ; только для отладки
-graphviz    ; только для отладки
+# matplotlib  ; только для отладки
+# graphviz    ; только для отладки
 
 pylint
 pytest
 pytest-cov
-PySide6
+PyQt5
 pyyaml

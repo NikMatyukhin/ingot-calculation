@@ -64,6 +64,10 @@ def timeit(func):
 def log_operation_info(operation, variables, identifier=None, message=''):
     # start_ic - запуск расчета слитка
     # end_ic - успешное завершение расчета слитка
+    # user_inter_ic - пользователь прервал расчет слитка
+    # error_ic - ошибка при расчете слитка
+    # create_cut - создание раскроя для существующего слитка
+    # end_cut - успешное завершение раскроя
     log_msg = ''
     values = {}
     if identifier:

@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor
 
+import application_rc
+
 from gui import ui_catalog
 from service import CatalogDataService, Field, StandardDataService
 from models import CatalogArticlesModel, CatalogDetailsModel, CatalogFilterProxyModel
@@ -94,7 +96,7 @@ class Catalog(QDialog):
 
         Отвечает за добавление и удаление заготовок и изделий.
 
-        :param point: Точка выхова контекстного меню
+        :param point: Точка вызова контекстного меню
         :type point: QPointF
         """
         menu = QMenu()
@@ -208,7 +210,7 @@ class Catalog(QDialog):
 if __name__ == '__main__':
     application = QApplication(sys.argv)
 
-    window = Catalog()
-    window.show()
+    catalog_window = Catalog()
+    catalog_window.show()
 
     sys.exit(application.exec())
