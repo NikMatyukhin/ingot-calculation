@@ -578,7 +578,7 @@ class OrderAddingDialog(QDialog):
             if ingot['status_id'] == 4:
                 predicted_tree = self.predicted_ingots[ingot['fusion_id']]['tree']
                 predicted_efficiency = self.predicted_ingots[ingot['fusion_id']]['efficiency']
-                ingot['ingot_id'] = StandardDataService.save_record(
+                ingot['id'] = StandardDataService.save_record(
                     'ingots', length=ingot['size'][0], width=ingot['size'][1], height=ingot['size'][2],
                     order_id=order_id, status_id=3, efficiency=predicted_efficiency, fusion_id=ingot['fusion_id']
                 )
