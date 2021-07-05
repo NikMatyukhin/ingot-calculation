@@ -723,8 +723,11 @@ class ComplectsModel(TreeModel):
 
         item = index.internalPointer()
         
-        if role == Qt.TextAlignmentRole and index.column() not in [1, 2, 8]:
-            return Qt.AlignHCenter
+        if role == Qt.TextAlignmentRole:
+            if index.column() not in [1, 2, 8]:
+                return Qt.AlignHCenter
+            else:
+                return Qt.AlignLeft
 
         return item.data(index.column())
 

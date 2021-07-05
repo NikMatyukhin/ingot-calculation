@@ -34,7 +34,8 @@ from models import (
    CatalogFilterProxyModel
 )
 from widgets import (
-    IngotSectionDelegate
+    IngotSectionDelegate,
+    ListValuesDelegate
 )
 from exceptions import ForcedTermination
 from log import log_operation_info
@@ -234,18 +235,26 @@ class OrderAddingDialog(QDialog):
         # Назначение меню кнопке
         self.menu = QMenu()
         self.fusions = CatalogDataService.fusions_list()
+        self.directions = CatalogDataService.directions_list()
         for fusion in self.fusions:
             # Под каждый сплав создаётся отдельное событие выпадающего меню
             action: QAction = self.menu.addAction(fusion)
             action.setObjectName(fusion)
             action.triggered.connect(self.calculate_ingot)
         self.ui.pushButton.setMenu(self.menu)
+        
 
         # Выравниваем ширину колонок левого представления под контент
         for column in range(self.model.columnCount(QModelIndex())):
             self.ui.treeView_1.resizeColumnToContents(column)
         self.ui.treeView_2.setColumnWidth(1, 170)
         self.ui.treeView_2.setColumnWidth(2, 120)
+
+        self.fusions_delegate = ListValuesDelegate(self.fusions)
+        self.directions_delegate = ListValuesDelegate(self.directions)
+        self.ui.treeView_1.setItemDelegateForColumn(2, self.fusions_delegate)
+        self.ui.treeView_2.setItemDelegateForColumn(2, self.fusions_delegate)
+        self.ui.treeView_2.setItemDelegateForColumn(8, self.directions_delegate)
 
         # Скрываем ненужные нам колонки в соответствии со списками заголовков
         for index, column in enumerate(self.headers):

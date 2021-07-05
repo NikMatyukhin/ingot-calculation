@@ -1,3 +1,4 @@
+from storage import Storage
 import sys
 import pickle
 import logging
@@ -149,6 +150,7 @@ class OCIMainWindow(QMainWindow):
         self.ui.newOrder.clicked.connect(self.open_order_dialog)
         self.ui.catalog.clicked.connect(self.open_catalog_window)
         self.ui.settings.clicked.connect(self.open_settings_dialog)
+        self.ui.storage.clicked.connect(self.open_storage_window)
         self.ui.newIngot.clicked.connect(self.open_ingot_dialog)
 
         # Сигнал возврата на исходную страницу с информацией о заказах
@@ -928,6 +930,11 @@ class OCIMainWindow(QMainWindow):
     def open_catalog_window(self):
         """Работа со справочником изделий"""
         window = Catalog(self)
+        window.show()
+
+    def open_storage_window(self):
+        """Работа с хранилищем (складом) слитков"""
+        window = Storage(self)
         window.show()
 
     def open_settings_dialog(self):
