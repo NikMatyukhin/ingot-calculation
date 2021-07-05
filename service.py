@@ -272,7 +272,7 @@ class OrderDataService(StandardDataService):
         if category == 'planned':
             sql = str('SELECT * FROM ingots WHERE status_id = 3')
         elif category == 'used':
-            sql = str('SELECT * FROM ingots WHERE order_id <> NULL AND status_id <> 3')
+            sql = str('SELECT * FROM ingots WHERE order_id NOT NULL AND status_id <> 3')
         elif category == 'unused':
             sql = str('SELECT * FROM ingots WHERE order_id IS NULL')
         else:

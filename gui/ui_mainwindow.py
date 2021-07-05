@@ -183,7 +183,7 @@ class Ui_MainWindow(object):
         self.line_1 = QtWidgets.QFrame(self.topBar)
         self.line_1.setMinimumSize(QtCore.QSize(0, 0))
         self.line_1.setFrameShape(QtWidgets.QFrame.VLine)
-        self.line_1.setFrameShadow(QtWidgets.QFrame.Plain)
+        self.line_1.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_1.setLineWidth(1)
         self.line_1.setObjectName("line_1")
         self.horizontalLayout_2.addWidget(self.line_1)
@@ -220,6 +220,38 @@ class Ui_MainWindow(object):
         self.catalog.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.catalog.setObjectName("catalog")
         self.horizontalLayout_2.addWidget(self.catalog)
+        self.line = QtWidgets.QFrame(self.topBar)
+        self.line.setFrameShape(QtWidgets.QFrame.VLine)
+        self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line.setObjectName("line")
+        self.horizontalLayout_2.addWidget(self.line)
+        self.storage = QtWidgets.QToolButton(self.topBar)
+        self.storage.setMinimumSize(QtCore.QSize(50, 60))
+        self.storage.setMaximumSize(QtCore.QSize(16777215, 80))
+        self.storage.setStyleSheet("QToolButton {\n"
+"    background-color: rgb(225, 225, 225);\n"
+"    border-radius: 3px;\n"
+"    padding-top: 2px;\n"
+"    color: black;\n"
+"    border: none;\n"
+"}\n"
+"\n"
+"QToolButton:hover {\n"
+"    background-color: rgb(210, 210, 210);\n"
+"}\n"
+"\n"
+"QToolButton:pressed {\n"
+"    background-color: rgb(189, 189, 189);\n"
+"    padding-left: 0px;\n"
+"    padding-top: 2px;\n"
+"}")
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap(":/icons/gold-ingot.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.storage.setIcon(icon4)
+        self.storage.setIconSize(QtCore.QSize(40, 40))
+        self.storage.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
+        self.storage.setObjectName("storage")
+        self.horizontalLayout_2.addWidget(self.storage)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
         self.settings = QtWidgets.QToolButton(self.topBar)
@@ -241,9 +273,9 @@ class Ui_MainWindow(object):
 "    padding-left: 0px;\n"
 "    padding-top: 2px;\n"
 "}")
-        icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(":/icons/settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.settings.setIcon(icon4)
+        icon5 = QtGui.QIcon()
+        icon5.addPixmap(QtGui.QPixmap(":/icons/settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.settings.setIcon(icon5)
         self.settings.setIconSize(QtCore.QSize(40, 30))
         self.settings.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.settings.setObjectName("settings")
@@ -398,7 +430,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 681, 1278))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 496, 1278))
         self.scrollAreaWidgetContents.setStyleSheet("* {\n"
 "    margin-right: 7px;\n"
 "}\n"
@@ -858,6 +890,8 @@ class Ui_MainWindow(object):
 "слиток"))
         self.catalog.setText(_translate("MainWindow", "Cправочник\n"
 "заготовок"))
+        self.storage.setText(_translate("MainWindow", "Склад\n"
+"слитков"))
         self.settings.setText(_translate("MainWindow", "Настройки\n"
 "приложения"))
         self.searchNumber.setPlaceholderText(_translate("MainWindow", "Номер заказа..."))
