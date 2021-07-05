@@ -154,7 +154,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
 
             if empty_rect:
                 empty_rect = empty_rect[0]
-                square += empty_rect.square
+                # square += empty_rect.square
                 x, y = empty_rect.blp
                 soft_type = 3
                 if region.limits:
@@ -237,6 +237,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                 _, res, _mrect, _tailings, _usable_square = max(_results, key=itemgetter(0))
                 usable_square += _usable_square
                 new_min_rect = _mrect
+                square = _mrect.square
                 tailings.extend(_tailings)
                 blanks.extend(res)
             status = StateLayout(
