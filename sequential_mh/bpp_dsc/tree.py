@@ -1552,7 +1552,7 @@ class CuttingChartNode(Node):
         else:
             self.hem = (0, hem)
             self.x_hem = (hem, hem)
-            y_hem = end * width if end * width <= 30 else 30
+            y_hem = int(end * width) if end * width <= 30 else 30
             if bin_node.parent.direction == Direction.H:
                 self.y_hem = (y_hem, 0)
             else:
