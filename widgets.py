@@ -284,7 +284,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
         painter.drawText(name_rect, Qt.TextSingleLine, name_text)
 
-        efficiency_text = str(order['efficiency']) + '%' if order['efficiency'] > 0.0 else 'Не указан'
+        efficiency_text = str(order['efficiency'] * 100) + '%' if order['efficiency'] > 0.0 else 'Не указан'
         status_text = StandardDataService.get_by_id('orders_statuses', Field('id', order['status_id']))[1]
               
         visible_info = {

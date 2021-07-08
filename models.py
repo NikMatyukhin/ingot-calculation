@@ -772,7 +772,7 @@ class OrderInformationComplectsModel(TreeModel):
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         if not index.isValid():
             return Qt.NoItemFlags
-        if index.column() == 7 or index.column() == 8:
+        if index.column() == 7 or index.column() == 9:
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
         return QAbstractItemModel.flags(self, index)
 
@@ -785,7 +785,7 @@ class OrderInformationComplectsModel(TreeModel):
         item = index.internalPointer()
 
         if role == Qt.TextAlignmentRole:
-            if index.column() in [4, 5, 6, 7, 8]:
+            if index.column() in [4, 5, 6, 7, 8, 9]:
                 return Qt.AlignHCenter
             else:
                 return Qt.AlignLeft
@@ -817,7 +817,7 @@ class OrderInformationComplectsModel(TreeModel):
         complects = OrderDataService.complects(Field('order_id', self.__order_id))
         for article in complects:
             article_id, name = article
-            self.appendRow([name, article_id, None, None, None, None, None, None, None, None], QModelIndex())
+            self.appendRow([name, article_id, None, None, None, None, None, None, None, None, None], QModelIndex())
 
             # Получение индекса только что добавленной записи изделия
             parent = self.index(0, 0, QModelIndex())
@@ -825,8 +825,8 @@ class OrderInformationComplectsModel(TreeModel):
 
             # Выполнение для всех деталей, связанных с заданной ведомостью
             for sub_line in detail:
-                detail_id, fusion_id, direction_id, status_id, name, l, w, d, amount, priority = sub_line
-                self.appendRow([name, detail_id, status_id, fusion_id, l, w, d, amount, priority, direction_id], parent)
+                detail_id, fusion_id, direction_id, status_id, name, l, w, d, amount, total, priority = sub_line
+                self.appendRow([name, detail_id, status_id, fusion_id, l, w, d, amount, total, priority, direction_id], parent)
 
 
 class CatalogFilterProxyModel(QSortFilterProxyModel):

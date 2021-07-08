@@ -88,7 +88,7 @@ class OCIMainWindow(QMainWindow):
         # Не содержит ничего, пока не установлен идентификатор заказа
         self.complect_headers = [
             'Название', 'ID', 'Статус', 'Сплав', 'Длина', 'Ширина', 'Толщина',
-            'Количество', 'Приоритет', 'Направление проката'
+            'Количество', 'Упаковано', 'Приоритет', 'Направление проката'
         ]
         self.complect_model = OrderInformationComplectsModel(self.complect_headers)
         
@@ -100,7 +100,7 @@ class OCIMainWindow(QMainWindow):
         self.fusion_delegate = ListValuesDelegate(self.fusions_list)
         self.ui.complectsView.setItemDelegateForColumn(2, self.status_delegate)
         self.ui.complectsView.setItemDelegateForColumn(3, self.fusion_delegate)
-        self.ui.complectsView.setItemDelegateForColumn(9, self.direction_delegate)
+        self.ui.complectsView.setItemDelegateForColumn(10, self.direction_delegate)
         
         self.ui.complectsView.setModel(self.complect_model)
         self.complect_model.dataChanged.connect(self.complect_changed)
@@ -291,6 +291,7 @@ class OCIMainWindow(QMainWindow):
                 return
             self.order_model.deleteRow(index.row())
             self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
+        self.ui.searchResult_1.clearSelection()
 
     def complect_changed(self, index: QModelIndex):
         text = self.ui.saveComplect.text()
@@ -299,21 +300,16 @@ class OCIMainWindow(QMainWindow):
 
     def update_complect_statuses(self, order_id: int, ingot_fusion: int):
         # Подсчитываем количество неразмещенных заготовок (название: количество)
-        # FIXME: проблемы со статусами при наличии одинаковых веток
-        #        эта фигня сама как-то работает, при обнаружении
-        #        проблемы нужно вернуться
-        # from itertools import groupby
-        # from collections import Counter
-        # from operator import attrgetter
-        # unplaced = []
-        # for height, group in groupby(self.tree.cc_leaves, key=attrgetter('bin.height')):
-        #     group = list(group)
-        #     num_leaves = len(group)
-        #     blanks = list(chain.from_iterable([leave.result.unplaced for leave in group]))
-        #     unplaced_for_group = list(filter(lambda item: item[1] == num_leaves, Counter(blanks).items()))
-        #     unplaced.extend(unplaced_for_group)
-        unplaced = list(chain.from_iterable([leave.result.unplaced for leave in self.tree.cc_leaves]))
-        unplaced_counter = Counter([blank.name for blank in unplaced])
+        temp = dict()
+        for leave in self.tree.cc_leaves:
+            unplaced = leave.result.unplaced
+            if leave.result.height in temp:
+                if not unplaced:
+                    del temp[leave.result.height]
+                    continue
+            temp[leave.result.height] = unplaced
+
+        unplaced_counter = Counter([blank.name for blank in list(chain.from_iterable(temp.values()))])
 
         # Переходим по всем изделиям в заказе
         model = self.complect_model
@@ -335,17 +331,19 @@ class OCIMainWindow(QMainWindow):
                 name: str = model.data(model.index(sub_row, 0, article), Qt.DisplayRole)
                 detail_id: int = model.data(model.index(sub_row, 1, article), Qt.DisplayRole)
                 status_id_index = model.index(sub_row, 2, article)
+                total_index = model.index(sub_row, 8, article)
                 depth: float = model.data(model.index(sub_row, 6, article), Qt.DisplayRole)
                 amount: int = model.data(model.index(sub_row, 7, article), Qt.DisplayRole)
                 complect_counter[article_name + '_' + name] = {
                     'detail_id': int(detail_id),
                     'depth': float(depth),
                     'amount': int(amount),
-                    'status_id': status_id_index
+                    'status_id': status_id_index,
+                    'total': total_index
                 }
 
         # Сначала проходимся по счётчику неразмещённых заготовок
-        updates = UpdatableFieldsCollection(['status_id', 'order_id', 'detail_id'])
+        updates = UpdatableFieldsCollection(['status_id', 'total', 'order_id', 'detail_id'])
         order = Field('order_id', order_id)
         
         for name in unplaced_counter:
@@ -353,24 +351,28 @@ class OCIMainWindow(QMainWindow):
             
             # Если количество заготовок совпадает с остатком
             if complect_counter[name]['amount'] == unplaced_counter[name]:
-                updates.append(Field('status_id', 4), order, detail)
+                updates.append(Field('status_id', 4), Field('total', 0), order, detail)
                 model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
+                model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             # Если количество заготовок не совпадает с остатком
             else:
-                updates.append(Field('status_id', 5), order, detail)
+                updates.append(Field('status_id', 5), Field('total', complect_counter[name]['amount'] - unplaced_counter[name]), order, detail)
                 model.setData(complect_counter[name]['status_id'], 5, Qt.EditRole)
+                model.setData(complect_counter[name]['total'], complect_counter[name]['amount'] - unplaced_counter[name], Qt.EditRole)
         
         # В конце проходимся по всем заготовкам чтобы найти пропущенные толщины
         for name in complect_counter:
             detail = Field('detail_id', complect_counter[name]['detail_id'])
             
             if complect_counter[name]['depth'] not in self.steps():
-                updates.append(Field('status_id', 4), order, detail)
+                updates.append(Field('status_id', 4), Field('total', 0), order, detail)
                 model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
+                model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             # Если количество неразмещённых заготовок равно нулю
             elif name not in unplaced_counter:
-                updates.append(Field('status_id', 1), order, detail)
+                updates.append(Field('status_id', 1), Field('total', complect_counter[name]['amount']), order, detail)
                 model.setData(complect_counter[name]['status_id'], 1, Qt.EditRole)
+                model.setData(complect_counter[name]['total'], complect_counter[name]['amount'], Qt.EditRole)
         OrderDataService.update_statuses(updates)
 
     def save_complects(self):
@@ -438,7 +440,7 @@ class OCIMainWindow(QMainWindow):
                     'blanks': details.qty(), 'heights': len(details.keys())
                 }, identifier=order_id
             )
-            _, efficiency, total_efficiency = self.create_cut(
+            _, efficiency, _ = self.create_cut(
                 ingot_size, details, material, progress=progress
             )
         except ForcedTermination:
@@ -455,18 +457,35 @@ class OCIMainWindow(QMainWindow):
             return
         else:
             progress.setLabelText('Завершение раскроя...')
+            
+            ingot_index = self.ui.ingotsView.currentIndex()
+            self.ingot_model.setData(ingot_index, {'efficiency': round(efficiency, 2)}, Qt.EditRole)
+            StandardDataService.update_record(
+                'ingots', Field('id', ingot_index.data(Qt.DisplayRole)['id']), efficiency=round(efficiency, 2)
+            )
+
+            order_index = self.ui.searchResult_1.currentIndex()
+            
+            self.update_complect_statuses(order_index.data(Qt.DisplayRole)['id'], ingot_index.data(Qt.DisplayRole)['fusion_id'])
+            
+            order_efficiency = OrderDataService.efficiency(Field('order_id', order_index.data(Qt.DisplayRole)['id']))
+            self.order_model.setData(order_index, {'efficiency': order_efficiency}, Qt.EditRole)
+            StandardDataService.update_record(
+                'orders', Field('id', order_index.data(Qt.DisplayRole)['id']), efficiency=order_efficiency
+            )
+
+            order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+            ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
+            self.save_tree(order, ingot)
+            self.redraw_map(ingot)
+            
             log_operation_info(
                 'end_cut',
                 {
                     'name': order_name, 'alloy': fusion_name,
-                    'efficiency': efficiency, 'total_efficiency': total_efficiency
+                    'efficiency': efficiency, 'total_efficiency': order_efficiency
                 }, identifier=order_id
             )
-            order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
-            ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
-            self.update_complect_statuses(order['id'], ingot['fusion_id'])
-            self.save_tree(order, ingot)
-            self.redraw_map(ingot)
         progress.close()
 
     def redraw_map(self, ingot: Dict):
@@ -548,27 +567,10 @@ class OCIMainWindow(QMainWindow):
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
 
-        ingot_index = self.ui.ingotsView.currentIndex()
-        ingot_id = ingot_index.data(Qt.DisplayRole)['id']
+        
         efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
-        data = {'efficiency': round(100 * efficiency, 2)}
-        self.ingot_model.setData(ingot_index, data, Qt.EditRole)
-        StandardDataService.update_record(
-            'ingots', Field('id', ingot_id), efficiency=data['efficiency']
-        )
-        order_index = self.ui.searchResult_1.currentIndex()
-        order_efficiency = OrderDataService.efficiency(Field('id', order_index.data(Qt.DisplayRole)['id']))
-        self.order_model.setData(order_index, {'efficiency': order_efficiency}, Qt.EditRole)
-        StandardDataService.update_record(
-            'orders', Field('id', order_index.data(Qt.DisplayRole)['id']), efficiency=order_efficiency
-        )
-        # TODO: теперь непонятно, что есть эффективность раскроя целого набора
-        # self.order_model.setData(current_index, data, Qt.EditRole)
-        # StandardDataService.update_record(
-        #     'orders', {'order_id': current_index.data(Qt.DisplayRole)['order_id']},
-        #     efficiency = data['efficiency']
-        # )
-        return tree, efficiency, order_efficiency
+        
+        return tree, efficiency, .1
 
     @timeit
     def stmh_idrd(self, tree, with_filter: bool = True,

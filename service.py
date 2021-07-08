@@ -288,7 +288,7 @@ class OrderDataService(StandardDataService):
         result = dict()
         sql = str('SELECT c.article_id, a.name, c.detail_id, d.fusion_id, '
                   'd.direction_id, c.status_id, d.name, d.length, d.width, '
-                  'd.height, c.amount, c.priority '
+                  'd.height, c.amount, c.total, c.priority '
                   'FROM complects AS c '
                   'LEFT JOIN details AS d ON d.id = c.detail_id '
                   'LEFT JOIN articles AS a ON a.id = c.article_id '
@@ -317,7 +317,7 @@ class OrderDataService(StandardDataService):
     @staticmethod
     @db_connector
     def update_statuses(updates: UpdatableFieldsCollection, connection: Connection = connect(':memory:')):
-        sql = str('UPDATE complects SET {}=? WHERE {}=? AND {}=?'.format(*updates.names))
+        sql = str('UPDATE complects SET {}=?, {}=? WHERE {}=? AND {}=?'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
 
@@ -339,15 +339,17 @@ class OrderDataService(StandardDataService):
                          'FROM ingots AS i '
                          'LEFT JOIN fusions AS f ON f.id = i.fusion_id '
                          f'WHERE i.{order.name}={order.value}')
-        blanks_sql = str('SELECT d.length, d.width, d.height, f.density '
+        blanks_sql = str('SELECT d.length, d.width, d.height, f.density, c.total '
                          'FROM complects AS c '
                          'LEFT JOIN details AS d ON d.id = c.detail_id '
                          'LEFT JOIN fusions AS f ON f.id = d.fusion_id '
-                         f'WHERE c.{order.name}={order.value}')
+                         f'WHERE c.{order.name}={order.value} '
+                         'AND (c.status_id = 1 OR c.status_id = 5)')
         cursor = connection.cursor()
         ingots_mass = sum(prod(line) for line in cursor.execute(ingots_sql))
         blanks_mass = sum(prod(line) for line in cursor.execute(blanks_sql))
-        return blanks_mass / ingots_mass
+        print(ingots_mass, blanks_mass)
+        return round(blanks_mass / ingots_mass, 2)
 
 
 if __name__ == '__main__':

@@ -3,6 +3,8 @@ import logging
 import typing
 from datetime import datetime
 from typing import Dict, List, Union, Optional
+from collections import Counter
+from itertools import chain
 
 from PyQt5.QtCore import (
     QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex, QObject
@@ -27,7 +29,7 @@ from gui import (
     ui_ready_ingot_dialog
 )
 from service import (
-    OrderDataService, StandardDataService, CatalogDataService, Field
+    OrderDataService, StandardDataService, CatalogDataService, Field, UpdatableFieldsCollection
 )
 from models import (
    OrderComplectsFilterProxyModel, ComplectsModel, IngotModel, 
@@ -528,7 +530,7 @@ class OrderAddingDialog(QDialog):
             tree, min_size, max_size, self.settings, progress=progress
         )
         efficiency = round(solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True), 2)
-        # print(f'Эффективность после расчета: {efficiency}')
+        print(f'Эффективность после расчета: {efficiency}')
 
         # size_error = self.ingot_settings['size_error']
         # allowance = self.ingot_settings['allowance']
@@ -570,6 +572,7 @@ class OrderAddingDialog(QDialog):
                 'Должен быть выбран хотя бы один слиток!\n'
                 'Должно быть добавлено хотя бы одно изделие!', QMessageBox.Ok
             )
+            return
 
         creation_date = datetime.today().strftime("%d_%m_%Y")
         order_id = StandardDataService.save_record('orders', status_id=1, name=order_name, date=creation_date)
@@ -601,6 +604,7 @@ class OrderAddingDialog(QDialog):
         # Добавляем записи о комплектации заказа в целом
         articles_count = 0
         details_count = 0
+        complect_counter = dict()
         for row in range(self.choice_proxy.rowCount(QModelIndex())):
             parent_proxy_index = self.choice_proxy.index(row, 0, QModelIndex())
             parent = self.choice_proxy.mapToSource(parent_proxy_index)
@@ -610,6 +614,8 @@ class OrderAddingDialog(QDialog):
 
             article_id_index = self.model.index(parent.row(), 0, QModelIndex())
             article_id = self.model.data(article_id_index, Qt.DisplayRole)
+            article_name_index = self.model.index(parent.row(), 1, QModelIndex())
+            article_name = self.model.data(article_name_index, Qt.DisplayRole)
             articles_count += 1
 
             # Добавляем записи о заготовках в заказе
@@ -619,6 +625,10 @@ class OrderAddingDialog(QDialog):
                 if not self.model.data(added_index, Qt.DisplayRole):
                     continue
 
+                name_index = self.model.index(sub_row, 1, parent)
+                name = self.model.data(name_index, Qt.DisplayRole)
+                depth_index = self.model.index(sub_row, 5, parent)
+                depth = float(self.model.data(depth_index, Qt.DisplayRole))
                 amount_index = self.model.index(sub_row, 6, parent)
                 amount = int(self.model.data(amount_index, Qt.DisplayRole))
                 details_count += amount
@@ -628,9 +638,60 @@ class OrderAddingDialog(QDialog):
                 detail_id = int(self.model.data(detail_id_index, Qt.DisplayRole))
                 fusion_id_index = self.model.index(sub_row, 2, parent)
                 fusion_id = int(self.model.data(fusion_id_index, Qt.DisplayRole))
-                status_id = 1 if fusion_id in used_fusions else 6
+                status_id = 0 if fusion_id in used_fusions else 6
                 StandardDataService.save_record('complects', order_id=order_id, article_id=article_id,detail_id=detail_id, amount=amount, priority=priority, status_id=status_id)
-        order_efficiency = OrderDataService.efficiency(Field('id', order_id))
+                complect_counter[article_name + '_' + name] = {
+                    'detail_id': int(detail_id),
+                    'depth': float(depth),
+                    'amount': int(amount),
+                    'fusion_id': int(fusion_id),
+                }
+        
+        # Проходим по всем выбранным слиткам
+        for fusion_id in self.predicted_ingots:
+            tree = self.predicted_ingots[fusion_id]['tree']
+            temp = dict()
+            for leave in tree.cc_leaves:
+                unplaced = leave.result.unplaced
+                if leave.result.height in temp:
+                    if not unplaced:
+                        del temp[leave.result.height]
+                        continue
+                temp[leave.result.height] = unplaced
+
+            # unplaced = list(chain.from_iterable([leave.result.unplaced for leave in tree.cc_leaves]))
+            unplaced_counter = Counter([blank.name for blank in list(chain.from_iterable(temp.values()))])
+            updates = UpdatableFieldsCollection(['status_id', 'total', 'order_id', 'detail_id'])
+            order = Field('order_id', order_id)
+            
+            for name in unplaced_counter:
+                if complect_counter[name]['fusion_id'] != fusion_id:
+                    continue
+                
+                detail = Field('detail_id', complect_counter[name]['detail_id'])
+                
+                # Если количество заготовок совпадает с остатком
+                if complect_counter[name]['amount'] == unplaced_counter[name]:
+                    print(name, complect_counter[name]['amount'], unplaced_counter[name])
+                    updates.append(Field('status_id', 4), Field('total', 0), order, detail)
+                # Если количество заготовок не совпадает с остатком
+                else:
+                    updates.append(Field('status_id', 5), Field('total', complect_counter[name]['amount'] - unplaced_counter[name]), order, detail)
+            
+            # В конце проходимся по всем заготовкам чтобы найти пропущенные толщины
+            for name in complect_counter:
+                if complect_counter[name]['fusion_id'] != fusion_id:
+                    continue
+                
+                detail = Field('detail_id', complect_counter[name]['detail_id'])
+                if complect_counter[name]['depth'] not in [leave.bin.height for leave in tree.cc_leaves]:
+                    updates.append(Field('status_id', 4), Field('total', 0), order, detail)
+                # Если количество неразмещённых заготовок равно нулю
+                elif name not in unplaced_counter:
+                    updates.append(Field('status_id', 1), Field('total', complect_counter[name]['amount']), order, detail)
+            OrderDataService.update_statuses(updates)
+
+        order_efficiency = OrderDataService.efficiency(Field('order_id', order_id))
         StandardDataService.update_record('orders', Field('id', order_id), status_id=order_status, efficiency=order_efficiency)
         pack = {
             'id': order_id,
