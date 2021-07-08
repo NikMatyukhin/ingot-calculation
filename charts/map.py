@@ -292,7 +292,7 @@ class CuttingMapPainter:
             self.changePos(operation=True)
         elif is_cc_node(node):
             number = node.result.qty()
-            efficiency = round(node.result.efficiency() * 100, 2)
+            efficiency = round(node.result.total_efficiency(node.bin.length, node.bin.width) * 100, 2)
             correct_case = ' заготовка\n' if number == 1 else ' заготовки\n'
             item = PlateGraphicsItem(
                 str(number) + correct_case + str(efficiency) + '%',
