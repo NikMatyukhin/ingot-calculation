@@ -527,7 +527,7 @@ class OCIMainWindow(QMainWindow):
                 amount = int(model.data(model.index(sub_row, 7, parent), Qt.DisplayRole))
                 priority = int(model.data(model.index(sub_row, 8, parent), Qt.DisplayRole))
                 direction_id = int(model.data(model.index(sub_row, 9, parent), Qt.DisplayRole))
-                direction_code = 3 if direction_id == 1 else 2
+                direction_code = 3 if direction_id == 0 else 2
                 direction = Direction(direction_code)
                 # Создаём заготовки из полученных данных
                 for _ in range(amount):
@@ -619,6 +619,7 @@ class OCIMainWindow(QMainWindow):
                 item.root, list(dfs(item.root)), nd=True, is_p=True
             )
         )
+        # print(f'{list(filter(lambda x: x.result.height == 3, best.root.cc_leaves))[0]._id = }')
         # total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
         return best
 

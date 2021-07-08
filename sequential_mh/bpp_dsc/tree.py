@@ -28,6 +28,7 @@ from .exception import (
 from .rectangle import BinType, Bin, Direction, Kit, Number, Result, UnsizedBin
 
 from ..tsh.bpp_ts import bpp_ts, Rectangle, RectangleType
+from ..tsh.rect import Rectangle
 
 
 Vec3 = tuple[Number, Number, Number]
@@ -1552,7 +1553,7 @@ class CuttingChartNode(Node):
         else:
             self.hem = (0, hem)
             self.x_hem = (hem, hem)
-            y_hem = end * width if end * width <= 30 else 30
+            y_hem = int(end * width) if end * width <= 30 else 30
             if bin_node.parent.direction == Direction.H:
                 self.y_hem = (y_hem, 0)
             else:
@@ -2146,3 +2147,54 @@ def is_defective_tree(tree, max_size):
             if is_locked:
                 return True
     return False
+
+
+def get_all_residuals(tree):
+    residuals = []
+    for leave in tree.root.cc_leaves:
+        residuals.extend(list(filter(
+            lambda item: item.rtype == RectangleType.RESIDUAL,
+            leave.result.tailings
+        )))
+
+        bin_length = leave.bin.length
+        bin_width = leave.bin.width
+
+        if bin_length > leave.result.length and leave.result.width == bin_width:
+            tailing = Rectangle.create_by_size(
+                (0, leave.result.length), bin_length - leave.result.length, bin_width
+            )
+            residuals.append(tailing)
+            leave.result.tailings.append(tailing)
+        elif bin_length == leave.result.length and bin_width > leave.result.width:
+            tailing = Rectangle.create_by_size(
+                (leave.result.width, 0), bin_length, bin_width - leave.result.width
+            )
+            residuals.append(tailing)
+            leave.result.tailings.append(tailing)
+        elif leave.result.length > bin_length and bin_width > leave.result.width:
+            area_horizontal = bin_width * (bin_length - leave.result.length)
+            area_vertical = bin_length * (bin_width - leave.result.width)
+            if area_vertical > area_horizontal:
+                tailing = Rectangle.create_by_size(
+                    (leave.result.width, 0), bin_length, bin_width - leave.result.width
+                )
+                residuals.append(tailing)
+                leave.result.tailings.append(tailing)
+                tailing = Rectangle.create_by_size(
+                    (0, leave.result.length), bin_length - leave.result.length, leave.result.width
+                )
+                residuals.append(tailing)
+                leave.result.tailings.append(tailing)
+            else:
+                tailing = Rectangle.create_by_size(
+                    (0, leave.result.length), bin_length - leave.result.length, bin_width
+                )
+                residuals.append(tailing)
+                leave.result.tailings.append(tailing)
+                tailing = Rectangle.create_by_size(
+                    (leave.result.width, 0), leave.result.length, bin_width - leave.result.width
+                )
+                residuals.append(tailing)
+                leave.result.tailings.append(tailing)
+    return residuals
