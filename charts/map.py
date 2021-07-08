@@ -211,7 +211,6 @@ class CuttingMapPainter:
                 next_node = tree_path[index + 3]
                 if is_bin_node(node) and is_bin_node(next_node) and is_op_node(op_node) and not op_node.operation == Operations.cutting:
                     if node.bin.size == next_node.bin.size:
-                        print(index, node.bin.size)
                         self.skip_counter = 2
             except IndexError:
                 pass
