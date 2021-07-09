@@ -446,7 +446,6 @@ class TableModel(QAbstractItemModel):
         if parent.isValid():
             return QModelIndex()
         if 0 <= row < len(self.__items_data) and 0 <= column < len(self.__headers):
-            print('index -> ', row, column)
             item = self.__items_data[row][column]
             return self.createIndex(row, column, item)
         return QModelIndex()

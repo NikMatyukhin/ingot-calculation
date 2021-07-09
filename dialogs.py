@@ -466,7 +466,7 @@ class OrderAddingDialog(QDialog):
                     self.ingot_model.deleteRow(row, QModelIndex())
                     break
             self.ingot_model.appendRow(data_row)
-            self.predicted_ingots[self.fusions[fusion_name]] = {'tree': tree.root, 'efficiency': round(efficiency * 100, 2)}
+            self.predicted_ingots[self.fusions[fusion_name]] = {'tree': tree.root, 'efficiency': round(efficiency, 2)}
         progress.close()
 
     def get_details_kit(self, material: Material) -> Kit:

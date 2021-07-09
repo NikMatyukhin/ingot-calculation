@@ -525,8 +525,8 @@ class OCIMainWindow(QMainWindow):
                 depth = float(model.data(model.index(sub_row, 6, parent), Qt.DisplayRole))
                 sizes: Sizes = [length, width, depth]
                 amount = int(model.data(model.index(sub_row, 7, parent), Qt.DisplayRole))
-                priority = int(model.data(model.index(sub_row, 8, parent), Qt.DisplayRole))
-                direction_id = int(model.data(model.index(sub_row, 9, parent), Qt.DisplayRole))
+                priority = int(model.data(model.index(sub_row, 9, parent), Qt.DisplayRole))
+                direction_id = int(model.data(model.index(sub_row, 10, parent), Qt.DisplayRole))
                 direction_code = 3 if direction_id == 0 else 2
                 direction = Direction(direction_code)
                 # Создаём заготовки из полученных данных

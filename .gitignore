@@ -118,3 +118,6 @@ log/
 # Schemes files
 *.oci
 
+# Nikita data support files
+*.xlsx
+from_xlc_to_sqlite.py

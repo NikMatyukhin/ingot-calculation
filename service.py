@@ -348,7 +348,6 @@ class OrderDataService(StandardDataService):
         cursor = connection.cursor()
         ingots_mass = sum(prod(line) for line in cursor.execute(ingots_sql))
         blanks_mass = sum(prod(line) for line in cursor.execute(blanks_sql))
-        print(ingots_mass, blanks_mass)
         return round(blanks_mass / ingots_mass, 2)
 
 
