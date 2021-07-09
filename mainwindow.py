@@ -1,4 +1,3 @@
-from storage import Storage
 import sys
 import pickle
 import logging
@@ -20,7 +19,8 @@ from PyQt5.QtWidgets import (
 from gui import ui_mainwindow
 from gui.ui_functions import *
 from widgets import (
-    IngotSectionDelegate, ListValuesDelegate, Section, ExclusiveButton, OrderSectionDelegate
+    IngotSectionDelegate, ListValuesDelegate, ExclusiveButton,
+    OrderSectionDelegate
 )
 from models import (
     IngotModel, OrderInformationComplectsModel, OrderModel
@@ -30,8 +30,10 @@ from service import (
     CatalogDataService
 )
 from dialogs import (
-    IngotAddingDialog, IngotReadinessDialog, OrderAddingDialog, FullScreenWindow
+    IngotAddingDialog, IngotReadinessDialog, OrderAddingDialog,
+    FullScreenWindow
 )
+from storage import Storage
 from charts.plan import CuttingPlanPainter, MyQGraphicsView
 from charts.map import CuttingMapPainter
 from catalog import Catalog
@@ -57,7 +59,6 @@ ListSizes = list[Sizes]
 
 
 class OCIMainWindow(QMainWindow):
-    
     def __init__(self):
         super().__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
@@ -105,19 +106,19 @@ class OCIMainWindow(QMainWindow):
         self.ui.complectsView.setModel(self.complect_model)
         self.complect_model.dataChanged.connect(self.complect_changed)
 
-        # Постраиваемое дерево раскроя
+        # Дерево раскроя
         self.tree = None
 
         # Работа с настройками приложения: подгрузка настроек
         self.settings = QSettings('configs', QSettings.IniFormat, self)
         self.is_saved = True
 
-        self.cut_allowance = None          # Припуск на разрез
-        self.end_face_loss = None          # Потери при обработке торцов (%)
-        self.minimum_plate_width = None    # Минимальная ширина пластины
-        self.minimum_plate_height = None   # Минимальная длина пластины
-        self.rough_roll_edge_loss = None   # Потери при обработке кромки до 3мм
-        self.clean_roll_edge_loss = None   # Потери при обработке кромки на 3мм
+        self.cut_allowance = 0             # Припуск на разрез
+        self.end_face_loss = 0             # Потери при обработке торцов (%)
+        self.minimum_plate_width = 0       # Минимальная ширина пластины
+        self.minimum_plate_height = 0      # Минимальная длина пластины
+        self.rough_roll_edge_loss = 0      # Потери при обработке кромки до 3мм
+        self.clean_roll_edge_loss = 0      # Потери при обработке кромки на 3мм
 
         self.guillotine_width = 1200       # Ширина ножа гильотины
         self.maximum_plate_height = 1200   # Максимальная длина пластины
@@ -272,7 +273,7 @@ class OCIMainWindow(QMainWindow):
 
     def confirm_order_removing(self, index: QModelIndex):
         order = index.data(Qt.DisplayRole)
-        
+
         # FIXME: вариант в одну строку им не нравится, так как у кнопок текст
         #        не "Да" + "Отмена", а "Ok" + "Cancel"
         message = QMessageBox(self)
@@ -287,7 +288,7 @@ class OCIMainWindow(QMainWindow):
         if answer == message.clickedButton():
             success = StandardDataService.delete_by_id('orders', Field('id', order['id']))
             if not success:
-                QMessageBox.critical(self, 'Ошибка удаления', f'Не удалось удалить заказ.', QMessageBox.Ok)
+                QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить заказ.', QMessageBox.Ok)
                 return
             self.order_model.deleteRow(index.row())
             self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
@@ -314,11 +315,11 @@ class OCIMainWindow(QMainWindow):
         # Переходим по всем изделиям в заказе
         model = self.complect_model
         complect_counter = dict()
-        
+
         for row in range(model.rowCount(QModelIndex())):
             article = model.index(row, 0, QModelIndex())
             article_name = model.data(article, Qt.DisplayRole)
-            
+
             # Переходим по всем заготовкам в изделии
             for sub_row in range(model.rowCount(article)):
                 detail_fusion = int(model.data(model.index(sub_row, 3, article), Qt.DisplayRole))
@@ -345,10 +346,10 @@ class OCIMainWindow(QMainWindow):
         # Сначала проходимся по счётчику неразмещённых заготовок
         updates = UpdatableFieldsCollection(['status_id', 'total', 'order_id', 'detail_id'])
         order = Field('order_id', order_id)
-        
+
         for name in unplaced_counter:
             detail = Field('detail_id', complect_counter[name]['detail_id'])
-            
+
             # Если количество заготовок совпадает с остатком
             if complect_counter[name]['amount'] == unplaced_counter[name]:
                 updates.append(Field('status_id', 4), Field('total', 0), order, detail)
@@ -356,14 +357,25 @@ class OCIMainWindow(QMainWindow):
                 model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             # Если количество заготовок не совпадает с остатком
             else:
-                updates.append(Field('status_id', 5), Field('total', complect_counter[name]['amount'] - unplaced_counter[name]), order, detail)
+                updates.append(
+                    Field('status_id', 5),
+                    Field(
+                        'total',
+                        complect_counter[name]['amount'] - unplaced_counter[name]
+                    ),
+                    order, detail
+                )
                 model.setData(complect_counter[name]['status_id'], 5, Qt.EditRole)
-                model.setData(complect_counter[name]['total'], complect_counter[name]['amount'] - unplaced_counter[name], Qt.EditRole)
-        
+                model.setData(
+                    complect_counter[name]['total'],
+                    complect_counter[name]['amount'] - unplaced_counter[name],
+                    Qt.EditRole
+                )
+
         # В конце проходимся по всем заготовкам чтобы найти пропущенные толщины
         for name in complect_counter:
             detail = Field('detail_id', complect_counter[name]['detail_id'])
-            
+
             if complect_counter[name]['depth'] not in self.steps():
                 updates.append(Field('status_id', 4), Field('total', 0), order, detail)
                 model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
@@ -380,10 +392,10 @@ class OCIMainWindow(QMainWindow):
         if text.endswith('*'):
             order_id = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)['id']
             order = Field('order_id', order_id)
-            
+
             updates = UpdatableFieldsCollection(['amount', 'priority', 'order_id', 'detail_id'])
             model = self.complect_model
-            
+
             for row in range(model.rowCount(QModelIndex())):
                 article_index = model.index(row, 0, QModelIndex())
 
@@ -418,6 +430,7 @@ class OCIMainWindow(QMainWindow):
             details = self.get_details_kit(material)
         except Exception as exception:
             QMessageBox.critical(self, 'Ошибка сборки', f'{exception}', QMessageBox.Ok)
+            return
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)
@@ -457,7 +470,7 @@ class OCIMainWindow(QMainWindow):
             return
         else:
             progress.setLabelText('Завершение раскроя...')
-            
+
             ingot_index = self.ui.ingotsView.currentIndex()
             self.ingot_model.setData(ingot_index, {'efficiency': round(efficiency, 2)}, Qt.EditRole)
             StandardDataService.update_record(
@@ -465,9 +478,12 @@ class OCIMainWindow(QMainWindow):
             )
 
             order_index = self.ui.searchResult_1.currentIndex()
-            
-            self.update_complect_statuses(order_index.data(Qt.DisplayRole)['id'], ingot_index.data(Qt.DisplayRole)['fusion_id'])
-            
+
+            self.update_complect_statuses(
+                order_index.data(Qt.DisplayRole)['id'],
+                ingot_index.data(Qt.DisplayRole)['fusion_id']
+            )
+
             order_efficiency = OrderDataService.efficiency(Field('order_id', order_index.data(Qt.DisplayRole)['id']))
             self.order_model.setData(order_index, {'efficiency': order_efficiency}, Qt.EditRole)
             StandardDataService.update_record(
@@ -478,7 +494,7 @@ class OCIMainWindow(QMainWindow):
             ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
             self.save_tree(order, ingot)
             self.redraw_map(ingot)
-            
+
             log_operation_info(
                 'end_cut',
                 {
@@ -508,7 +524,7 @@ class OCIMainWindow(QMainWindow):
         for row in range(model.rowCount(QModelIndex())):
             parent = model.index(row, 0, QModelIndex())
             parent_name = model.data(parent, Qt.DisplayRole)
-            
+
             # Переходим по всем заготовкам в изделии
             for sub_row in range(model.rowCount(parent)):
                 fusion_id = model.data(model.index(sub_row, 3, parent), Qt.DisplayRole)
@@ -517,7 +533,7 @@ class OCIMainWindow(QMainWindow):
                 # Если не совпадают сплав заготовки и выбранного слитка - пропускаем
                 if detail_fusion != material.name:
                     continue
-                
+
                 # Собираем все нужные данные по колонкам
                 name: str = model.data(model.index(sub_row, 0, parent), Qt.DisplayRole)
                 length = int(model.data(model.index(sub_row, 4, parent), Qt.DisplayRole))
@@ -567,9 +583,8 @@ class OCIMainWindow(QMainWindow):
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
 
-        
         efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
-        
+
         return tree, efficiency, .1
 
     @timeit
@@ -797,6 +812,7 @@ class OCIMainWindow(QMainWindow):
         return best
 
     def steps(self):
+        """Список толщин"""
         leaves = self.tree.cc_leaves
         depth_list = [leave.bin.height for leave in leaves]
         return depth_list
@@ -979,6 +995,7 @@ class OCIMainWindow(QMainWindow):
         window.exec_()
 
     def read_settings(self):
+        """Чтение настроек из файл"""
         self.cut_allowance = self.settings.value(
             'cutting/cut_allowance', defaultValue=2, type=int)
         self.end_face_loss = self.settings.value(
@@ -1079,6 +1096,7 @@ class OCIMainWindow(QMainWindow):
                 pickle.dump(self.tree, file)
 
     def is_file_exist(self, order: Dict, ingot: Dict):
+        """Проверка существования файла"""
         file_name = self.get_file_name(order, ingot)
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
@@ -1099,6 +1117,7 @@ class OCIMainWindow(QMainWindow):
 
 
 def get_abs_path(file_name, path=None) -> Path:
+    """Получение абсолютного пути"""
     dir_path = Path(__file__).parent.absolute()
     if path:
         abs_path = dir_path / path / file_name
@@ -1124,10 +1143,10 @@ def number_of_steps(num_of_heights, doubling=True):
     number_of_trees = 4 * (2 ** num_of_heights - 1) / 2
     if doubling:
         number_of_trees *= 2
-        n = (2 ** num_of_heights * 2 - 2) / 2 + 1
+        number = (2 ** num_of_heights * 2 - 2) / 2 + 1
     else:
-        n = (2 ** num_of_heights - 1) / 2 + 1
-    return int(number_of_trees + n)
+        number = (2 ** num_of_heights - 1) / 2 + 1
+    return int(number_of_trees + number)
 
 
 if __name__ == '__main__':
