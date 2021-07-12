@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1268, 660)
+        Form.resize(1268, 685)
         Form.setMouseTracking(True)
         Form.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(Form)
@@ -22,7 +22,7 @@ class Ui_Form(object):
         self.verticalLayout_4.setSpacing(0)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.top_frame = QtWidgets.QFrame(Form)
-        self.top_frame.setMinimumSize(QtCore.QSize(0, 40))
+        self.top_frame.setMinimumSize(QtCore.QSize(0, 50))
         self.top_frame.setMaximumSize(QtCore.QSize(16777215, 50))
         self.top_frame.setStyleSheet("background-color: rgb(225, 225, 225);")
         self.top_frame.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -44,6 +44,7 @@ class Ui_Form(object):
         font.setBold(False)
         font.setWeight(50)
         self.add_article.setFont(font)
+        self.add_article.setAutoFillBackground(False)
         self.add_article.setStyleSheet("QPushButton {\n"
 "    background-color: rgb(225, 225, 225);\n"
 "    border-radius: 3px;\n"
@@ -83,6 +84,7 @@ class Ui_Form(object):
         font.setBold(False)
         font.setWeight(50)
         self.add_detail.setFont(font)
+        self.add_detail.setAutoFillBackground(False)
         self.add_detail.setStyleSheet("QPushButton {\n"
 "    background-color: rgb(225, 225, 225);\n"
 "    border-radius: 3px;\n"
@@ -180,6 +182,7 @@ class Ui_Form(object):
         self.gridLayout.addWidget(self.articles_view, 1, 0, 1, 2)
         self.verticalLayout.addWidget(self.articles)
         self.attention = QtWidgets.QLabel(self.left_frame)
+        self.attention.setMinimumSize(QtCore.QSize(0, 21))
         self.attention.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.attention.setScaledContents(False)
         self.attention.setAlignment(QtCore.Qt.AlignCenter)

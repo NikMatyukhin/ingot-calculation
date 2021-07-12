@@ -68,7 +68,7 @@ class Catalog(QDialog):
         self.shadow_effect.setBlurRadius(20)
         self.ui.top_frame.setGraphicsEffect(self.shadow_effect)
 
-        self.ui.add_article.clicked.connect(self.open_product_dialog)
+        self.ui.add_article.clicked.connect(self.open_article_dialog)
         self.ui.add_detail.clicked.connect(self.open_detail_dialog)
         self.ui.articles_view.clicked.connect(self.show_details)
         self.ui.name.textChanged.connect(self.search_proxy.name)
@@ -105,7 +105,7 @@ class Catalog(QDialog):
             if self.articles_model.rowCount(QModelIndex()):
                 if not self.ui.articles_view.currentIndex().parent().isValid():
                     add = menu.addAction('Добавить заготовку')
-                    delete = menu.addAction('Удалить продукцию')
+                    delete = menu.addAction('Удалить изделие')
         
                     add.triggered.connect(self.open_detail_dialog)
                     delete.triggered.connect(self.confirm_article_removing)
@@ -119,7 +119,7 @@ class Catalog(QDialog):
         
         menu.exec_(self.mapToGlobal(point))
 
-    def open_product_dialog(self):
+    def open_article_dialog(self):
         window = ArticleDialog(self)
         window.recordSavedSuccess.connect(self.confirm_article_adding)
 
@@ -194,6 +194,7 @@ class Catalog(QDialog):
             self.articles_model.removeRows(index.row(), 1, QModelIndex())
         else:
             QMessageBox.critical(self, 'Ошибка удаления', 'SqlDatabaseError: can not remove record.', QMessageBox.Ok)
+        self.details_model.clear()
 
     def confirm_detail_removing(self):
         index = self.ui.details_view.currentIndex()

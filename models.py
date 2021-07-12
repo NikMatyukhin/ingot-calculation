@@ -654,7 +654,7 @@ class CatalogArticlesModel(TreeModel):
         for line in sorted(StandardDataService.get_table('articles')):
             self.appendRow(line, QModelIndex())
             for sub_line in StandardDataService.get_by_field('details', Field('article_id', line[0])):
-                self.appendRow([None, sub_line[4], sub_line[0]], self.index(0, 0, QModelIndex()))
+                self.appendRow([None, sub_line[4]], self.index(0, 0, QModelIndex()))
 
 
 class CatalogDetailsModel(TableModel):
@@ -732,7 +732,7 @@ class ComplectsModel(TreeModel):
 
     def setupModelData(self):
         for article in StandardDataService.get_table('articles'):
-            article_id, name, _ = article
+            article_id, name = article
             self.appendRow([article_id, name, None, None, None, None, None, None, None, None, False], QModelIndex())
 
             # Получение индекса только что добавленной записи изделия

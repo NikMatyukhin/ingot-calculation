@@ -68,9 +68,6 @@ class ArticleDialog(QDialog):
 
         # Валидация полей и установка дополнений
         self.ui.regnum.setValidator(QIntValidator(self.ui.regnum))
-        product_completer = QCompleter(list(CatalogDataService.type_list()), self)
-        product_completer.setCaseSensitivity(Qt.CaseInsensitive)
-        self.ui.type.setCompleter(product_completer)
 
         self.ui.add.clicked.connect(self.confirm_adding)
         self.ui.cancel.clicked.connect(self.reject)
@@ -81,37 +78,32 @@ class ArticleDialog(QDialog):
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
         id = self.ui.regnum.text()
-        type = self.ui.type.text()
         name = self.ui.name.text()
 
         # Если номер ведомости, тип и описание заполнены, то можно добавлять
-        if not id or not type or not name:
+        if not id or not name:
             self.timer.start(1500)
             self.highlight()
             return
         
-        id = StandardDataService.save_record('articles', id=id, type=type, name=name)
+        id = StandardDataService.save_record('articles', id=id, name=name)
         if not id:
             QMessageBox.critical(self, 'Ошибка добавления', f'Изделие не было добавлено в базу!', QMessageBox.Ok)
             return
         
         QMessageBox.information(self, f'Изделие {id}', f'Изделие №{id} успешно добавлено!', QMessageBox.Ok)
-        self.recordSavedSuccess.emit([id, name, None])
+        self.recordSavedSuccess.emit([id, name])
 
     def highlight(self):
         if not self.ui.regnum.text():
             QToolTip.showText(self.ui.regnum.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.regnum)
             self.ui.regnum.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
-        if not self.ui.type.text():
-            QToolTip.showText(self.ui.type.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.type)
-            self.ui.type.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
         if not self.ui.name.text():
             QToolTip.showText(self.ui.name.mapToGlobal(QPoint(0, 0)), "Поле необходимо заполнить", self.ui.name)
             self.ui.name.setStyleSheet('QLineEdit {border: 2px solid red; padding-left: -1px;}')
 
     def cooldown(self):
         self.ui.regnum.setStyleSheet('')
-        self.ui.type.setStyleSheet('')
         self.ui.name.setStyleSheet('')
 
 
