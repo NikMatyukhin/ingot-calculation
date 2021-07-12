@@ -186,7 +186,7 @@ class CuttingMapPainter:
         self.tree = tree
 
     def setEfficiency(self, efficiency):
-        self.efficiency = efficiency
+        self.efficiency = efficiency * 100
 
     def drawTree(self):
         self.cutting_nodes = []

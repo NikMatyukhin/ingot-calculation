@@ -121,3 +121,5 @@ log/
 # Nikita data support files
 *.xlsx
 from_xlc_to_sqlite.py
+Ui_untitled.py
+temp.py
