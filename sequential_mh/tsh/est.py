@@ -17,7 +17,7 @@ class Estimator:
     def __init__(self, rectangle, height, g_height, start=None, limits=None,
                  x_hem=None, y_hem=None):
         self.rectangle = rectangle
-        self.height = height
+        self.height = round(height, 4)
         self.g_height = g_height
         if start is None:
             start = self.rectangle.blp
@@ -164,7 +164,7 @@ class Estimator:
         x_1, y_1 = self.tlp.x, self.trp.y
         x_correction = 0
         y_correction = 0
-        if self.height == self.g_height:
+        if math.isclose(self.height, self.g_height, rel_tol=1e-4):
             x_correction = self.right_hem
             y_correction = self.top_hem
         if less_or_equal(x, x_1 - x_correction):
