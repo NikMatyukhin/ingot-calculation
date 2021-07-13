@@ -62,7 +62,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     if last_rolldir:
         rotate_all(rectangles, last_rolldir)
     main_region = Estimator(
-        src_rect, height, g_height, limits=max_size,
+        src_rect, round(height, 4), g_height, limits=max_size,
         x_hem=x_hem, y_hem=y_hem
     )
     all_regions = [main_region]
@@ -87,7 +87,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             )
             if best is None:
                 continue
-            if variant == 15:
+            if variant == 12:
                 state = StateLayout([], [best], [], min_rect, 0, 0, 0)
                 layout_options.append(state)
                 continue
@@ -242,7 +242,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                 blanks.extend(res)
             status = StateLayout(
                 blanks, [], tailings, new_min_rect,
-                usable_square / square,  intersection_square,
+                round(usable_square / square, 6),  intersection_square,
                 new_min_rect.min_side / new_min_rect.max_side
             )
             layout_options.append(status)
@@ -332,7 +332,7 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                 count = len(
                     [
                         item for item in packed
-                        if rect.size[0] >= 350 or rect.size[1] >= 350
+                        if (rect.size[0] >= 400 and rect.size[1] > 80) or (rect.size[1] >= 400 and rect.size[0] > 80)
                     ]
                 )
                 if count >= 2:
@@ -378,26 +378,29 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
             elif priority > 10 and w_0 < rect_w < w_max and rect_l == l_0:
                 # вариант 7
                 priority, orientation, best = 10, j, rect
-            elif priority > 11 and w_0 < rect_w < w_max and l_0 < rect_l < l_max:
+            # elif priority > 11 and w_0 < rect_w < w_max and l_0 < rect_l < l_max:
+            #     # вариант 11
+            #     priority, orientation, best = 11, j, rect
+            elif priority > 11 and rect_w < w_max and rect_l < l_max:
                 # вариант 11
                 priority, orientation, best = 11, j, rect
-            elif priority > 12 and rect_w < w_0 and l_0 < rect_l < l_max:
-                # вариант 12
-                priority, orientation, best = 12, j, rect
-            elif priority > 13 and w_0 < rect_w < w_max and rect_l < min(l_0, l_max):
-                # вариант 13
-                priority, orientation, best = 13, j, rect
-            elif priority > 14 and rect_w < w_0 and rect_l < min(l_0, l_max):
-                # вариант 14
-                priority, orientation, best = 14, j, rect
-            elif priority > 15:
+            # elif priority > 12 and rect_w < w_0 and rect_l < min(l_0, l_max):
+            #     # вариант 14
+            #     priority, orientation, best = 14, j, rect
+            # elif priority > 13 and rect_w < w_0 and l_0 < rect_l < l_max:
+            #     # вариант 12
+            #     priority, orientation, best = 12, j, rect
+            # elif priority > 14 and w_0 < rect_w < w_max and rect_l < min(l_0, l_max):
+            #     # вариант 13
+            #     priority, orientation, best = 13, j, rect
+            elif priority > 12:
                 # ничего не входит
-                priority, orientation, best = 15, j, rect
-    if priority > 15:
-        priority, orientation, best = 15, 0, rectangles[-1]
+                priority, orientation, best = 12, j, rect
+    if priority > 12:
+        priority, orientation, best = 12, 0, rectangles[-1]
     if best and orientation == 1 and best.is_rotatable:
         best.rotate()
-    if 11 <= priority < 15 and best:
+    if priority == 11 and best:
         size = best.size[:-1]
         variants = []
         for j in range(1 + best.is_rotatable):
@@ -409,7 +412,7 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                 intersection_square = rect.intersection_square(src_rect)
                 variants.append((intersection_square, j))
         _, orientation = max(variants, key=itemgetter(0))
-        if priority == 14:
+        if priority == 11:
             best_intersection, _ = max(variants, key=itemgetter(0))
             orientation_by_intersection = [v[1] for v in variants if v[0] == best_intersection]
             orientation_by_min_area = best_orientation(best, src_rect, x0, y0)
