@@ -171,12 +171,12 @@ class Estimator:
             x = x_1 - x_correction
         if less_or_equal(y, y_1 - y_correction):
             y = y_1 - y_correction
-        y_est = curve_value(x, y)
-        x_est = curve_value(y, x)
+        y_est = round(curve_value(x, y), 4)
+        x_est = round(curve_value(y, x), 4)
         if y_est < 0 or x_est < 0:
             return None, None
-        min_y_est = curve_value(x + self.right_hem, y + self.top_hem)
-        min_x_est = curve_value(y + self.top_hem, x + self.right_hem)
+        min_y_est = round(curve_value(x + self.right_hem, y + self.top_hem), 4)
+        min_x_est = round(curve_value(y + self.top_hem, x + self.right_hem), 4)
         if min_y_est < 0 or min_x_est < 0:
             return None, None
         top_hem = y_est - min_y_est
