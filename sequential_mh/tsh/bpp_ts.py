@@ -62,7 +62,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     if last_rolldir:
         rotate_all(rectangles, last_rolldir)
     main_region = Estimator(
-        src_rect, height, g_height, limits=max_size,
+        src_rect, round(height, 4), g_height, limits=max_size,
         x_hem=x_hem, y_hem=y_hem
     )
     all_regions = [main_region]
@@ -72,8 +72,6 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
         for_packing = rectangles[first_priority]
     else:
         for_packing = dict_to_list(rectangles)
-        # for_packing = rectangles
-    # while not is_empty_dict(for_packing):
     while for_packing:
         layout_options = []
         if not all_regions:
@@ -87,7 +85,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             )
             if best is None:
                 continue
-            if variant == 15:
+            if variant == 12:
                 state = StateLayout([], [best], [], min_rect, 0, 0, 0)
                 layout_options.append(state)
                 continue
@@ -139,13 +137,15 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                     tailings.append(dummy_alw)
             blanks = [PackedRectangle(deepcopy(best), *new_start)]
             rect = Rectangle.create_by_size(new_start, best.length, best.width)
-            if dummy_alw:
-                rect = min_enclosing_rect((dummy_alw, rect))
-            if dummy_hem:
-                rect = min_enclosing_rect((dummy_hem, rect))
+            for tailing in tailings:
+                rect = min_enclosing_rect((tailing, rect))
+            # if dummy_alw:
+            #     rect = min_enclosing_rect((dummy_alw, rect))
+            # if dummy_hem:
+            #     rect = min_enclosing_rect((dummy_hem, rect))
             new_min_rect = min_enclosing_rect((min_rect, rect))
             empty_rect = difference_rect(new_min_rect, [min_rect, rect])
-            square, usable_square = rect.square, best.area
+            square, usable_square = new_min_rect.square, best.area
             if dummy_hem:
                 usable_square += dummy_hem.square
             if dummy_alw:
@@ -235,23 +235,26 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
                         if main_region(*_mrect.trp):
                             _results.append((ef, placed_blanks, _mrect, _tailings, _usable_square))
                 _, res, _mrect, _tailings, _usable_square = max(_results, key=itemgetter(0))
-                usable_square += _usable_square
+                # usable_square += _usable_square
                 new_min_rect = _mrect
                 square = _mrect.square
                 tailings.extend(_tailings)
                 blanks.extend(res)
+            usable_square = sum(r.square for r in tailings if r.rtype != RectangleType.RESIDUAL)
+            usable_square += sum(b.rectangle.area for b in blanks)
+            usable_square += sum(b.rectangle.area for b in result)
+            usable_square += sum(r.square for r in all_tailings if r.rtype != RectangleType.RESIDUAL)
             status = StateLayout(
                 blanks, [], tailings, new_min_rect,
-                usable_square / square,  intersection_square,
+                round(usable_square / square, 6), round(intersection_square / src_rect.square, 6),
                 new_min_rect.min_side / new_min_rect.max_side
             )
             layout_options.append(status)
         # выбрать вариант размещения
-        # TODO: Может сравнивать как длины векторов???
         layout = max(
-            enumerate(layout_options), key=lambda item: (item[1].efficiency,
-                                              item[1].inters_square,
-                                              item[1].aspect_ratio)
+            enumerate(layout_options),
+            key=lambda item: penalty_func(item[1].efficiency, item[1].aspect_ratio,
+                                          item[1].inters_square)
         )
         layout = layout[1]
         # добавляю размещенные заготовки в результат
@@ -332,7 +335,7 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                 count = len(
                     [
                         item for item in packed
-                        if rect.size[0] >= 350 or rect.size[1] >= 350
+                        if (rect.size[0] >= 400 and rect.size[1] > 80) or (rect.size[1] >= 400 and rect.size[0] > 80)
                     ]
                 )
                 if count >= 2:
@@ -348,56 +351,76 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                 continue
             _, l_max = dist
 
-            if priority > 1 and rect_w == w_0 and rect_l == l_max:
-                # вариант 1
+            width, length = estimator(x0, y0)
+            # p = 4
+            if priority > 1 and rect_w == width and rect_l == length:
                 priority, orientation, best = 1, j, rect
-            elif priority > 2 and rect_w == w_max and rect_l == l_max:
+            elif priority > 2 and rect_w == width and rect_l < length:
                 # вариант 2
                 priority, orientation, best = 2, j, rect
-            elif priority > 3 and w_0 < rect_w < w_max and rect_l == l_max:
+            elif priority > 3 and rect_w < width and rect_l == length:
                 # вариант 3
                 priority, orientation, best = 3, j, rect
-            elif priority > 4 and rect_w < w_0 and rect_l == l_max:
-                # вариант 4
-                priority, orientation, best = 4, j, rect
-            elif priority > 5 and rect_w == w_max and rect_l < l_max:
-                # вариант 5
-                priority, orientation, best = 5, j, rect
-            elif priority > 6 and rect_w == w_0 and rect_l == l_0:
-                # вариант 10
-                priority, orientation, best = 6, j, rect
-            elif priority > 7 and rect_w == w_0 and rect_l < l_0:
-                # вариант 8
-                priority, orientation, best = 7, j, rect
-            elif priority > 8 and rect_w < w_0 and rect_l == l_0:
-                # вариант 9
-                priority, orientation, best = 8, j, rect
-            elif priority > 9 and rect_w == w_0 and l_0 < rect_l < l_max:
-                # вариант 6
-                priority, orientation, best = 9, j, rect
-            elif priority > 10 and w_0 < rect_w < w_max and rect_l == l_0:
-                # вариант 7
-                priority, orientation, best = 10, j, rect
-            elif priority > 11 and w_0 < rect_w < w_max and l_0 < rect_l < l_max:
-                # вариант 11
-                priority, orientation, best = 11, j, rect
-            elif priority > 12 and rect_w < w_0 and l_0 < rect_l < l_max:
-                # вариант 12
-                priority, orientation, best = 12, j, rect
-            elif priority > 13 and w_0 < rect_w < w_max and rect_l < min(l_0, l_max):
-                # вариант 13
-                priority, orientation, best = 13, j, rect
-            elif priority > 14 and rect_w < w_0 and rect_l < min(l_0, l_max):
-                # вариант 14
-                priority, orientation, best = 14, j, rect
-            elif priority > 15:
+            elif priority > 3 and rect_w < width and rect_l < length:
+                # вариант 3
+                priority, orientation, best = 3, j, rect
+            elif priority > 4:
                 # ничего не входит
-                priority, orientation, best = 15, j, rect
-    if priority > 15:
-        priority, orientation, best = 15, 0, rectangles[-1]
+                priority, orientation, best = 12, j, rect
+
+            # if priority > 1 and rect_w == w_0 and rect_l == l_max:
+            #     # вариант 1
+            #     priority, orientation, best = 1, j, rect
+            # elif priority > 2 and rect_w == w_max and rect_l == l_max:
+            #     # вариант 2
+            #     priority, orientation, best = 2, j, rect
+            # elif priority > 3 and w_0 < rect_w < w_max and rect_l == l_max:
+            #     # вариант 3
+            #     priority, orientation, best = 3, j, rect
+            # elif priority > 4 and rect_w < w_0 and rect_l == l_max:
+            #     # вариант 4
+            #     priority, orientation, best = 4, j, rect
+            # elif priority > 5 and rect_w == w_max and rect_l < l_max:
+            #     # вариант 5
+            #     priority, orientation, best = 5, j, rect
+            # elif priority > 6 and rect_w == w_0 and rect_l == l_0:
+            #     # вариант 10
+            #     priority, orientation, best = 6, j, rect
+            # elif priority > 7 and rect_w == w_0 and rect_l < l_0:
+            #     # вариант 8
+            #     priority, orientation, best = 7, j, rect
+            # elif priority > 8 and rect_w < w_0 and rect_l == l_0:
+            #     # вариант 9
+            #     priority, orientation, best = 8, j, rect
+            # elif priority > 9 and rect_w == w_0 and l_0 < rect_l < l_max:
+            #     # вариант 6
+            #     priority, orientation, best = 9, j, rect
+            # elif priority > 10 and w_0 < rect_w < w_max and rect_l == l_0:
+            #     # вариант 7
+            #     priority, orientation, best = 10, j, rect
+            # # elif priority > 11 and w_0 < rect_w < w_max and l_0 < rect_l < l_max:
+            # #     # вариант 11
+            # #     priority, orientation, best = 11, j, rect
+            # elif priority > 11 and rect_w < w_max and rect_l < l_max:
+            #     # вариант 11
+            #     priority, orientation, best = 11, j, rect
+            # elif priority > 12 and rect_w < w_0 and rect_l < min(l_0, l_max):
+            #     # вариант 14
+            #     priority, orientation, best = 14, j, rect
+            # elif priority > 13 and rect_w < w_0 and l_0 < rect_l < l_max:
+            #     # вариант 12
+            #     priority, orientation, best = 12, j, rect
+            # elif priority > 14 and w_0 < rect_w < w_max and rect_l < min(l_0, l_max):
+            #     # вариант 13
+            #     priority, orientation, best = 13, j, rect
+            # elif priority > 12:
+            #     # ничего не входит
+            #     priority, orientation, best = 12, j, rect
+    if priority > 12:
+        priority, orientation, best = 12, 0, rectangles[-1]
     if best and orientation == 1 and best.is_rotatable:
         best.rotate()
-    if 11 <= priority < 15 and best:
+    if priority == 11 and best:
         size = best.size[:-1]
         variants = []
         for j in range(1 + best.is_rotatable):
@@ -409,7 +432,7 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                 intersection_square = rect.intersection_square(src_rect)
                 variants.append((intersection_square, j))
         _, orientation = max(variants, key=itemgetter(0))
-        if priority == 14:
+        if priority == 11:
             best_intersection, _ = max(variants, key=itemgetter(0))
             orientation_by_intersection = [v[1] for v in variants if v[0] == best_intersection]
             orientation_by_min_area = best_orientation(best, src_rect, x0, y0)
@@ -433,3 +456,17 @@ def best_orientation(rectangle, container, x, y):
         area_2 = (y + rect_l) * container.width
         variants.append((min(area_1, area_2), j))
     return min(variants, key=itemgetter(0))[1]
+
+
+def e2_norm(vector, weight=None):
+    """Евклидова норма вектора"""
+    if weight:
+        return sum(map(lambda item: item[1]*item[0]**2, zip(vector, weight))) ** 0.5
+    return sum(map(lambda x: x**2, vector)) ** 0.5
+
+
+def penalty_func(aspect_ratio, efficiency, inters_square):
+    """Штраф за сильно вылянутое решение"""
+    if aspect_ratio < 0.25:
+        return efficiency * aspect_ratio, aspect_ratio, inters_square
+    return efficiency, aspect_ratio, inters_square

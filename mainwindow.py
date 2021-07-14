@@ -47,6 +47,7 @@ from sequential_mh.bpp_dsc.rectangle import (
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node
 )
+from sequential_mh.bpp_dsc.exception import BPPError
 from sequential_mh.bpp_dsc.support import dfs
 from sequential_mh.bpp_dsc.stm import (
     _pack, _create_insert_template, predicate, is_empty_tree, is_empty_node
@@ -627,6 +628,9 @@ class OCIMainWindow(QMainWindow):
                 item for item in trees if not is_defective_tree(item, max_size)
             ]
 
+        if not trees:
+            raise BPPError('Не удалось получить раскрой')
+
         # print(f'Годных деревьев: {len(trees)}')
         progress.setLabelText('Выбор оптимального решения...')
         best = max(
@@ -634,8 +638,6 @@ class OCIMainWindow(QMainWindow):
                 item.root, list(dfs(item.root)), nd=True, is_p=True
             )
         )
-        # print(f'{list(filter(lambda x: x.result.height == 3, best.root.cc_leaves))[0]._id = }')
-        # total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
         return best
 
     @staticmethod
@@ -803,6 +805,8 @@ class OCIMainWindow(QMainWindow):
         trees = [
             item for item in trees if not is_defective_tree(item, max_leaf_size)
         ]
+        if not trees:
+            raise BPPError('Не удалось получить раскрой')
         best = max(
             trees,
             key=lambda item: solution_efficiency(

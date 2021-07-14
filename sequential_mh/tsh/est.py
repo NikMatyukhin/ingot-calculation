@@ -17,7 +17,7 @@ class Estimator:
     def __init__(self, rectangle, height, g_height, start=None, limits=None,
                  x_hem=None, y_hem=None):
         self.rectangle = rectangle
-        self.height = height
+        self.height = round(height, 4)
         self.g_height = g_height
         if start is None:
             start = self.rectangle.blp
@@ -164,19 +164,19 @@ class Estimator:
         x_1, y_1 = self.tlp.x, self.trp.y
         x_correction = 0
         y_correction = 0
-        if self.height == self.g_height:
+        if math.isclose(self.height, self.g_height, rel_tol=1e-4):
             x_correction = self.right_hem
             y_correction = self.top_hem
         if less_or_equal(x, x_1 - x_correction):
             x = x_1 - x_correction
         if less_or_equal(y, y_1 - y_correction):
             y = y_1 - y_correction
-        y_est = curve_value(x, y)
-        x_est = curve_value(y, x)
+        y_est = round(curve_value(x, y), 4)
+        x_est = round(curve_value(y, x), 4)
         if y_est < 0 or x_est < 0:
             return None, None
-        min_y_est = curve_value(x + self.right_hem, y + self.top_hem)
-        min_x_est = curve_value(y + self.top_hem, x + self.right_hem)
+        min_y_est = round(curve_value(x + self.right_hem, y + self.top_hem), 4)
+        min_x_est = round(curve_value(y + self.top_hem, x + self.right_hem), 4)
         if min_y_est < 0 or min_x_est < 0:
             return None, None
         top_hem = y_est - min_y_est
