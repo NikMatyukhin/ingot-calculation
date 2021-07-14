@@ -2198,12 +2198,14 @@ def get_all_residuals(tree):
             tailing = Rectangle.create_by_size(
                 (0, leave.result.length), bin_length - leave.result.length, bin_width
             )
+            tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
             leave.result.tailings.append(tailing)
         elif bin_length == leave.result.length and bin_width > leave.result.width:
             tailing = Rectangle.create_by_size(
                 (leave.result.width, 0), bin_length, bin_width - leave.result.width
             )
+            tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
             leave.result.tailings.append(tailing)
         elif leave.result.length > bin_length and bin_width > leave.result.width:
@@ -2213,22 +2215,26 @@ def get_all_residuals(tree):
                 tailing = Rectangle.create_by_size(
                     (leave.result.width, 0), bin_length, bin_width - leave.result.width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
                 tailing = Rectangle.create_by_size(
                     (0, leave.result.length), bin_length - leave.result.length, leave.result.width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
             else:
                 tailing = Rectangle.create_by_size(
                     (0, leave.result.length), bin_length - leave.result.length, bin_width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
                 tailing = Rectangle.create_by_size(
                     (leave.result.width, 0), leave.result.length, bin_width - leave.result.width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
     return residuals
