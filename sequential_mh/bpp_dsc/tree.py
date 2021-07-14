@@ -1671,7 +1671,6 @@ class CuttingChartNode(Node):
             troot.kit.delete_height(self.bin.d_height)
             self.delete_branch()
 
-
         return self.result
 
     # работа с размерами (оценка, обновление) --------------------------

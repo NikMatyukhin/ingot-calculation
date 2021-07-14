@@ -638,8 +638,6 @@ class OCIMainWindow(QMainWindow):
                 item.root, list(dfs(item.root)), nd=True, is_p=True
             )
         )
-        # print(f'{list(filter(lambda x: x.result.height == 3, best.root.cc_leaves))[0]._id = }')
-        # total_efficiency = solution_efficiency(best.root, list(dfs(best.root)), is_total=True)
         return best
 
     @staticmethod
