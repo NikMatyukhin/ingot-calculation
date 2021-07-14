@@ -820,6 +820,19 @@ class OCIMainWindow(QMainWindow):
         get_all_residuals(best)
         return best
 
+    def save_residuals(self):
+        """Сохранение остатков в БД"""
+        min_size = self.minimum_plate_height, self.minimum_plate_width
+        if self.tree is None:
+            raise ValueError('Дерево не рассчитано')
+        for node in self.tree.cc_leaves:
+            tailings = filtration_residues(node.result.tailings, min_size=min_size)
+            print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
+            for i, tailing in enumerate(tailings):
+                print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}')
+
+            # TODO: дописать логику сохранения в БД
+
     def steps(self):
         """Список толщин"""
         leaves = self.tree.cc_leaves
