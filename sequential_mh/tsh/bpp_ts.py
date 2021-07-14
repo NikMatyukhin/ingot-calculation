@@ -246,7 +246,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
             usable_square += sum(r.square for r in all_tailings if r.rtype != RectangleType.RESIDUAL)
             status = StateLayout(
                 blanks, [], tailings, new_min_rect,
-                round(usable_square / square, 6),  round(intersection_square / src_rect.square, 6),
+                round(usable_square / square, 6), round(intersection_square / src_rect.square, 6),
                 new_min_rect.min_side / new_min_rect.max_side
             )
             layout_options.append(status)
