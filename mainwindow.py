@@ -5,6 +5,7 @@ import time
 import math
 from typing import Dict, Union
 from itertools import chain
+from functools import partial
 from collections import Counter, deque
 from pathlib import Path
 
@@ -42,16 +43,18 @@ from exceptions import ForcedTermination
 from log import setup_logging, timeit, log_operation_info
 
 from sequential_mh.bpp_dsc.rectangle import (
-    Direction, Material, Blank, Kit, Bin
+    BinType, Direction, Material, Blank, Kit, Bin
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node
+    BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node,
+    get_all_residuals
 )
 from sequential_mh.bpp_dsc.exception import BPPError
 from sequential_mh.bpp_dsc.support import dfs
 from sequential_mh.bpp_dsc.stm import (
     _pack, _create_insert_template, predicate, is_empty_tree, is_empty_node
 )
+from sequential_mh.tsh.rect import RectangleType
 
 
 Number = Union[int, float]
@@ -638,6 +641,7 @@ class OCIMainWindow(QMainWindow):
                 item.root, list(dfs(item.root)), nd=True, is_p=True
             )
         )
+        get_all_residuals(best)
         return best
 
     @staticmethod
@@ -813,6 +817,7 @@ class OCIMainWindow(QMainWindow):
                 item.root, list(dfs(item.root)), nd=True, is_p=True
             )
         )
+        get_all_residuals(best)
         return best
 
     def steps(self):
@@ -1151,6 +1156,67 @@ def number_of_steps(num_of_heights, doubling=True):
     else:
         number = (2 ** num_of_heights - 1) / 2 + 1
     return int(number_of_trees + number)
+
+
+def create_bins_residues(items, height: Number,
+                         rolldir: Direction, material=None) -> list[Bin]:
+    """Создание контейнеров из остатков
+
+    :param items: список прямоуголников-остатков
+    :type items: list[Rectangle]
+    :param height: толщина
+    :type height: Number
+    :param rolldir: [description]
+    :type rolldir: Direction
+    :param material: материал, defaults to None
+    :type material: Material, optional
+    :return: Список контейнеров-остатков
+    :rtype: list[Bin]
+    """ 
+    args = (height, rolldir, material, BinType.residue)
+    return [Bin(item.length, item.width, *args) for item in items]
+
+
+def filtration_residues(items, min_size=None):
+    """Фильтрация остатков
+
+    :param items: список прямоугольников
+    :type items: list[Rectangle]
+    :param min_size: минимальные размеры, defaults to None
+    :type min_size: Optional[tuple[Number, Number]], optional
+    :return: остатки с подходящими размерами
+    :rtype: list[Rectangle]
+    """
+    residues = filter(is_residual, items)
+    p_is_suitable_sizes = partial(is_suitable_sizes, min_size=min_size)
+    if min_size:
+        residues = filter(p_is_suitable_sizes, residues)
+    return list(residues)
+
+
+def is_residual(item) -> bool:
+    """Проверка на остаток
+
+    :param item: Прямоугольник тип которого проверяется
+    :type item: Rectangle
+    :return: True если остаток и False в противном случае
+    :rtype: bool
+    """
+    return item.rtype == RectangleType.RESIDUAL
+
+
+def is_suitable_sizes(item, min_size: tuple[Number, Number]) -> bool:
+    """Проверка минимальных размеров
+
+    :param item: Прямоугольник
+    :type item: Rectangle
+    :param min_size: Минимальные размеры в формате (length, width)
+    :type min_size: tuple[Number, Number]
+    :return: True если прямоугольник удовлетворяет минимальным размерам
+             и False в противном случае
+    :rtype: bool
+    """
+    return item.min_side >= min(min_size) and item.max_side >= max(min_size)
 
 
 if __name__ == '__main__':
