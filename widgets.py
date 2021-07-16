@@ -339,10 +339,13 @@ class OrderSectionDelegate(QStyledItemDelegate):
 class IngotSectionDelegate(QStyledItemDelegate):
 
     forgedIndexClicked = pyqtSignal(QModelIndex)
+    deleteFromStorageClicked = pyqtSignal(QModelIndex)
+    deleteFromOrderClicked = pyqtSignal(QModelIndex)
     margin = 5
 
-    def __init__(self, parent: typing.Optional[QObject] = None) -> None:
+    def __init__(self, show_close: True, parent: typing.Optional[QObject] = None) -> None:
         super(IngotSectionDelegate, self).__init__(parent)
+        self.show_close = show_close
     
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         opt = QStyleOptionViewItem(option)
@@ -372,6 +375,11 @@ class IngotSectionDelegate(QStyledItemDelegate):
             painter.fillRect(rect, fill_color.darker(105))
         else:
             painter.fillRect(rect, fill_color)
+        
+        if self.show_close:
+            self.closeIcon = QPixmap(':icons/cancel.png').scaled(15, 15, aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio, transformMode=Qt.TransformationMode.SmoothTransformation)
+            self.closeIconPos = QPoint(contentRect.right() - self.closeIcon.width() + self.margin, contentRect.top())
+            painter.drawPixmap(self.closeIconPos, self.closeIcon)
         
         painter.setPen(palette.shadow().color())
         painter.drawLine(rect.right(), rect.top(), rect.right(), rect.bottom())
@@ -422,9 +430,16 @@ class IngotSectionDelegate(QStyledItemDelegate):
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
         if event.type() == QEvent.MouseButtonRelease:
             forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos)
+            if self.show_close:
+                closeIconRect = self.closeIcon.rect().translated(self.closeIconPos)
             ingot = index.data(Qt.DisplayRole)
-            if(forgeIconRect.contains(event.pos()) and ingot['status_id'] == 3):
+            if forgeIconRect.contains(event.pos()) and ingot['status_id'] == 3:
                 self.forgedIndexClicked.emit(index)
+            elif self.show_close and closeIconRect.contains(event.pos()):
+                if ingot['order_id']:
+                    self.deleteFromOrderClicked.emit(index)
+                else:
+                    self.deleteFromStorageClicked.emit(index)
         return super().editorEvent(event, model, option, index)
 
 
