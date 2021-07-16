@@ -278,13 +278,13 @@ class OrderSectionDelegate(QStyledItemDelegate):
         painter.setFont(title_font)
         painter.setPen(palette.text().color())
 
-        name_text = 'Заказ ' + order['name']
+        name_text = 'Заказ №' + str(order['id']) + ' (' + order['name'] + ')'
         name_rect = QRect(self.textBox(title_font, name_text))
         name_rect.moveTo(contentRect.left(), contentRect.top())
 
         painter.drawText(name_rect, Qt.TextSingleLine, name_text)
 
-        efficiency_text = str(order['efficiency'] * 100) + '%' if order['efficiency'] > 0.0 else 'Не указан'
+        efficiency_text = str(round(order['efficiency'] * 100, 2)) + '%' if order['efficiency'] > 0.0 else 'Не указан'
         status_text = StandardDataService.get_by_id('orders_statuses', Field('id', order['status_id']))[1]
               
         visible_info = {

@@ -1049,6 +1049,7 @@ class OCIMainWindow(QMainWindow):
         if window.exec() == QDialog.Accepted:
             efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
             self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'efficiency': efficiency}, Qt.EditRole)
+            StandardDataService.update_record('orders', Field('id', order['id']), efficiency=efficiency)
         self.show_order_information(self.ui.searchResult_1.currentIndex())
 
     def open_order_dialog(self):
