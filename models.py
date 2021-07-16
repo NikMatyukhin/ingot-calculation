@@ -592,6 +592,7 @@ class IngotModel(ListModel):
         for ingot in result:
             data_row = {
                 'id': ingot[0],
+                'order_id': self.__order_id if self.__order_id else None,
                 'fusion_id': ingot[2],
                 'status_id': ingot[3],
                 'size': [ingot[4], ingot[5], round(ingot[6], 1)],

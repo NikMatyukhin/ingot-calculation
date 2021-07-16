@@ -66,7 +66,7 @@ class Catalog(QDialog):
         self.shadow_effect.setYOffset(-5)
         self.shadow_effect.setXOffset(0)
         self.shadow_effect.setBlurRadius(20)
-        self.ui.top_frame.setGraphicsEffect(self.shadow_effect)
+        self.ui.top_area.setGraphicsEffect(self.shadow_effect)
 
         self.ui.add_article.clicked.connect(self.open_article_dialog)
         self.ui.add_detail.clicked.connect(self.open_detail_dialog)
