@@ -721,19 +721,21 @@ class BinNode(Node):
                                 self.children.delete(left)
                             else:
                                 self.children.delete(right)
-                        
-                estimate = self.estimate_size()
-                width = estimate[WIDTH]
-                length = estimate[LENGTH]
-                # FIXME: косяк, если объединенная оценка выходит за границы,
-                # для подветок маленьких примеров (example_9)
-                dist = self.bin.estimator(width, length, last_deformations)
-                if dist is None:
-                    dist = (0, 0)
-                if last_rolldir == Direction.H:
-                    width += dist[0]
-                else:
-                    length += dist[1]
+
+                if not is_cutting_node(self.parent):
+                    estimate = self.estimate_size()
+                    width = estimate[WIDTH]
+                    length = estimate[LENGTH]
+                    # FIXME: косяк, если объединенная оценка выходит за границы,
+                    # для подветок маленьких примеров (example_9)
+                    dist = self.bin.estimator(width, length, last_deformations)
+                    if dist is None:
+                        dist = (0, 0)
+
+                    if last_rolldir == Direction.H:
+                        width += dist[0]
+                    else:
+                        length += dist[1]
                 bin_ = Bin(
                     length, width, self.bin.d_height,
                     last_rolldir, self.bin.material, self.bin.bin_type
@@ -1440,19 +1442,31 @@ class OperationNode(Node):
                 else:
                     raise SizeError('Невозможно разрезать лист')
             else:
-                if abs(s_1) >= abs(s_2):
-                # if s_1 >= s_2:
-                    self.direction = Direction.H
-                    if is_left:
-                        self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
-                    else:
-                        self.point = (estimate[LENGTH], 0.)
-                else:
+                if self.parent.bin.last_rolldir == Direction.H:
                     self.direction = Direction.V
                     if is_left:
                         self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
                     else:
                         self.point = (0., estimate[WIDTH])
+                else:
+                    self.direction = Direction.H
+                    if is_left:
+                        self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
+                    else:
+                        self.point = (estimate[LENGTH], 0.)
+                # if abs(s_1) >= abs(s_2):
+                # # if s_1 >= s_2:
+                #     self.direction = Direction.H
+                #     if is_left:
+                #         self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
+                #     else:
+                #         self.point = (estimate[LENGTH], 0.)
+                # else:
+                #     self.direction = Direction.V
+                #     if is_left:
+                #         self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
+                #     else:
+                #         self.point = (0., estimate[WIDTH])
         else:
             msg = ('Операция установки направления разреза доступна только '
                    'для узлов разреза')
@@ -1578,6 +1592,27 @@ class CuttingChartNode(Node):
             bin_node.fix_sizes(
                 width, length, max_size=max_size, restrictions=restrictions
             )
+            cutting_node, _ = self.parent_cnode()
+            if list(chain.from_iterable(group.values())):
+                min_length, min_width = min(
+                    map(lambda x: (x.length, x.width), list(chain.from_iterable(group.values()))),
+                    key=lambda x: x[0]
+                )
+                # min_width = min(map(lambda x: x.width, list(chain.from_iterable(group.values()))))
+                is_valid_a = is_valid_b = False
+                if cutting_node.direction == Direction.H:
+                    if max_size[0] > width:
+                        is_valid_a = min_length <= length and min_width <= width - max_size[0]
+                        is_valid_b = min_width <= length and min_length <= width - max_size[0]
+                else:
+                    if max_size[0] > length:
+                        is_valid_a = min_length <= width and min_width <= length - max_size[0]
+                        is_valid_b = min_width <= width and min_length <= length - max_size[0]
+                if not is_valid_a or not is_valid_b:
+                    unplaced = list(chain.from_iterable(group.values()))
+                    for _, subgroup in group.items():
+                        subgroup.clear()
+                    self.result.update([], unplaced=unplaced)
         else:
             length, width, _ = self.available_size()
             group = bin_node.kit[self.bin.height]
@@ -1635,7 +1670,6 @@ class CuttingChartNode(Node):
             troot = self.get_troot()
             troot.kit.delete_height(self.bin.d_height)
             self.delete_branch()
-
 
         return self.result
 
@@ -2164,12 +2198,14 @@ def get_all_residuals(tree):
             tailing = Rectangle.create_by_size(
                 (0, leave.result.length), bin_length - leave.result.length, bin_width
             )
+            tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
             leave.result.tailings.append(tailing)
         elif bin_length == leave.result.length and bin_width > leave.result.width:
             tailing = Rectangle.create_by_size(
                 (leave.result.width, 0), bin_length, bin_width - leave.result.width
             )
+            tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
             leave.result.tailings.append(tailing)
         elif leave.result.length > bin_length and bin_width > leave.result.width:
@@ -2179,22 +2215,26 @@ def get_all_residuals(tree):
                 tailing = Rectangle.create_by_size(
                     (leave.result.width, 0), bin_length, bin_width - leave.result.width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
                 tailing = Rectangle.create_by_size(
                     (0, leave.result.length), bin_length - leave.result.length, leave.result.width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
             else:
                 tailing = Rectangle.create_by_size(
                     (0, leave.result.length), bin_length - leave.result.length, bin_width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
                 tailing = Rectangle.create_by_size(
                     (leave.result.width, 0), leave.result.length, bin_width - leave.result.width
                 )
+                tailing.rtype = RectangleType.RESIDUAL
                 residuals.append(tailing)
                 leave.result.tailings.append(tailing)
     return residuals
