@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1115, 704)
+        MainWindow.resize(1293, 764)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/icons/kras-logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
@@ -301,35 +301,6 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setContentsMargins(20, 20, 20, 20)
         self.verticalLayout_2.setSpacing(10)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.searchNumber = QtWidgets.QLineEdit(self.leftMenu_1)
-        self.searchNumber.setEnabled(False)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.searchNumber.sizePolicy().hasHeightForWidth())
-        self.searchNumber.setSizePolicy(sizePolicy)
-        self.searchNumber.setMinimumSize(QtCore.QSize(0, 30))
-        self.searchNumber.setMaximumSize(QtCore.QSize(16777215, 30))
-        self.searchNumber.setClearButtonEnabled(True)
-        self.searchNumber.setObjectName("searchNumber")
-        self.verticalLayout_2.addWidget(self.searchNumber)
-        self.searchType = QtWidgets.QComboBox(self.leftMenu_1)
-        self.searchType.setEnabled(False)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.searchType.sizePolicy().hasHeightForWidth())
-        self.searchType.setSizePolicy(sizePolicy)
-        self.searchType.setMinimumSize(QtCore.QSize(0, 30))
-        self.searchType.setMaximumSize(QtCore.QSize(16777215, 30))
-        self.searchType.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.searchType.setObjectName("searchType")
-        self.searchType.addItem("")
-        self.searchType.addItem("")
-        self.searchType.addItem("")
-        self.searchType.addItem("")
-        self.searchType.addItem("")
-        self.verticalLayout_2.addWidget(self.searchType)
         self.searchResult_1 = QtWidgets.QListView(self.leftMenu_1)
         self.searchResult_1.setObjectName("searchResult_1")
         self.verticalLayout_2.addWidget(self.searchResult_1)
@@ -361,18 +332,18 @@ class Ui_MainWindow(object):
         self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_5.setSpacing(0)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
-        self.label = QtWidgets.QLabel(self.informationPage)
-        self.label.setMinimumSize(QtCore.QSize(0, 40))
-        self.label.setMaximumSize(QtCore.QSize(16777215, 40))
+        self.order_name = QtWidgets.QLabel(self.informationPage)
+        self.order_name.setMinimumSize(QtCore.QSize(0, 40))
+        self.order_name.setMaximumSize(QtCore.QSize(16777215, 40))
         font = QtGui.QFont()
         font.setPointSize(14)
-        self.label.setFont(font)
-        self.label.setStyleSheet("QLabel {\n"
+        self.order_name.setFont(font)
+        self.order_name.setStyleSheet("QLabel {\n"
 "    padding-left: 10px;\n"
 "    background-color: rgb(225, 225, 225);\n"
 "}")
-        self.label.setObjectName("label")
-        self.verticalLayout_5.addWidget(self.label)
+        self.order_name.setObjectName("order_name")
+        self.verticalLayout_5.addWidget(self.order_name)
         self.scrollArea = QtWidgets.QScrollArea(self.informationPage)
         self.scrollArea.setStyleSheet("QScrollArea {\n"
 "    padding-left: 20px;\n"
@@ -430,8 +401,8 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 496, 1278))
-        self.scrollAreaWidgetContents.setStyleSheet("* {\n"
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 850, 1382))
+        self.scrollAreaWidgetContents.setStyleSheet("QWidget {\n"
 "    margin-right: 7px;\n"
 "}\n"
 "\n"
@@ -449,68 +420,22 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.setContentsMargins(0, 0, 0, 20)
         self.verticalLayout_4.setSpacing(0)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.complectsFrame = QtWidgets.QFrame(self.scrollAreaWidgetContents)
-        self.complectsFrame.setStyleSheet("* {\n"
-"    margin-right: 0px;\n"
-"}")
-        self.complectsFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.complectsFrame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.complectsFrame.setObjectName("complectsFrame")
-        self.horizontalLayout_8 = QtWidgets.QHBoxLayout(self.complectsFrame)
-        self.horizontalLayout_8.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_8.setSpacing(0)
-        self.horizontalLayout_8.setObjectName("horizontalLayout_8")
-        self.label_2 = QtWidgets.QLabel(self.complectsFrame)
-        self.label_2.setMinimumSize(QtCore.QSize(0, 40))
-        self.label_2.setMaximumSize(QtCore.QSize(16777215, 40))
+        self.label_4 = QtWidgets.QLabel(self.scrollAreaWidgetContents)
+        self.label_4.setMinimumSize(QtCore.QSize(0, 40))
+        self.label_4.setMaximumSize(QtCore.QSize(16777215, 40))
         font = QtGui.QFont()
         font.setPointSize(14)
-        self.label_2.setFont(font)
-        self.label_2.setStyleSheet("QLabel {\n"
+        self.label_4.setFont(font)
+        self.label_4.setStyleSheet("QLabel {\n"
 "    background-color: rgb(234, 234, 234);\n"
+"    border: 1px solid gray;\n"
+"    border-bottom: none;\n"
 "}")
-        self.label_2.setObjectName("label_2")
-        self.horizontalLayout_8.addWidget(self.label_2)
-        self.saveComplect = QtWidgets.QPushButton(self.complectsFrame)
-        self.saveComplect.setMinimumSize(QtCore.QSize(120, 40))
-        self.saveComplect.setMaximumSize(QtCore.QSize(120, 40))
-        self.saveComplect.setStyleSheet("QPushButton {\n"
-"    margin-top: 10px;\n"
-"    border: none;\n"
-"    background-color: rgb(234, 234, 234);\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: rgb(216, 216, 216);\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: rgb(200, 200, 200);\n"
-"}")
-        self.saveComplect.setObjectName("saveComplect")
-        self.horizontalLayout_8.addWidget(self.saveComplect)
-        self.saveComplectAndRecreate = QtWidgets.QPushButton(self.complectsFrame)
-        self.saveComplectAndRecreate.setMinimumSize(QtCore.QSize(120, 40))
-        self.saveComplectAndRecreate.setMaximumSize(QtCore.QSize(120, 40))
-        self.saveComplectAndRecreate.setStyleSheet("QPushButton {\n"
-"    margin-top: 10px;\n"
-"    margin-right: 7px;\n"
-"    border: none;\n"
-"    background-color: rgb(234, 234, 234);\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: rgb(216, 216, 216);\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: rgb(200, 200, 200);\n"
-"}")
-        self.saveComplectAndRecreate.setObjectName("saveComplectAndRecreate")
-        self.horizontalLayout_8.addWidget(self.saveComplectAndRecreate)
-        self.verticalLayout_4.addWidget(self.complectsFrame)
+        self.label_4.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.label_4.setObjectName("label_4")
+        self.verticalLayout_4.addWidget(self.label_4)
         self.complectsView = QtWidgets.QTreeView(self.scrollAreaWidgetContents)
-        self.complectsView.setMinimumSize(QtCore.QSize(0, 300))
+        self.complectsView.setMinimumSize(QtCore.QSize(0, 500))
         self.complectsView.viewport().setProperty("cursor", QtGui.QCursor(QtCore.Qt.ArrowCursor))
         self.complectsView.setStyleSheet("QTreeView {\n"
 "    border: 1px solid gray;\n"
@@ -557,15 +482,36 @@ class Ui_MainWindow(object):
 "        border-image: none;\n"
 "        image: url(:icons/branch-open.png);\n"
 "}")
-        self.complectsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.complectsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.complectsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.complectsView.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked|QtWidgets.QAbstractItemView.SelectedClicked)
-        self.complectsView.setAlternatingRowColors(False)
         self.complectsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.complectsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
+        self.complectsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.complectsView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
         self.complectsView.setAnimated(True)
         self.complectsView.setObjectName("complectsView")
         self.verticalLayout_4.addWidget(self.complectsView)
+        self.frame = QtWidgets.QFrame(self.scrollAreaWidgetContents)
+        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame.setObjectName("frame")
+        self.horizontalLayout_9 = QtWidgets.QHBoxLayout(self.frame)
+        self.horizontalLayout_9.setContentsMargins(0, 10, 0, 0)
+        self.horizontalLayout_9.setSpacing(0)
+        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.assign_ingot = QtWidgets.QPushButton(self.frame)
+        self.assign_ingot.setMinimumSize(QtCore.QSize(120, 35))
+        self.assign_ingot.setMaximumSize(QtCore.QSize(120, 16777215))
+        self.assign_ingot.setObjectName("assign_ingot")
+        self.horizontalLayout_9.addWidget(self.assign_ingot)
+        self.edit_order = QtWidgets.QPushButton(self.frame)
+        self.edit_order.setMinimumSize(QtCore.QSize(120, 35))
+        self.edit_order.setMaximumSize(QtCore.QSize(120, 16777215))
+        self.edit_order.setObjectName("edit_order")
+        self.horizontalLayout_9.addWidget(self.edit_order)
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_9.addItem(spacerItem2)
+        self.verticalLayout_4.addWidget(self.frame)
         self.label_3 = QtWidgets.QLabel(self.scrollAreaWidgetContents)
         self.label_3.setMinimumSize(QtCore.QSize(0, 40))
         self.label_3.setMaximumSize(QtCore.QSize(16777215, 40))
@@ -574,6 +520,8 @@ class Ui_MainWindow(object):
         self.label_3.setFont(font)
         self.label_3.setStyleSheet("QLabel {\n"
 "    background-color: rgb(234, 234, 234);\n"
+"    border: 1px solid gray;\n"
+"    border-bottom: none;\n"
 "}")
         self.label_3.setObjectName("label_3")
         self.verticalLayout_4.addWidget(self.label_3)
@@ -608,6 +556,8 @@ class Ui_MainWindow(object):
         self.label_7.setFont(font)
         self.label_7.setStyleSheet("QLabel {\n"
 "    background-color: rgb(234, 234, 234);\n"
+"    border: 1px solid gray;\n"
+"    border-bottom: none;\n"
 "}")
         self.label_7.setObjectName("label_7")
         self.horizontalLayout_5.addWidget(self.label_7)
@@ -616,7 +566,9 @@ class Ui_MainWindow(object):
         self.recalculate.setMaximumSize(QtCore.QSize(120, 40))
         self.recalculate.setStyleSheet("QPushButton {\n"
 "    margin-top: 10px;\n"
-"    border: none;\n"
+"    border: 1px solid gray;\n"
+"    border-bottom: none;\n"
+"    border-left: none;\n"
 "    background-color: rgb(234, 234, 234);\n"
 "}\n"
 "\n"
@@ -634,7 +586,9 @@ class Ui_MainWindow(object):
         self.fullScreen.setMaximumSize(QtCore.QSize(120, 40))
         self.fullScreen.setStyleSheet("QPushButton {\n"
 "    margin-top: 10px;\n"
-"    border: none;\n"
+"    border: 1px solid gray;\n"
+"    border-bottom: none;\n"
+"    border-left: none;\n"
 "    background-color: rgb(234, 234, 234);\n"
 "}\n"
 "\n"
@@ -653,7 +607,9 @@ class Ui_MainWindow(object):
         self.detailedPlan.setStyleSheet("QPushButton {\n"
 "    margin-top: 10px;\n"
 "    margin-right: 7px;\n"
-"    border: none;\n"
+"    border: 1px solid gray;\n"
+"    border-bottom: none;\n"
+"    border-left: none;\n"
 "    background-color: rgb(234, 234, 234);\n"
 "}\n"
 "\n"
@@ -672,23 +628,10 @@ class Ui_MainWindow(object):
         self.graphicsView.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
         self.graphicsView.setObjectName("graphicsView")
         self.verticalLayout_4.addWidget(self.graphicsView)
-        self.label_5 = QtWidgets.QLabel(self.scrollAreaWidgetContents)
-        self.label_5.setMinimumSize(QtCore.QSize(0, 40))
-        self.label_5.setMaximumSize(QtCore.QSize(16777215, 40))
-        font = QtGui.QFont()
-        font.setPointSize(14)
-        self.label_5.setFont(font)
-        self.label_5.setStyleSheet("QLabel {\n"
-"    background-color: rgb(234, 234, 234);\n"
-"}")
-        self.label_5.setObjectName("label_5")
-        self.verticalLayout_4.addWidget(self.label_5)
-        self.label_6 = QtWidgets.QLabel(self.scrollAreaWidgetContents)
-        self.label_6.setTextFormat(QtCore.Qt.AutoText)
-        self.label_6.setObjectName("label_6")
-        self.verticalLayout_4.addWidget(self.label_6)
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         self.verticalLayout_5.addWidget(self.scrollArea)
+        self.scrollArea.raise_()
+        self.order_name.raise_()
         self.orderInformationArea.addWidget(self.informationPage)
         self.horizontalLayout.addWidget(self.orderInformationArea)
         self.mainArea.addWidget(self.observerPage)
@@ -732,8 +675,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_8.setContentsMargins(-1, -1, 7, -1)
         self.verticalLayout_8.setSpacing(10)
         self.verticalLayout_8.setObjectName("verticalLayout_8")
-        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_8.addItem(spacerItem2)
+        spacerItem3 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_8.addItem(spacerItem3)
         self.verticalLayout_9.addLayout(self.verticalLayout_8)
         self.searchResult_2.setWidget(self.scrollAreaWidgetContents_2)
         self.verticalLayout_7.addWidget(self.searchResult_2)
@@ -894,31 +837,18 @@ class Ui_MainWindow(object):
 "слитков"))
         self.settings.setText(_translate("MainWindow", "Настройки\n"
 "приложения"))
-        self.searchNumber.setPlaceholderText(_translate("MainWindow", "Номер заказа..."))
-        self.searchType.setItemText(0, _translate("MainWindow", "Все заказы"))
-        self.searchType.setItemText(1, _translate("MainWindow", "В процессе"))
-        self.searchType.setItemText(2, _translate("MainWindow", "В ожидании раскроя"))
-        self.searchType.setItemText(3, _translate("MainWindow", "Не начатые"))
-        self.searchType.setItemText(4, _translate("MainWindow", "Завершённые"))
         self.defaultLabel.setText(_translate("MainWindow", "Заказ не выбран"))
-        self.label.setText(_translate("MainWindow", "Номер заказа"))
-        self.label_2.setText(_translate("MainWindow", "Выбранные заготовки"))
-        self.saveComplect.setText(_translate("MainWindow", "Сохранить"))
-        self.saveComplectAndRecreate.setText(_translate("MainWindow", "Сохранить\n"
-"и пересчитать"))
-        self.label_3.setText(_translate("MainWindow", "Выбранные слитки"))
-        self.label_7.setText(_translate("MainWindow", "Карта раскроя"))
+        self.order_name.setText(_translate("MainWindow", "Номер заказа"))
+        self.label_4.setText(_translate("MainWindow", "Заготовки"))
+        self.assign_ingot.setText(_translate("MainWindow", "Добавить\n"
+"слиток"))
+        self.edit_order.setText(_translate("MainWindow", "Редактировать\n"
+"заказ"))
+        self.label_3.setText(_translate("MainWindow", "Слитки"))
+        self.label_7.setText(_translate("MainWindow", "Карта раскроя (позже уберём отсюда)"))
         self.recalculate.setText(_translate("MainWindow", "Пересчитать"))
         self.fullScreen.setText(_translate("MainWindow", "На весь экран"))
         self.detailedPlan.setText(_translate("MainWindow", "Перейти к плану"))
-        self.label_5.setText(_translate("MainWindow", "Статистика по заказу"))
-        self.label_6.setText(_translate("MainWindow", "Выход годного:\n"
-"\n"
-"Готовых деталей:\n"
-"Неукомплектованных деталей:\n"
-"\n"
-"Дефектов раскроя:\n"
-"Забракованных деталей:"))
         self.searchName.setPlaceholderText(_translate("MainWindow", "Название детали..."))
         self.closeOrder.setText(_translate("MainWindow", "Завершить заказ"))
         self.sourcePlate.setText(_translate("MainWindow", "Карта\n"

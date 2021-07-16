@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\QtProjects\oci\gui\add_order_dialog.ui'
+# Form implementation generated from reading ui file 'd:\QtProjects\oci\gui\edit_order_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -14,14 +14,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(1395, 697)
+        Dialog.resize(1395, 650)
         Dialog.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName("verticalLayout")
         self.main_area = QtWidgets.QFrame(Dialog)
-        self.main_area.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.main_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.main_area.setFrameShadow(QtWidgets.QFrame.Raised)
         self.main_area.setObjectName("main_area")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.main_area)
@@ -31,7 +31,6 @@ class Ui_Dialog(object):
         self.splitter = QtWidgets.QSplitter(self.main_area)
         self.splitter.setStyleSheet("QSplitter::handle {\n"
 "    background-image: url(:/icons/splitter.png);\n"
-"    background-repeat: no-repeat;\n"
 "}")
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setHandleWidth(59)
@@ -126,16 +125,12 @@ class Ui_Dialog(object):
         self.verticalLayout_4.setSpacing(10)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.tip_2 = QtWidgets.QLabel(self.complects_area)
+        self.tip_2.setMinimumSize(QtCore.QSize(0, 48))
+        self.tip_2.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.tip_2.setObjectName("tip_2")
         self.verticalLayout_4.addWidget(self.tip_2)
-        self.name = QtWidgets.QLineEdit(self.complects_area)
-        self.name.setEnabled(False)
-        self.name.setMinimumSize(QtCore.QSize(0, 25))
-        self.name.setMaximumSize(QtCore.QSize(550, 16777215))
-        self.name.setObjectName("name")
-        self.verticalLayout_4.addWidget(self.name)
         self.complects_view = QtWidgets.QTreeView(self.complects_area)
-        self.complects_view.setMinimumSize(QtCore.QSize(0, 508))
+        self.complects_view.setMinimumSize(QtCore.QSize(0, 540))
         self.complects_view.setStyleSheet("QTreeView {\n"
 "    border: 1px solid gray;\n"
 "}\n"
@@ -185,38 +180,6 @@ class Ui_Dialog(object):
         self.complects_view.setWordWrap(True)
         self.complects_view.setObjectName("complects_view")
         self.verticalLayout_4.addWidget(self.complects_view)
-        self.line = QtWidgets.QFrame(self.complects_area)
-        self.line.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.line.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line.setObjectName("line")
-        self.verticalLayout_4.addWidget(self.line)
-        self.tip_3 = QtWidgets.QLabel(self.complects_area)
-        self.tip_3.setObjectName("tip_3")
-        self.verticalLayout_4.addWidget(self.tip_3)
-        self.heigth_area = QtWidgets.QFrame(self.complects_area)
-        self.heigth_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
-        self.heigth_area.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.heigth_area.setObjectName("heigth_area")
-        self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.heigth_area)
-        self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_3.setSpacing(5)
-        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.label = QtWidgets.QLabel(self.heigth_area)
-        self.label.setEnabled(True)
-        self.label.setObjectName("label")
-        self.horizontalLayout_3.addWidget(self.label)
-        self.heigth = QtWidgets.QDoubleSpinBox(self.heigth_area)
-        self.heigth.setEnabled(True)
-        self.heigth.setObjectName("heigth")
-        self.horizontalLayout_3.addWidget(self.heigth)
-        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_3.addItem(spacerItem)
-        self.verticalLayout_4.addWidget(self.heigth_area)
-        self.line_2 = QtWidgets.QFrame(self.complects_area)
-        self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
-        self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.line_2.setObjectName("line_2")
-        self.verticalLayout_4.addWidget(self.line_2)
         self.horizontalLayout.addWidget(self.splitter)
         self.verticalLayout.addWidget(self.main_area)
         self.button_area = QtWidgets.QFrame(Dialog)
@@ -229,12 +192,12 @@ class Ui_Dialog(object):
         self.horizontalLayout_2.setContentsMargins(0, 0, 10, 0)
         self.horizontalLayout_2.setSpacing(10)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_2.addItem(spacerItem1)
-        self.add = QtWidgets.QPushButton(self.button_area)
-        self.add.setMinimumSize(QtCore.QSize(80, 0))
-        self.add.setObjectName("add")
-        self.horizontalLayout_2.addWidget(self.add)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_2.addItem(spacerItem)
+        self.save = QtWidgets.QPushButton(self.button_area)
+        self.save.setMinimumSize(QtCore.QSize(80, 0))
+        self.save.setObjectName("save")
+        self.horizontalLayout_2.addWidget(self.save)
         self.verticalLayout.addWidget(self.button_area)
 
         self.retranslateUi(Dialog)
@@ -242,12 +205,9 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Новый заказ"))
+        Dialog.setWindowTitle(_translate("Dialog", "Редактирование заказа"))
         self.tip_1.setText(_translate("Dialog", "1. Выберите заготовки и добавьте их в заказ"))
         self.search.setPlaceholderText(_translate("Dialog", "Введите название изделия..."))
         self.tip_2.setText(_translate("Dialog", "2. Проверьте и при необходимости скорректируйте состав заказа (количество и приоритет заготовок)"))
-        self.name.setPlaceholderText(_translate("Dialog", "Введите название заказа..."))
-        self.tip_3.setText(_translate("Dialog", "3. Выставьте толщину, с которой будет начинаться разрез заготовок"))
-        self.label.setText(_translate("Dialog", "Толщина реза:"))
-        self.add.setText(_translate("Dialog", "Добавить"))
+        self.save.setText(_translate("Dialog", "Сохранить"))
 import application_rc

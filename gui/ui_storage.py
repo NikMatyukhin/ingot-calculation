@@ -14,20 +14,28 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(620, 690)
+        Dialog.resize(640, 750)
+        Dialog.setMaximumSize(QtCore.QSize(16777215, 750))
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
-        self.verticalLayout.setContentsMargins(10, 10, 10, 10)
-        self.verticalLayout.setSpacing(5)
+        self.verticalLayout.setContentsMargins(10, 5, 10, 0)
+        self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.label = QtWidgets.QLabel(Dialog)
-        self.label.setMinimumSize(QtCore.QSize(0, 20))
-        self.label.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
-        self.label.setObjectName("label")
-        self.verticalLayout.addWidget(self.label)
-        self.listView_3 = QtWidgets.QListView(Dialog)
-        self.listView_3.setMinimumSize(QtCore.QSize(0, 195))
-        self.listView_3.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.listView_3.setStyleSheet("QScrollBar:horizontal {\n"
+        self.unused_label = QtWidgets.QLabel(Dialog)
+        self.unused_label.setMinimumSize(QtCore.QSize(0, 40))
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.unused_label.setFont(font)
+        self.unused_label.setStyleSheet("QLabel {\n"
+"    background-color: rgb(234, 234, 234);\n"
+"    margin-top: 10px;\n"
+"}")
+        self.unused_label.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
+        self.unused_label.setObjectName("unused_label")
+        self.verticalLayout.addWidget(self.unused_label)
+        self.unused_view = QtWidgets.QListView(Dialog)
+        self.unused_view.setMinimumSize(QtCore.QSize(0, 195))
+        self.unused_view.setMaximumSize(QtCore.QSize(16777215, 195))
+        self.unused_view.setStyleSheet("QScrollBar:horizontal {\n"
 "    height: 10px;\n"
 "    background-color: rgb(240, 240, 240);\n"
 "}\n"
@@ -54,24 +62,32 @@ class Ui_Dialog(object):
 "    background: none;\n"
 "}\n"
 "")
-        self.listView_3.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.listView_3.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.listView_3.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.listView_3.setProperty("showDropIndicator", False)
-        self.listView_3.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
-        self.listView_3.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
-        self.listView_3.setFlow(QtWidgets.QListView.LeftToRight)
-        self.listView_3.setObjectName("listView_3")
-        self.verticalLayout.addWidget(self.listView_3)
-        self.label_2 = QtWidgets.QLabel(Dialog)
-        self.label_2.setMinimumSize(QtCore.QSize(0, 20))
-        self.label_2.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
-        self.label_2.setObjectName("label_2")
-        self.verticalLayout.addWidget(self.label_2)
-        self.listView_2 = QtWidgets.QListView(Dialog)
-        self.listView_2.setMinimumSize(QtCore.QSize(0, 195))
-        self.listView_2.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.listView_2.setStyleSheet("QScrollBar:horizontal {\n"
+        self.unused_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.unused_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.unused_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.unused_view.setProperty("showDropIndicator", False)
+        self.unused_view.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        self.unused_view.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.unused_view.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.unused_view.setFlow(QtWidgets.QListView.LeftToRight)
+        self.unused_view.setObjectName("unused_view")
+        self.verticalLayout.addWidget(self.unused_view)
+        self.used_label = QtWidgets.QLabel(Dialog)
+        self.used_label.setMinimumSize(QtCore.QSize(0, 40))
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.used_label.setFont(font)
+        self.used_label.setStyleSheet("QLabel {\n"
+"    background-color: rgb(234, 234, 234);\n"
+"    margin-top: 10px;\n"
+"}")
+        self.used_label.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
+        self.used_label.setObjectName("used_label")
+        self.verticalLayout.addWidget(self.used_label)
+        self.used_view = QtWidgets.QListView(Dialog)
+        self.used_view.setMinimumSize(QtCore.QSize(0, 195))
+        self.used_view.setMaximumSize(QtCore.QSize(16777215, 195))
+        self.used_view.setStyleSheet("QScrollBar:horizontal {\n"
 "    height: 10px;\n"
 "    background-color: rgb(240, 240, 240);\n"
 "}\n"
@@ -98,24 +114,32 @@ class Ui_Dialog(object):
 "    background: none;\n"
 "}\n"
 "")
-        self.listView_2.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.listView_2.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.listView_2.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.listView_2.setProperty("showDropIndicator", False)
-        self.listView_2.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
-        self.listView_2.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
-        self.listView_2.setFlow(QtWidgets.QListView.LeftToRight)
-        self.listView_2.setObjectName("listView_2")
-        self.verticalLayout.addWidget(self.listView_2)
-        self.label_3 = QtWidgets.QLabel(Dialog)
-        self.label_3.setMinimumSize(QtCore.QSize(0, 20))
-        self.label_3.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
-        self.label_3.setObjectName("label_3")
-        self.verticalLayout.addWidget(self.label_3)
-        self.listView = QtWidgets.QListView(Dialog)
-        self.listView.setMinimumSize(QtCore.QSize(0, 195))
-        self.listView.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.listView.setStyleSheet("QScrollBar:horizontal {\n"
+        self.used_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.used_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.used_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.used_view.setProperty("showDropIndicator", False)
+        self.used_view.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        self.used_view.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.used_view.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.used_view.setFlow(QtWidgets.QListView.LeftToRight)
+        self.used_view.setObjectName("used_view")
+        self.verticalLayout.addWidget(self.used_view)
+        self.plan_label = QtWidgets.QLabel(Dialog)
+        self.plan_label.setMinimumSize(QtCore.QSize(0, 40))
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.plan_label.setFont(font)
+        self.plan_label.setStyleSheet("QLabel {\n"
+"    background-color: rgb(234, 234, 234);\n"
+"    margin-top: 10px;\n"
+"}")
+        self.plan_label.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
+        self.plan_label.setObjectName("plan_label")
+        self.verticalLayout.addWidget(self.plan_label)
+        self.plan_view = QtWidgets.QListView(Dialog)
+        self.plan_view.setMinimumSize(QtCore.QSize(0, 195))
+        self.plan_view.setMaximumSize(QtCore.QSize(16777215, 195))
+        self.plan_view.setStyleSheet("QScrollBar:horizontal {\n"
 "    height: 10px;\n"
 "    background-color: rgb(240, 240, 240);\n"
 "}\n"
@@ -142,15 +166,33 @@ class Ui_Dialog(object):
 "    background: none;\n"
 "}\n"
 "")
-        self.listView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.listView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.listView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.listView.setProperty("showDropIndicator", False)
-        self.listView.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
-        self.listView.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
-        self.listView.setFlow(QtWidgets.QListView.LeftToRight)
-        self.listView.setObjectName("listView")
-        self.verticalLayout.addWidget(self.listView)
+        self.plan_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.plan_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.plan_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.plan_view.setProperty("showDropIndicator", False)
+        self.plan_view.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        self.plan_view.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.plan_view.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.plan_view.setFlow(QtWidgets.QListView.LeftToRight)
+        self.plan_view.setObjectName("plan_view")
+        self.verticalLayout.addWidget(self.plan_view)
+        self.button_area = QtWidgets.QFrame(Dialog)
+        self.button_area.setMinimumSize(QtCore.QSize(0, 40))
+        self.button_area.setMaximumSize(QtCore.QSize(16777215, 40))
+        self.button_area.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.button_area.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.button_area.setObjectName("button_area")
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.button_area)
+        self.horizontalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_3.setSpacing(10)
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem)
+        self.add = QtWidgets.QPushButton(self.button_area)
+        self.add.setMinimumSize(QtCore.QSize(80, 0))
+        self.add.setObjectName("add")
+        self.horizontalLayout_3.addWidget(self.add)
+        self.verticalLayout.addWidget(self.button_area)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -158,6 +200,7 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Склад слитков"))
-        self.label.setText(_translate("Dialog", "Свободные слитки"))
-        self.label_2.setText(_translate("Dialog", "Слитки в работе"))
-        self.label_3.setText(_translate("Dialog", "Запланированные слитки"))
+        self.unused_label.setText(_translate("Dialog", "Свободные слитки"))
+        self.used_label.setText(_translate("Dialog", "Слитки в работе"))
+        self.plan_label.setText(_translate("Dialog", "Запланированные слитки"))
+        self.add.setText(_translate("Dialog", "Добавить"))
