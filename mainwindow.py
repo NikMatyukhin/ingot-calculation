@@ -631,7 +631,12 @@ class OCIMainWindow(QMainWindow):
         start_step, steps = 0, 0
         if restrictions:
             cut_thickness = restrictions.get('cutting_thickness')
-            doubling = cut_thickness >= max(tree.root.kit.keys())
+            if cut_thickness >= max(tree.root.kit.keys()):
+                doubling = True
+            else:
+                # cut_thickness = max(tree.root.kit.keys())
+                restrictions['cutting_thickness'] = max(tree.root.kit.keys())
+            # doubling = cut_thickness >= max(tree.root.kit.keys())
         if progress:
             steps = number_of_steps(len(tree.root.kit.keys()), doubling=doubling)
             # Костыль. Умножение на константу для учета одинаковых веток
