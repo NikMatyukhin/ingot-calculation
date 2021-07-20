@@ -10,6 +10,16 @@ from collections import OrderedDict
 
 
 @dataclass
+class IngotStatus:
+    """Статус слитка
+
+    Содержит название статуса и его ID из базы данных.
+    """
+    id_: int
+    name: set
+
+
+@dataclass
 class Field:
     """Класс управления полями таблицы SQL.
 
@@ -238,6 +248,35 @@ class CatalogDataService(StandardDataService):
         cursor.execute('SELECT DISTINCT type FROM articles')
         
         return list(map(itemgetter(0), cursor.fetchall()))
+
+
+class IngotStatusDataService(StandardDataService):
+    """Сервис работы со статусам слитка"""
+    table = 'ingots_statuses'
+
+    @staticmethod
+    @db_connector
+    def get_table(connection: Connection = connect(':memory:')) -> list:
+        """Получение списка статусов"""
+        # super здесь не работает, можно было подключение через self сделать
+        cursor = connection.cursor()
+        cursor.execute(f'SELECT * FROM {IngotStatusDataService.table}')
+        return [IngotStatus(*item) for item in cursor.fetchall()]
+
+    @staticmethod
+    @db_connector
+    def get_by_field(condition: Field, connection: Connection = connect(':memory:')) -> list:
+        sql = str(f'SELECT * FROM {IngotStatusDataService.table} WHERE {condition.name}={repr(condition.value)}')
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return [IngotStatus(*item) for item in cursor.fetchall()]
+
+    @classmethod
+    def get_by_name(cls, name: str):
+        """Получение статуса по имени"""
+        field = Field(name='name', value=name)
+        return cls.get_by_field(condition=field)
+
 
 class OrderDataService(StandardDataService):
 
