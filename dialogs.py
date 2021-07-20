@@ -234,6 +234,8 @@ class OrderAddingDialog(QDialog):
 
         # Связываем сигналы и слоты
         self.customContextMenuRequested.connect(self.show_context_menu)
+        self.ui.catalog_view.doubleClicked.connect(self.add_entity_filter)
+        self.ui.complects_view.doubleClicked.connect(self.remove_entity_filter)
         self.ui.search.textChanged.connect(self.search_proxy.name)
         self.ui.add.clicked.connect(self.confirm_adding)
 
@@ -264,6 +266,12 @@ class OrderAddingDialog(QDialog):
                     delete = menu.addAction('Убрать изделие целиком')
                     delete.triggered.connect(self.remove_article_from_complect)
         menu.exec_(self.mapToGlobal(point))
+
+    def add_entity_filter(self, index: QModelIndex):
+        if index.parent().isValid():
+            self.add_detail_to_complect()
+        else:
+            self.add_article_to_complect()
 
     def add_article_to_complect(self):
         index = self.search_proxy.mapToSource(self.ui.catalog_view.currentIndex())
@@ -303,6 +311,12 @@ class OrderAddingDialog(QDialog):
         self.ui.complects_view.setColumnWidth(1, 210)
         self.ui.complects_view.setColumnWidth(2, 120)
         self.ui.complects_view.expandAll()
+
+    def remove_entity_filter(self, index: QModelIndex):
+        if index.parent().isValid():
+            self.remove_detail_from_complect()
+        else:
+            self.remove_article_from_complect()
 
     def remove_article_from_complect(self):
         index = self.choice_proxy.mapToSource(self.ui.complects_view.currentIndex())
@@ -373,38 +387,16 @@ class OrderAddingDialog(QDialog):
             return
 
         # Добавляем записи о комплектации заказа в целом
-        articles_count = 0
-        details_count = 0
-        for row in range(self.choice_proxy.rowCount(QModelIndex())):
-            parent_proxy_index = self.choice_proxy.index(row, 0, QModelIndex())
-            parent = self.choice_proxy.mapToSource(parent_proxy_index)
-
-            # HACK: без этого работать не будет
-            parent = self.model.index(parent.row(), 0, QModelIndex())
-
-            article_id_index = self.model.index(parent.row(), 0, QModelIndex())
-            article_id = self.model.data(article_id_index, Qt.DisplayRole)
-            articles_count += 1
-
-            # Добавляем записи о заготовках в заказе
-            for sub_row in range(self.model.rowCount(parent)):
-                added_index = self.model.index(sub_row, 10, parent)
-
-                if not self.model.data(added_index, Qt.DisplayRole):
-                    continue
-
-                amount_index = self.model.index(sub_row, 6, parent)
-                amount = int(self.model.data(amount_index, Qt.DisplayRole))
-                details_count += amount
-                priority_index = self.model.index(sub_row, 7, parent)
-                priority = int(self.model.data(priority_index, Qt.DisplayRole))
-                detail_id_index = self.model.index(sub_row, 9, parent)
-                detail_id = int(self.model.data(detail_id_index, Qt.DisplayRole))
-                StandardDataService.save_record(
-                    'complects', 
-                    order_id=order_id, article_id=article_id, status_id=0,
-                    detail_id=detail_id, amount=amount, priority=priority
-                )
+        marked_rows = self.model.added()
+        complects = marked_rows['complects']
+        updates = UpdatableFieldsCollection(['order_id', 'article_id', 'detail_id', 'status_id', 'amount', 'priority'])
+        order = Field('order_id', order_id)
+        status = Field('status_id', 0)
+        for article, details in complects.items():
+            article = Field('article_id', article)
+            for detail in details:
+                updates.append(order, article, Field('detail_id', detail[0]), status, Field('amount', detail[1]), Field('priority', detail[2]))
+        OrderDataService.save_complects(updates)
 
         self.recordSavedSuccess.emit({
             'id': order_id,
@@ -413,8 +405,8 @@ class OrderAddingDialog(QDialog):
             'step': 0.0,
             'efficiency': 0.0,
             'date': creation_date,
-            'articles': articles_count,
-            'details': details_count,
+            'articles': marked_rows['articles_count'],
+            'details': marked_rows['details_count'],
         })
         logging.info('Заказ %(name)s добавлен в базу.', {'name': order_name})
         self.accept()
@@ -479,6 +471,8 @@ class OrderEditingDialog(QDialog):
         # Связываем сигналы и слоты
         self.customContextMenuRequested.connect(self.show_context_menu)
         self.ui.search.textChanged.connect(self.search_proxy.name)
+        self.ui.catalog_view.doubleClicked.connect(self.add_entity_filter)
+        self.ui.complects_view.doubleClicked.connect(self.remove_entity_filter)
         self.ui.save.clicked.connect(self.confirm_order_editing)
 
     def show_context_menu(self, point: QPointF):
@@ -508,6 +502,12 @@ class OrderEditingDialog(QDialog):
                     delete = menu.addAction('Убрать изделие целиком')
                     delete.triggered.connect(self.remove_article_from_complect)
         menu.exec_(self.mapToGlobal(point))
+
+    def add_entity_filter(self, index: QModelIndex):
+        if index.parent().isValid():
+            self.add_detail_to_complect()
+        else:
+            self.add_article_to_complect()
 
     def add_article_to_complect(self):
         index = self.search_proxy.mapToSource(self.ui.catalog_view.currentIndex())
@@ -547,6 +547,12 @@ class OrderEditingDialog(QDialog):
         self.ui.complects_view.setColumnWidth(1, 210)
         self.ui.complects_view.setColumnWidth(2, 120)
         self.ui.complects_view.expandAll()
+
+    def remove_entity_filter(self, index: QModelIndex):
+        if index.parent().isValid():
+            self.remove_detail_from_complect()
+        else:
+            self.remove_article_from_complect()
 
     def remove_article_from_complect(self):
         index = self.choice_proxy.mapToSource(self.ui.complects_view.currentIndex())
@@ -629,42 +635,20 @@ class OrderEditingDialog(QDialog):
         StandardDataService.delete_by_fields('complects', order_id=self.order['id'])
 
         # Добавляем записи о комплектации заказа в целом
-        articles_count = 0
-        details_count = 0
-        for row in range(self.choice_proxy.rowCount(QModelIndex())):
-            parent_proxy_index = self.choice_proxy.index(row, 0, QModelIndex())
-            parent = self.choice_proxy.mapToSource(parent_proxy_index)
-
-            # HACK: без этого работать не будет
-            parent = self.model.index(parent.row(), 0, QModelIndex())
-
-            article_id_index = self.model.index(parent.row(), 0, QModelIndex())
-            article_id = self.model.data(article_id_index, Qt.DisplayRole)
-            articles_count += 1
-
-            # Добавляем записи о заготовках в заказе
-            for sub_row in range(self.model.rowCount(parent)):
-                added_index = self.model.index(sub_row, 10, parent)
-
-                if not self.model.data(added_index, Qt.DisplayRole):
-                    continue
-
-                amount_index = self.model.index(sub_row, 6, parent)
-                amount = int(self.model.data(amount_index, Qt.DisplayRole))
-                details_count += amount
-                priority_index = self.model.index(sub_row, 7, parent)
-                priority = int(self.model.data(priority_index, Qt.DisplayRole))
-                detail_id_index = self.model.index(sub_row, 9, parent)
-                detail_id = int(self.model.data(detail_id_index, Qt.DisplayRole))
-                StandardDataService.save_record(
-                    'complects', 
-                    order_id=self.order['id'], article_id=article_id, status_id=0,
-                    detail_id=detail_id, amount=amount, priority=priority
-                )
+        marked_rows = self.model.added()
+        complects = marked_rows['complects']
+        updates = UpdatableFieldsCollection(['order_id', 'article_id', 'detail_id', 'status_id', 'amount', 'priority'])
+        order = Field('order_id', self.order['id'])
+        status = Field('status_id', 0)
+        for article, details in complects.items():
+            article = Field('article_id', article)
+            for detail in details:
+                updates.append(order, article, Field('detail_id', detail[0]), status, Field('amount', detail[1]), Field('priority', detail[2]))
+        OrderDataService.save_complects(updates)
 
         self.orderEditedSuccess.emit({
-            'articles': articles_count,
-            'details': details_count,
+            'articles': marked_rows['articles_count'],
+            'details': marked_rows['details_count'],
         })
         logging.info('Заказ %(name)s обновлён в базе.', {'name': self.order['id']})
         self.accept()
