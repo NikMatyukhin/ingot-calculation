@@ -410,6 +410,8 @@ class IngotSectionDelegate(QStyledItemDelegate):
         free_height = min(contentRect.width(), free_height)
         if ingot['status_id'] != 2:
             self.forgeIcon = QPixmap(':icons/ingot.svg')
+        else:
+            self.forgeIcon = QPixmap(':icons/patch.png')
         self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, aspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio, transformMode = Qt.TransformationMode.SmoothTransformation)
         icon_left_margin = contentRect.width() // 2 - free_height // 2
         self.forgeIconPos = QPoint(contentRect.left() + icon_left_margin, contentRect.top() + self.margin + batch_rect.height())
