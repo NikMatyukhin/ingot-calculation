@@ -32,7 +32,7 @@ from models import (
 )
 from service import (
     Field, OrderDataService, StandardDataService, UpdatableFieldsCollection,
-    CatalogDataService
+    CatalogDataService, IngotStatusDataService
 )
 from dialogs import (
     IngotAddingDialog, IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
@@ -498,6 +498,7 @@ class OCIMainWindow(QMainWindow):
             _, efficiency, _ = self.create_cut(
                 ingot_size, details, material, progress=progress
             )
+            self.save_residuals()
         except ForcedTermination:
             log_operation_info(
                 'user_inter_cut', {'name': order_name, 'alloy': fusion_name},
@@ -798,11 +799,11 @@ class OCIMainWindow(QMainWindow):
                 _pack(node, level, restrictions, with_priority=with_priority)
                 # контролируем уровень построения поддеревьев
                 # FIXME: раскоментировать для учета остатков
-                # if tree._type == 0:
-                #     level_subtree = 0
-                # if level_subtree < 1:
-                #     level_subtree += 1
-                #     self.create_subtree(node, restrictions, level_subtree)
+                if tree._type == 0:
+                    level_subtree = 0
+                if level_subtree < 1:
+                    level_subtree += 1
+                    self.create_subtree(node, restrictions, level_subtree)
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -841,9 +842,6 @@ class OCIMainWindow(QMainWindow):
         min_size = self.minimum_plate_height, self.minimum_plate_width
         tailings = get_residuals(node)
         tailings = filtration_residues(node.result.tailings, min_size=min_size)
-        print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
-        for i, tailing in enumerate(tailings):
-            print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}')
         suitable_residues = [
             t for t in tailings
             if incoming_rectangles(t, node.bin.height, node.result.unplaced)
@@ -966,6 +964,11 @@ class OCIMainWindow(QMainWindow):
 
     def save_residuals(self):
         """Сохранение остатков в БД"""
+        # по второму кругу получаем слиток для определения партии
+        ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
+        # гемор с партией, без ООП тяжко
+        batch = ingot['batch']
+        order_id = ingot['order_id']
         min_size = self.minimum_plate_height, self.minimum_plate_width
         if self.tree is None:
             raise ValueError('Дерево не рассчитано')
@@ -973,9 +976,26 @@ class OCIMainWindow(QMainWindow):
             tailings = filtration_residues(node.result.tailings, min_size=min_size)
             print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
             for i, tailing in enumerate(tailings):
-                print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}')
+                print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}; {node.bin.material}')
 
-            # TODO: дописать логику сохранения в БД
+                # получаем сплав
+                fusions = CatalogDataService.fusions_list()
+                fusion = fusions[node.bin.material.name]
+
+                statuses = IngotStatusDataService.get_by_name('Остаток')
+                if statuses:
+                    status = statuses[0]
+                else:
+                    raise ValueError('Статус "Остаток" не найден')
+
+                # делаем остаток
+                _id = StandardDataService.save_record(
+                    'ingots', fusion_id=fusion, batch=batch, status_id=status.id_,
+                    length=tailing.length, width=tailing.width,
+                    height=node.bin.height
+                )
+                print(f'Остаток сохранен: {_id = }')
+                # прявязка к заказу
 
     def steps(self):
         """Список толщин"""
