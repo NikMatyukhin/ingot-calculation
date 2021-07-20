@@ -143,7 +143,8 @@ def stmh_idrd(tree, in_process_filtering=True, postfiltration=True,
     return best
 
 
-def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None):
+def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None,
+               with_priority=True):
     # if local:
     #     level = deque(tree.root.leaves())
     #     for node in tree.root.cc_leaves:
@@ -187,7 +188,7 @@ def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None):
         nodes = deque(sorted(nodes, key=predicate))
         node = nodes[0]
         if is_cc_node(node):
-            _pack(node, level, restrictions)
+            _pack(node, level, restrictions, with_priority=with_priority)
             if is_empty_tree(tree):
                 result.append(tree)
             else:
@@ -200,7 +201,7 @@ def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None):
     return result
 
 
-def _pack(node, level, restrictions):
+def _pack(node, level, restrictions, with_priority=True):
     if restrictions:
         # максимальная длина реза
         max_len = restrictions.get('cutting_length')
@@ -221,7 +222,10 @@ def _pack(node, level, restrictions):
     # 4.3) если ветка не существует:
     if adj_branch is None or not is_op_node(adj_branch):
         # 4.3.1) упаковать
-        node.pack(max_size=max_size, restrictions=restrictions)
+        node.pack(
+            max_size=max_size, restrictions=restrictions,
+            with_priority=with_priority
+        )
         # 4.3.2) обновить размеры
         node.update_size(max_len=max_len)
         if node.result.unplaced:
