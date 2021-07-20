@@ -271,6 +271,7 @@ class OCIMainWindow(QMainWindow):
 
     def confirm_ingot_removing(self, index: QModelIndex):
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
+        order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
 
         message = QMessageBox(self)
         message.setWindowTitle('Подтверждение удаления')
@@ -289,6 +290,15 @@ class OCIMainWindow(QMainWindow):
                 QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить слиток.', QMessageBox.Ok)
                 return
             self.ingot_model.deleteRow(index.row())
+            self.complect_model.discard_statuses(order['id'], ingot['fusion_id'])
+            self.ui.complectsView.expandAll()
+            try:
+                order_efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
+            except ZeroDivisionError:
+                order_efficiency = 0
+                self.map_scene.clear()
+            self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'efficiency': order_efficiency}, Qt.EditRole)
+            StandardDataService.update_record('orders', Field('id', order['id']), efficiency=order_efficiency)
 
     def check_current_order(self):
         """Проверка текущего заказа с возможным изменением статуса"""
@@ -543,7 +553,7 @@ class OCIMainWindow(QMainWindow):
     def redraw_map(self, ingot: Dict):
         self.map_scene.clear()
         self.map_painter.setTree(self.tree)
-        self.map_painter.setEfficiency(ingot['efficiency'])
+        self.map_painter.setEfficiency(round(ingot['efficiency'], 2))
         self.map_painter.drawTree()
 
     def get_details_kit(self, material: Material) -> Kit:

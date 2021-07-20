@@ -331,6 +331,24 @@ class OrderDataService(StandardDataService):
         cursor.executemany(sql, updates)
         
         return True
+    
+    @staticmethod
+    @db_connector
+    def save_complects(updates: UpdatableFieldsCollection, connection: Connection = connect(':memory:')) -> bool:
+        sql = str('INSERT INTO complects ({}, {}, {}, {}, {}, {}) VALUES (?, ?, ?, ?, ?, ?)'.format(*updates.names))
+        cursor = connection.cursor()
+        cursor.executemany(sql, updates)
+        
+        return True
+
+    @staticmethod
+    @db_connector
+    def discard_statuses(updates: UpdatableFieldsCollection, connection: Connection = connect(':memory:')) -> bool:
+        sql = str('UPDATE complects SET {}=? WHERE {}=? AND {}=?'.format(*updates.names))
+        cursor = connection.cursor()
+        cursor.executemany(sql, updates)
+        
+        return True
 
     @staticmethod
     @db_connector
