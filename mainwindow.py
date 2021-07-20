@@ -1,3 +1,6 @@
+"""Модуль главного окна"""
+
+
 import copy
 import sys
 import pickle
@@ -64,6 +67,7 @@ ListSizes = list[Sizes]
 
 
 class OCIMainWindow(QMainWindow):
+    """Главное окно"""
     def __init__(self):
         super().__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
@@ -307,7 +311,7 @@ class OCIMainWindow(QMainWindow):
 
     def confirm_order_adding(self, data: dict):
         self.order_model.appendRow(data)
-    
+
     def confirm_order_editing(self, data: dict):
         index = self.ui.searchResult_1.currentIndex()
         self.order_model.setData(index, data, Qt.EditRole)
@@ -449,6 +453,7 @@ class OCIMainWindow(QMainWindow):
             self.ui.saveComplect.setText(text[:-1])
 
     def safe_create_tree(self):
+        """Сохранение дерева"""
         self.save_complects()
         self.create_tree()
 
@@ -670,7 +675,7 @@ class OCIMainWindow(QMainWindow):
         start_step, steps = 0, 0
         if restrictions:
             cut_thickness = restrictions.get('cutting_thickness')
-            if cut_thickness >= max(tree.root.kit.keys()):
+            if cut_thickness and cut_thickness >= max(tree.root.kit.keys()):
                 doubling = True
             else:
                 # cut_thickness = max(tree.root.kit.keys())
@@ -995,7 +1000,7 @@ class OCIMainWindow(QMainWindow):
 
         self.sourcePage()
 
-        # Кнопку заверешния заказа меняем на кнопку перехода на след.шаг
+        # Кнопку завершения заказа меняем на кнопку перехода на след.шаг
         # depth = order['current_depth']
         # self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
 
@@ -1128,7 +1133,7 @@ class OCIMainWindow(QMainWindow):
         window = IngotAddingDialog(self)
         if window.exec_() == QDialog.Accepted:
             pass
-    
+
     def open_assign_dialog(self):
         """Добавление слитка к заказу"""
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
@@ -1340,7 +1345,7 @@ def create_bins_residues(items, height: Number,
     :type material: Material, optional
     :return: Список контейнеров-остатков
     :rtype: list[Bin]
-    """ 
+    """
     args = (height, rolldir, material, BinType.residue)
     return [Bin(item.length, item.width, *args) for item in items]
 
