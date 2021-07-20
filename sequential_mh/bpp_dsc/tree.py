@@ -1782,6 +1782,18 @@ class CuttingChartNode(Node):
             parent = parent.parent
         return parent, child
 
+    def efficiency(self):
+        used_volume = self.result.total_volume
+
+        if self.subtree:
+            for subtree in self.subtree:
+                for subnode in subtree.root.cc_leaves:
+                    used_volume += subnode.result.total_volume
+
+        if self.bin.volume != 0:
+            return used_volume / self.bin.volume
+        return 0
+
     @property
     def kit(self):
         if self.parent.parent:
@@ -1922,6 +1934,13 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
                 [1/blank.rectangle.priority for blank in node.result]
             )
             number_detail += node.result.qty()
+            for subtree in node.subtree:
+                for subnode in subtree.root.cc_leaves:
+                    used_volume += subnode.result.total_volume
+                    number_detail += subnode.result.qty()
+                    priorities.extend(
+                        [1/blank.rectangle.priority for blank in subnode.result]
+                    )
     if is_total:
         efficiency = used_volume / root.bin.volume
     else:
