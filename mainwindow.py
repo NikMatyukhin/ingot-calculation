@@ -626,42 +626,13 @@ class OCIMainWindow(QMainWindow):
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
 
-        # from sequential_mh.tsh import rect
-        # from sequential_mh.tsh.est import Estimator
-        # from sequential_mh.tsh.visualize import visualize
+        # NOTE: своя визуализация для отладки
         # for node in self.tree.cc_leaves:
-        #     main_rect = rect.Rectangle.create_by_size(
-        #         (0, 0), node.bin.length, node.bin.width
-        #     )
-        #     main_region = Estimator(main_rect, node.bin.height, node.bin.height)
-        #     rectangles = list(chain.from_iterable(node.result.blanks.values()))
-        #     l = sum(len(group) for _, group in kit[node.bin.height].items())
-        #     print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{l}')
-        #     print(f'Прокат: {node.bin.last_rolldir}')
-        #     print(f'Bin ID: {node._id}')
-        #     visualize(
-        #         main_region, rectangles, node.result.tailings,
-        #         xlim=node.bin.width + 50, ylim=node.bin.length + 50,
-        #         prefix='Основной'
-        #     )
+        #     debug_visualize(node, 'Основной')
         #     if node.subtree:
         #         for subtree in node.subtree:
         #             for subnode in subtree.root.cc_leaves:
-        #                 main_rect = rect.Rectangle.create_by_size(
-        #                     (0, 0), subnode.bin.length, subnode.bin.width
-        #                 )
-        #                 main_region = Estimator(main_rect, subnode.bin.height, subnode.bin.height)
-        #                 rectangles = list(chain.from_iterable(subnode.result.blanks.values()))
-        #                 l = sum(len(group) for _, group in kit[subnode.bin.height].items())
-        #                 print(f'Карта толщины: {subnode.bin.height}; упаковано: {subnode.result.qty()}/{l}')
-        #                 print(f'Прокат: {subnode.bin.last_rolldir}')
-        #                 print(f'Bin ID: {subnode._id}')
-
-        #                 visualize(
-        #                     main_region, rectangles, subnode.result.tailings,
-        #                     xlim=subnode.bin.width + 50, ylim=subnode.bin.length + 50,
-        #                     prefix=f'Остаток от {node.bin.height} мм'
-        #                 )
+        #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
 
         efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
 
@@ -963,6 +934,14 @@ class OCIMainWindow(QMainWindow):
             )
         )
         get_all_residuals(best)
+
+        # NOTE: своя визуализация для отладки
+        # for node in best.root.cc_leaves:
+        #     debug_visualize(node, 'Основной')
+        #     if node.subtree:
+        #         for subtree in node.subtree:
+        #             for subnode in subtree.root.cc_leaves:
+        #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
         return best
 
     def save_residuals(self):
@@ -1393,6 +1372,23 @@ def filtration_residues(items, min_size=None):
     if min_size:
         residues = filter(p_is_suitable_sizes, residues)
     return list(residues)
+
+
+def debug_visualize(node, name):
+    # NOTE: своя визуализация для отладки
+    from sequential_mh.tsh import rect
+    from sequential_mh.tsh.est import Estimator
+    from sequential_mh.tsh.visualize import visualize
+    main_rect = rect.Rectangle.create_by_size(
+        (0, 0), node.bin.length, node.bin.width
+    )
+    main_region = Estimator(main_rect, node.bin.height, node.bin.height)
+    rectangles = list(chain.from_iterable(node.result.blanks.values()))
+    visualize(
+        main_region, rectangles, node.result.tailings,
+        xlim=node.bin.width + 50, ylim=node.bin.length + 50,
+        prefix=name
+    )
 
 
 def is_residual(item) -> bool:
