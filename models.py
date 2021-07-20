@@ -10,16 +10,16 @@ from PyQt5.QtGui import (
 )
 
 from service import (
-    Field, StandardDataService, OrderDataService
+    Field, StandardDataService, OrderDataService, UpdatableFieldsCollection
 )
 
 
 class TreeItem:
 
     def __init__(self, data: list, parent: Optional[QObject] = None):
-        self.__item_data = data
-        self.__parent_item = parent
-        self.__child_items = []
+        self._item_data = data
+        self._parent_item = parent
+        self._child_items = []
 
     def child(self, number: int):
         """Получение наследника по индексу
@@ -29,17 +29,17 @@ class TreeItem:
         :return: Объект наследника
         :rtype: TreeItem
         """
-        if number < 0 or number >= len(self.__child_items):
+        if number < 0 or number >= len(self._child_items):
             return None
-        return self.__child_items[number]
+        return self._child_items[number]
 
     def childCount(self) -> int:
         """Количество наследников у текущего объекта"""
-        return len(self.__child_items)
+        return len(self._child_items)
 
     def columnCount(self) -> int:
         """Количество полей данных у объекта дерева"""
-        return len(self.__item_data)
+        return len(self._item_data)
 
     def data(self, column: int) -> Any:
         """Получение данных по номеру колонки.
@@ -49,9 +49,9 @@ class TreeItem:
         :return: Данные объекта
         :rtype: Any
         """
-        if column < 0 or column >= len(self.__item_data):
+        if column < 0 or column >= len(self._item_data):
             return None
-        return self.__item_data[column]
+        return self._item_data[column]
 
     def insertChildren(self, position: int, count: int, columns: int) -> bool:
         """Вставка пустого места для добавляемых наследников.
@@ -65,12 +65,12 @@ class TreeItem:
         :return: Результат операции вставки
         :rtype: bool
         """
-        if position < 0 or position > len(self.__child_items):
+        if position < 0 or position > len(self._child_items):
             return False
 
         for row in range(count):
             data = ['' for _ in range(columns)]
-            self.__child_items.insert(position, TreeItem(data, parent=self))
+            self._child_items.insert(position, TreeItem(data, parent=self))
         return True
 
     def insertColumns(self, position: int, columns: int) -> bool:
@@ -83,18 +83,18 @@ class TreeItem:
         :return: Результат операции вставки
         :rtype: bool
         """
-        if position < 0 or position > len(self.__item_data):
+        if position < 0 or position > len(self._item_data):
             return False
 
         for column in range(columns):
-            self.__item_data.insert(position, None)
+            self._item_data.insert(position, None)
 
-        for child_item in self.__child_items:
+        for child_item in self._child_items:
             child_item.insertColumns(position, columns)
 
     def parent(self):
         """Получение предка объекта (предыдущий узел дерева)"""
-        return self.__parent_item
+        return self._parent_item
 
     def removeChildren(self, position: int, count: int) -> bool:
         """Удаление наследников у объекта.
@@ -106,11 +106,11 @@ class TreeItem:
         :return: Результат операции удаления
         :rtype: bool
         """
-        if position < 0 or position + count > len(self.__child_items):
+        if position < 0 or position + count > len(self._child_items):
             return False
 
         for row in range(count):
-            del self.__child_items[position]
+            del self._child_items[position]
         return True
 
     def removeColumns(self, position: int, columns: int) -> bool:
@@ -123,19 +123,19 @@ class TreeItem:
         :return: Результат операции удаления
         :rtype: bool
         """
-        if position < 0 or position + columns > len(self.__item_data):
+        if position < 0 or position + columns > len(self._item_data):
             return False
 
         for column in range(columns):
-            del self.__item_data[position]
+            del self._item_data[position]
 
-        for child_item in self.__child_items:
+        for child_item in self._child_items:
             child_item.removeColumns(position, columns)
 
     def childNumber(self) -> int:
         """Позиция текущего объекта среди наследников его родителя"""
-        if self.__parent_item:
-            return self.__parent_item.__child_items.index(self)
+        if self._parent_item:
+            return self._parent_item._child_items.index(self)
         return 0
 
     def setData(self, column: int, value: Any) -> bool:
@@ -148,9 +148,9 @@ class TreeItem:
         :return: Результат операции замены
         :rtype: bool
         """
-        if column < 0 or column >= len(self.__item_data):
+        if column < 0 or column >= len(self._item_data):
             return False
-        self.__item_data[column] = value
+        self._item_data[column] = value
         return True
 
 
@@ -731,6 +731,24 @@ class ComplectsModel(TreeModel):
 
         return item.data(index.column())
 
+    def added(self):
+        added_ = {
+            'articles_count': 0,
+            'details_count': 0,
+            'complects': {}
+        }
+        for article in self.root_item._child_items:
+            if not article.data(10):
+                continue
+            added_['complects'][article.data(0)] = []
+            added_['articles_count'] += 1
+            for detail in article._child_items:
+                if detail.data(10):
+                    d_ = detail.data(9), detail.data(6), detail.data(7)
+                    added_['complects'][article.data(0)].append(d_)
+                    added_['details_count'] += int(detail.data(6))
+        return added_
+
     def setupModelData(self):
         for article in StandardDataService.get_table('articles'):
             article_id, name = article
@@ -805,6 +823,18 @@ class OrderInformationComplectsModel(TreeModel):
 
         return item.data(index.column())
 
+    def discard_statuses(self, order_id: int, fusion_id: int):
+        updates = UpdatableFieldsCollection(['status_id', 'order_id', 'detail_id'])
+        order = Field('order_id', order_id)
+        status = Field('status_id', 0)
+        for article in self.root_item._child_items:
+            for detail in article._child_items:
+                if int(detail.data(3)) != fusion_id:
+                    continue
+                updates.append(status, order, Field('detail_id', detail.data(1)))
+        OrderDataService.discard_statuses(updates)
+        self.setupModelData()
+
     def clear(self):
         self.beginResetModel()
         self.root_item.removeChildren(0, self.root_item.childCount())
@@ -834,27 +864,25 @@ class CatalogFilterProxyModel(QSortFilterProxyModel):
         super(CatalogFilterProxyModel, self).__init__(parent)
         self.name_filter = str('')
 
-    def filterAcceptsRow(self, sourceRow: int,
-                         sourceParent: QModelIndex) -> bool:
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.parent().isValid():
             name = self.sourceModel().data(
                 self.sourceModel().index(sourceRow, 1, QModelIndex()),
                 Qt.DisplayRole
             )
-            return self.name_filter in name
+            return self.name_filter in name.lower()
         return True
 
     @pyqtSlot(str)
     def name(self, filter: str):
-        self.name_filter = filter
+        self.name_filter = filter.lower()
         self.invalidateFilter()
 
 
 class OrderComplectsFilterProxyModel(QSortFilterProxyModel):
 
-    def filterAcceptsRow(self, sourceRow: int,
-                         sourceParent: QModelIndex) -> bool:
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.parent().isValid():
             return self.sourceModel().data(self.sourceModel().index(sourceRow, 10, QModelIndex()), Qt.DisplayRole)
