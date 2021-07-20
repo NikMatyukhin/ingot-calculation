@@ -799,11 +799,11 @@ class OCIMainWindow(QMainWindow):
                 _pack(node, level, restrictions, with_priority=with_priority)
                 # контролируем уровень построения поддеревьев
                 # FIXME: раскоментировать для учета остатков
-                if tree._type == 0:
-                    level_subtree = 0
-                if level_subtree < 1:
-                    level_subtree += 1
-                    self.create_subtree(node, restrictions, level_subtree)
+                # if tree._type == 0:
+                #     level_subtree = 0
+                # if level_subtree < 1:
+                #     level_subtree += 1
+                #     self.create_subtree(node, restrictions, level_subtree)
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -899,7 +899,10 @@ class OCIMainWindow(QMainWindow):
         start_step, steps = 0, 0
         if restrictions:
             cut_thickness = restrictions.get('cutting_thickness')
-            doubling = cut_thickness >= max(main_tree.root.kit.keys())
+            if cut_thickness and cut_thickness >= max(main_tree.root.kit.keys()):
+                doubling = True
+            else:
+                restrictions['cutting_thickness'] = max(main_tree.root.kit.keys())
         if progress:
             steps = number_of_steps(len(main_tree.root.kit.keys()), doubling=doubling)
             # Костыль. Умножение на константу для учета одинаковых веток
