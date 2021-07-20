@@ -1,3 +1,4 @@
+import copy
 import sys
 import pickle
 import logging
@@ -43,11 +44,11 @@ from exceptions import ForcedTermination
 from log import setup_logging, timeit, log_operation_info
 
 from sequential_mh.bpp_dsc.rectangle import (
-    BinType, Direction, Material, Blank, Kit, Bin
+    BinType, Direction, Material, Blank, Kit, Bin, Rectangle3d
 )
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node,
-    get_all_residuals
+    get_all_residuals, get_residuals
 )
 from sequential_mh.bpp_dsc.exception import BPPError
 from sequential_mh.bpp_dsc.support import dfs
@@ -619,13 +620,51 @@ class OCIMainWindow(QMainWindow):
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
 
+        # from sequential_mh.tsh import rect
+        # from sequential_mh.tsh.est import Estimator
+        # from sequential_mh.tsh.visualize import visualize
+        # for node in self.tree.cc_leaves:
+        #     main_rect = rect.Rectangle.create_by_size(
+        #         (0, 0), node.bin.length, node.bin.width
+        #     )
+        #     main_region = Estimator(main_rect, node.bin.height, node.bin.height)
+        #     rectangles = list(chain.from_iterable(node.result.blanks.values()))
+        #     l = sum(len(group) for _, group in kit[node.bin.height].items())
+        #     print(f'Карта толщины: {node.bin.height}; упаковано: {node.result.qty()}/{l}')
+        #     print(f'Прокат: {node.bin.last_rolldir}')
+        #     print(f'Bin ID: {node._id}')
+        #     visualize(
+        #         main_region, rectangles, node.result.tailings,
+        #         xlim=node.bin.width + 50, ylim=node.bin.length + 50,
+        #         prefix='Основной'
+        #     )
+        #     if node.subtree:
+        #         for subtree in node.subtree:
+        #             for subnode in subtree.root.cc_leaves:
+        #                 main_rect = rect.Rectangle.create_by_size(
+        #                     (0, 0), subnode.bin.length, subnode.bin.width
+        #                 )
+        #                 main_region = Estimator(main_rect, subnode.bin.height, subnode.bin.height)
+        #                 rectangles = list(chain.from_iterable(subnode.result.blanks.values()))
+        #                 l = sum(len(group) for _, group in kit[subnode.bin.height].items())
+        #                 print(f'Карта толщины: {subnode.bin.height}; упаковано: {subnode.result.qty()}/{l}')
+        #                 print(f'Прокат: {subnode.bin.last_rolldir}')
+        #                 print(f'Bin ID: {subnode._id}')
+
+        #                 visualize(
+        #                     main_region, rectangles, subnode.result.tailings,
+        #                     xlim=subnode.bin.width + 50, ylim=subnode.bin.length + 50,
+        #                     prefix=f'Остаток от {node.bin.height} мм'
+        #                 )
+
         efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
 
         return tree, efficiency, .1
 
     @timeit
     def stmh_idrd(self, tree, with_filter: bool = True,
-                  restrictions: dict = None, progress: QProgressDialog = None):
+                  restrictions: dict = None, progress: QProgressDialog = None,
+                  level_subtree=0, with_priority=True):
         is_main = True
         doubling = False
         start_step, steps = 0, 0
@@ -646,14 +685,14 @@ class OCIMainWindow(QMainWindow):
         trees_vertical = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress, end_progress=False,
-            direction=1, steps=steps
+            direction=1, steps=steps, level_subtree=level_subtree, with_priority=with_priority
         )
         if progress:
             start_step = progress.value()
         trees_horizontal = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress, direction=2,
-            start_step=start_step, steps=steps
+            start_step=start_step, steps=steps, level_subtree=level_subtree, with_priority=with_priority
         )
         trees = [*trees_vertical, *trees_horizontal]
 
@@ -661,8 +700,8 @@ class OCIMainWindow(QMainWindow):
             max_size = restrictions.get('max_size')
         else:
             max_size = None
-        # print(f'Количество деревьев: {len(trees)}')
-        progress.setLabelText('Фильтрация решений...')
+        if progress:
+            progress.setLabelText('Фильтрация решений...')
         if with_filter:
             trees = [
                 item for item in trees if not is_defective_tree(item, max_size)
@@ -671,21 +710,25 @@ class OCIMainWindow(QMainWindow):
         if not trees:
             raise BPPError('Не удалось получить раскрой')
 
-        # print(f'Годных деревьев: {len(trees)}')
-        progress.setLabelText('Выбор оптимального решения...')
+        print(f'Годных деревьев: {len(trees)}')
+        if progress:
+            progress.setLabelText('Выбор оптимального решения...')
         best = max(
             trees, key=lambda item: solution_efficiency(
                 item.root, list(dfs(item.root)), nd=True, is_p=True
             )
         )
+        for node in best.root.cc_leaves:
+            print(node.bin.height, node._id)
         get_all_residuals(best)
         return best
 
-    @staticmethod
-    def _stmh_idrd(tree, local: bool = False, with_filter: bool = True,
+    # @staticmethod
+    def _stmh_idrd(self, tree, local: bool = False, with_filter: bool = True,
                    restrictions: dict = None,
                    progress: QProgressDialog = None, end_progress=True,
-                   direction=1, start_step=0, steps=0):
+                   direction=1, start_step=0, steps=0,
+                   level_subtree=0, with_priority=True):
         """Последовательная древовидная метаэвристика.
 
         Построение деревьев растроя.
@@ -747,7 +790,14 @@ class OCIMainWindow(QMainWindow):
             nodes = deque(sorted(nodes, key=predicate))
             node = nodes[0]
             if is_cc_node(node):
-                _pack(node, level, restrictions)
+                _pack(node, level, restrictions, with_priority=with_priority)
+                # контролируем уровень построения поддеревьев
+                # FIXME: раскоментировать для учета остатков
+                # if tree._type == 0:
+                #     level_subtree = 0
+                # if level_subtree < 1:
+                #     level_subtree += 1
+                #     self.create_subtree(node, restrictions, level_subtree)
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -771,6 +821,58 @@ class OCIMainWindow(QMainWindow):
             progress.setValue(steps)
 
         return result
+
+    def create_subtree(self, node, restrictions, level_subtree):
+        """Создание поддерева для остатка
+
+        :param node: Узел, содержащий остатки
+        :type node: CuttingChartNode
+        :param restrictions: Ограничения
+        :type restrictions: dict
+        :param level_subtree: Уровень поддерева, ограничивает
+                              рекурсивное построение деревьев
+        :type level_subtree: int
+        """
+        min_size = self.minimum_plate_height, self.minimum_plate_width
+        tailings = get_residuals(node)
+        tailings = filtration_residues(node.result.tailings, min_size=min_size)
+        print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
+        for i, tailing in enumerate(tailings):
+            print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}')
+        suitable_residues = [
+            t for t in tailings
+            if incoming_rectangles(t, node.bin.height, node.result.unplaced)
+        ]
+        # если нет прямоугольников для размещения текущей
+        # толщины пробуем упаковать другие
+        adjacent_branch = node.adjacent_branch()
+        adj_node = adjacent_branch.adj_leaves[0]
+        if not suitable_residues and not adj_node.kit.is_empty():
+            # получить неупакованные элементы из соседней ветки
+            # построить дерево для остатков
+            for tailing in tailings:
+                new_root = BinNode(
+                    Bin(
+                        tailing.length, tailing.width, node.bin.height,
+                        material=node.bin.material
+                    ),
+                    copy.deepcopy(adj_node.kit)
+                )
+                new_tree = Tree(new_root)
+                new_tree._type = 1
+                new_tree = self.stmh_idrd(
+                    new_tree, restrictions=restrictions,
+                    level_subtree=level_subtree, with_priority=False
+                )
+                node.subtree.append(new_tree)
+                # как быть если есть приоритет? когда частичная упаковка текущей толщины
+                # получить упакованные элементы
+                # удалить упакованные элементы из соседней ветки
+                for subnode in new_tree.root.cc_leaves:
+                    blanks = [r.rectangle for r in chain.from_iterable(subnode.result.blanks.values())]
+                    adj_node.kit.delete_items(list(blanks), subnode.bin.height)
+                if adj_node.kit.is_empty():
+                    break
 
     @timeit
     def optimal_ingot_size(self, main_tree, min_size, max_size, restrictions, progress=None):
@@ -1241,6 +1343,11 @@ def create_bins_residues(items, height: Number,
     """ 
     args = (height, rolldir, material, BinType.residue)
     return [Bin(item.length, item.width, *args) for item in items]
+
+
+def incoming_rectangles(rect, height, kit):
+    """Прямоугольники входящие в rect"""
+    return [Rectangle3d(rect.length, rect.width, height).is_subrectangle(b, b.is_rotatable) for b in kit]
 
 
 def filtration_residues(items, min_size=None):
