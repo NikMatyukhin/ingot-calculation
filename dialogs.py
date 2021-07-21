@@ -268,6 +268,8 @@ class OrderAddingDialog(QDialog):
         menu.exec_(self.mapToGlobal(point))
 
     def add_entity_filter(self, index: QModelIndex):
+        if index.column() in [7, 9]:
+            return
         if index.parent().isValid():
             self.add_detail_to_complect()
         else:
@@ -313,6 +315,8 @@ class OrderAddingDialog(QDialog):
         self.ui.complects_view.expandAll()
 
     def remove_entity_filter(self, index: QModelIndex):
+        if index.column() in [7, 9]:
+            return
         if index.parent().isValid():
             self.remove_detail_from_complect()
         else:
@@ -504,6 +508,8 @@ class OrderEditingDialog(QDialog):
         menu.exec_(self.mapToGlobal(point))
 
     def add_entity_filter(self, index: QModelIndex):
+        if index.column() in [7, 9]:
+            return
         if index.parent().isValid():
             self.add_detail_to_complect()
         else:
@@ -549,6 +555,8 @@ class OrderEditingDialog(QDialog):
         self.ui.complects_view.expandAll()
 
     def remove_entity_filter(self, index: QModelIndex):
+        if index.column() in [7, 9]:
+            return
         if index.parent().isValid():
             self.remove_detail_from_complect()
         else:
@@ -722,7 +730,7 @@ class IngotAssignmentDialog(QDialog):
 
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel('unused')
-        self.ingot_delegate = IngotSectionDelegate(self.ui.ingots_view)
+        self.ingot_delegate = IngotSectionDelegate(False, self.ui.ingots_view)
         self.ui.ingots_view.setModel(self.ingot_model)
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
         
@@ -744,6 +752,9 @@ class IngotAssignmentDialog(QDialog):
     def confirm_ingots_assinging(self):
         if self.repeatable_fusions():
             QMessageBox.critical(self, 'Ошибка добавления', 'Невозможно выбрать несколько слитков одного сплава', QMessageBox.Close)
+            return
+        if not self.ui.ingots_view.selectedIndexes():
+            QMessageBox.critical(self, 'Ошибка добавления', 'Не выбраны слитки', QMessageBox.Close)
             return
 
         used_fusions = []
@@ -993,10 +1004,10 @@ class IngotReadinessDialog(QDialog):
         self.ui.setupUi(self)
 
         self.id = id
-        self.ui.length_label.setText(str(sizes[0]))
-        self.ui.width_label.setText(str(sizes[1]))
-        self.ui.heigth_label.setText(str(sizes[2]))
-        self.ui.fusion_label.setText(fusion)
+        self.ui.length.setText(str(sizes[0]))
+        self.ui.width.setText(str(sizes[1]))
+        self.ui.heigth.setText(str(sizes[2]))
+        self.ui.fusion.setText(fusion)
 
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
