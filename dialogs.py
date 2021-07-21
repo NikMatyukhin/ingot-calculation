@@ -1008,6 +1008,7 @@ class IngotReadinessDialog(QDialog):
         self.ui.width.setText(str(sizes[1]))
         self.ui.heigth.setText(str(sizes[2]))
         self.ui.fusion.setText(fusion)
+        self.ui.batch.setValidator(QIntValidator(1, 99999))
 
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
