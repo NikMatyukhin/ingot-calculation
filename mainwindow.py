@@ -406,12 +406,12 @@ class OCIMainWindow(QMainWindow):
         for name in complect_counter:
             detail = Field('detail_id', complect_counter[name]['detail_id'])
 
-            if complect_counter[name]['depth'] not in self.steps():
-                updates.append(Field('status_id', 4), Field('total', 0), order, detail)
-                model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
-                model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
+            # if complect_counter[name]['depth'] not in self.steps():
+            #     updates.append(Field('status_id', 4), Field('total', 0), order, detail)
+            #     model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
+            #     model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             # Если количество неразмещённых заготовок равно нулю
-            elif name not in unplaced_counter:
+            if name not in unplaced_counter:
                 updates.append(Field('status_id', 1), Field('total', complect_counter[name]['amount']), order, detail)
                 model.setData(complect_counter[name]['status_id'], 1, Qt.EditRole)
                 model.setData(complect_counter[name]['total'], complect_counter[name]['amount'], Qt.EditRole)
