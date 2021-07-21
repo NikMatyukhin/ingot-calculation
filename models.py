@@ -508,7 +508,7 @@ class ListModel(QAbstractListModel):
     def appendRow(self, data: dict, index: QModelIndex = QModelIndex()) -> bool:
         if not self.insertRows(0, 1, index):
             return False
-        self.items_data[-1] = data
+        self.items_data[0] = data
     
     def deleteRow(self, row: int, index: QModelIndex = QModelIndex()) -> bool:
         if 0 > row > len(self.items_data):
@@ -517,7 +517,7 @@ class ListModel(QAbstractListModel):
 
     def insertRows(self, position: int, rows: int, parent: QModelIndex) -> bool:
         self.beginInsertRows(parent, position, position + rows - 1)
-        self.items_data.append({})
+        self.items_data.insert(position, {})
         self.endInsertRows()
         return True
 

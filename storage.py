@@ -31,6 +31,7 @@ class Storage(QDialog):
         self.ui.used_view.setItemDelegate(self.ingot_unclosable_delegate)
         self.ui.unused_view.setItemDelegate(self.ingot_delegate)
         self.ui.plan_view.setItemDelegate(self.ingot_unclosable_delegate)
+        self.ui.unused_view.setFocus()
 
         self.ui.add.clicked.connect(self.open_ingot_dialog)
         self.ingot_delegate.deleteFromStorageClicked.connect(self.confirm_ingot_removing)
@@ -60,7 +61,8 @@ class Storage(QDialog):
             if not success:
                 QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить слиток.', QMessageBox.Ok)
                 return
-            self.unused_ingots_model.deleteRow(index.row())      
+            self.unused_ingots_model.deleteRow(index.row())
+        self.ui.unused_view.setFocus()
 
 
 if __name__ == '__main__':

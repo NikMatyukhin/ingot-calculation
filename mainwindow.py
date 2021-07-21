@@ -266,8 +266,7 @@ class OCIMainWindow(QMainWindow):
             # Заказ возможно стоит сделать обычным и готовым
             self.ingot_model.setData(index, {'status_id': 1, 'batch': window.get_batch()}, Qt.EditRole)
             self.check_current_order()
-
-            ingot = self.unused_ingots_model.data(index, Qt.DisplayRole)
+            # ingot = self.unused_ingots_model.data(index, Qt.DisplayRole)
 
     def confirm_ingot_removing(self, index: QModelIndex):
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
