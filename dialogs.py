@@ -865,12 +865,8 @@ class IngotAssignmentDialog(QDialog):
                 if complect_counter[name]['fusion_id'] != fusion:
                     continue
 
-                if complect_counter[name]['depth'] not in self.steps(fusion):
-                    updates.append(Field('status_id', 4), Field('total', 0), order, detail)
-                    model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
-                    model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
                 # Если количество неразмещённых заготовок равно нулю
-                elif name not in unplaced_counter:
+                if name not in unplaced_counter:
                     updates.append(Field('status_id', 1), Field('total', complect_counter[name]['amount']), order, detail)
                     model.setData(complect_counter[name]['status_id'], 1, Qt.EditRole)
                     model.setData(complect_counter[name]['total'], complect_counter[name]['amount'], Qt.EditRole)
@@ -883,15 +879,13 @@ class IngotAssignmentDialog(QDialog):
         return depth_list
 
     def unplaced_list(self, fusion: int):
-        temp = dict()
+        """Словарь неразмещенных заготовок {имя: количество}"""
+        all_blanks = Counter(
+            b.name for b in self.predicted_ingots[fusion]['tree'].root.kit
+        )
         for leave in self.predicted_ingots[fusion]['tree'].cc_leaves:
-            unplaced = leave.result.unplaced
-            if leave.result.height in temp:
-                if not unplaced:
-                    del temp[leave.result.height]
-                    continue
-            temp[leave.result.height] = unplaced
-        return Counter([blank.name for blank in list(chain.from_iterable(temp.values()))])
+            all_blanks -= Counter(b.name for b in leave.placed)
+        return all_blanks
 
     def calculate_ingot(self):
         sender = self.sender()

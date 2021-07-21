@@ -10,7 +10,7 @@ import math
 from typing import Dict, Union
 from itertools import chain
 from functools import partial
-from collections import Counter, deque
+from collections import Counter, deque, namedtuple
 from pathlib import Path
 
 from PyQt5.QtCore import (
@@ -341,17 +341,11 @@ class OCIMainWindow(QMainWindow):
         self.ui.searchResult_1.clearSelection()
 
     def update_complect_statuses(self, order_id: int, ingot_fusion: int):
+        """Обновление статусов заготовок"""
         # Подсчитываем количество неразмещенных заготовок (название: количество)
-        temp = dict()
+        unplaced_counter = Counter(b.name for b in self.tree.kit)
         for leave in self.tree.cc_leaves:
-            unplaced = leave.result.unplaced
-            if leave.result.height in temp:
-                if not unplaced:
-                    del temp[leave.result.height]
-                    continue
-            temp[leave.result.height] = unplaced
-
-        unplaced_counter = Counter([blank.name for blank in list(chain.from_iterable(temp.values()))])
+            unplaced_counter -= Counter(b.name for b in leave.placed)
 
         # Переходим по всем изделиям в заказе
         model = self.complect_model
@@ -370,18 +364,13 @@ class OCIMainWindow(QMainWindow):
                     continue
 
                 # Собираем все нужные данные по колонкам
-                name: str = model.data(model.index(sub_row, 0, article), Qt.DisplayRole)
-                detail_id: int = model.data(model.index(sub_row, 1, article), Qt.DisplayRole)
-                status_id_index = model.index(sub_row, 2, article)
-                total_index = model.index(sub_row, 8, article)
-                depth: float = model.data(model.index(sub_row, 6, article), Qt.DisplayRole)
-                amount: int = model.data(model.index(sub_row, 7, article), Qt.DisplayRole)
+                name = model.data(model.index(sub_row, 0, article), Qt.DisplayRole)
                 complect_counter[article_name + '_' + name] = {
-                    'detail_id': int(detail_id),
-                    'depth': float(depth),
-                    'amount': int(amount),
-                    'status_id': status_id_index,
-                    'total': total_index
+                    'detail_id': int(model.data(model.index(sub_row, 1, article), Qt.DisplayRole)),
+                    'depth': float(model.data(model.index(sub_row, 6, article), Qt.DisplayRole)),
+                    'amount': int(model.data(model.index(sub_row, 7, article), Qt.DisplayRole)),
+                    'status_id': model.index(sub_row, 2, article),
+                    'total': model.index(sub_row, 8, article)
                 }
 
         # Сначала проходимся по счётчику неразмещённых заготовок

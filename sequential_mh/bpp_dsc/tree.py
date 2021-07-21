@@ -1795,6 +1795,24 @@ class CuttingChartNode(Node):
         return 0
 
     @property
+    def unplaced(self):
+        unplaced = self.result.unplaced
+        for subtree in self.subtree:
+            for node in subtree.root.cc_leaves:
+                unplaced.extend(node.result.unplaced)
+        return unplaced
+
+    @property
+    def placed(self):
+        placed = [blank.rectangle for blank in chain.from_iterable(self.result.blanks.values())]
+        for subtree in self.subtree:
+            for node in subtree.root.cc_leaves:
+                placed.extend(
+                    [blank.rectangle for blank in chain.from_iterable(node.result.blanks.values())]
+                )
+        return placed
+
+    @property
     def kit(self):
         if self.parent.parent:
             return self.parent.parent.kit
