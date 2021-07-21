@@ -431,17 +431,17 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
         if event.type() == QEvent.MouseButtonRelease:
-            forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos)
+            ingot = index.data(Qt.DisplayRole)
             if self.show_close:
                 closeIconRect = self.closeIcon.rect().translated(self.closeIconPos)
-            ingot = index.data(Qt.DisplayRole)
-            if forgeIconRect.contains(event.pos()) and ingot['status_id'] == 3:
+                if closeIconRect.contains(event.pos()):
+                    if ingot['order_id']:
+                        self.deleteFromOrderClicked.emit(index)
+                    else:
+                        self.deleteFromStorageClicked.emit(index)
+            forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos)
+            if ingot['status_id'] == 3 and forgeIconRect.contains(event.pos()):
                 self.forgedIndexClicked.emit(index)
-            elif self.show_close and closeIconRect.contains(event.pos()):
-                if ingot['order_id']:
-                    self.deleteFromOrderClicked.emit(index)
-                else:
-                    self.deleteFromStorageClicked.emit(index)
         return super().editorEvent(event, model, option, index)
 
 

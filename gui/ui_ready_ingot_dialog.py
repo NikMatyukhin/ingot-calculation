@@ -102,7 +102,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Dialog", "Подтверждение готовности"))
         self.parameters.setTitle(_translate("Dialog", "Параметры слитка"))
         self.batch_label.setText(_translate("Dialog", "Номер партии"))
         self.batch.setPlaceholderText(_translate("Dialog", "Введите номер партии..."))

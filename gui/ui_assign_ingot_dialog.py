@@ -34,35 +34,9 @@ class Ui_Dialog(object):
         self.ingots_view = QtWidgets.QListView(Dialog)
         self.ingots_view.setMinimumSize(QtCore.QSize(0, 195))
         self.ingots_view.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.ingots_view.setStyleSheet("QScrollBar:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(240, 240, 240);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(205,116,61);\n"
-"    border: none;\n"
-"    border-radius: 3px;\n"
-"}\n"
-"\n"
-"QScrollBar::handle:hover {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:pressed {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::sub-line:horizontal, QScrollBar::add-line:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"QScrollBar:left-arrow:horizontal, QScrollBar::right-arrow:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"")
+        self.ingots_view.setStyleSheet("")
         self.ingots_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.ingots_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.ingots_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.ingots_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.ingots_view.setProperty("showDropIndicator", False)
         self.ingots_view.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)

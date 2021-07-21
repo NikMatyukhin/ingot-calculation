@@ -35,35 +35,9 @@ class Ui_Dialog(object):
         self.unused_view = QtWidgets.QListView(Dialog)
         self.unused_view.setMinimumSize(QtCore.QSize(0, 195))
         self.unused_view.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.unused_view.setStyleSheet("QScrollBar:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(240, 240, 240);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(205,116,61);\n"
-"    border: none;\n"
-"    border-radius: 3px;\n"
-"}\n"
-"\n"
-"QScrollBar::handle:hover {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:pressed {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::sub-line:horizontal, QScrollBar::add-line:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"QScrollBar:left-arrow:horizontal, QScrollBar::right-arrow:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"")
+        self.unused_view.setStyleSheet("")
         self.unused_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.unused_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.unused_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.unused_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.unused_view.setProperty("showDropIndicator", False)
         self.unused_view.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
@@ -87,35 +61,9 @@ class Ui_Dialog(object):
         self.used_view = QtWidgets.QListView(Dialog)
         self.used_view.setMinimumSize(QtCore.QSize(0, 195))
         self.used_view.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.used_view.setStyleSheet("QScrollBar:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(240, 240, 240);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(205,116,61);\n"
-"    border: none;\n"
-"    border-radius: 3px;\n"
-"}\n"
-"\n"
-"QScrollBar::handle:hover {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:pressed {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::sub-line:horizontal, QScrollBar::add-line:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"QScrollBar:left-arrow:horizontal, QScrollBar::right-arrow:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"")
+        self.used_view.setStyleSheet("")
         self.used_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.used_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.used_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.used_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.used_view.setProperty("showDropIndicator", False)
         self.used_view.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
@@ -139,35 +87,9 @@ class Ui_Dialog(object):
         self.plan_view = QtWidgets.QListView(Dialog)
         self.plan_view.setMinimumSize(QtCore.QSize(0, 195))
         self.plan_view.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.plan_view.setStyleSheet("QScrollBar:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(240, 240, 240);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:horizontal {\n"
-"    height: 10px;\n"
-"    background-color: rgb(205,116,61);\n"
-"    border: none;\n"
-"    border-radius: 3px;\n"
-"}\n"
-"\n"
-"QScrollBar::handle:hover {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:pressed {\n"
-"    background-color: rgb(231, 128, 69);\n"
-"}\n"
-"\n"
-"QScrollBar::sub-line:horizontal, QScrollBar::add-line:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"QScrollBar:left-arrow:horizontal, QScrollBar::right-arrow:horizontal {\n"
-"    background: none;\n"
-"}\n"
-"")
+        self.plan_view.setStyleSheet("")
         self.plan_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.plan_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.plan_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.plan_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.plan_view.setProperty("showDropIndicator", False)
         self.plan_view.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
