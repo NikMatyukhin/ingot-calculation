@@ -1827,6 +1827,8 @@ class CuttingChartNode(Node):
 class Tree:
     def __init__(self, root: BinNode) -> None:
         self.root = root
+        # NOTE: костыль
+        self.main_kit = deepcopy(root.kit)
         self._type = 0  # 0 - дерево, 1 - поддерево
 
     @staticmethod
@@ -1863,7 +1865,7 @@ class Tree:
         for childe in children:
             branches = all_branches(childe)
             for i, branch in enumerate(branches):
-                new_tree = deepcopy(self)
+                new_tree = copy(self)
                 new_parent = new_tree.node_by_id(parent._id)
                 trees.append((new_tree, new_parent, branch))
         return trees
@@ -1873,6 +1875,12 @@ class Tree:
             if node._id == id_:
                 return node
         return None
+
+    def __copy__(self):
+        obj = self.__class__(deepcopy(self.root))
+        obj._type = self._type
+        obj.main_kit = deepcopy(self.main_kit)
+        return obj
 
 
 def all_branches(root):
@@ -1936,14 +1944,15 @@ def top_down_traversal(start):
     return result
 
 
-def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
+def solution_efficiency(root, path, main_kit, nd=False, is_total=False, is_p=False):
     # is_total - Учитывая весь бин
     # nd - взвешенная на количество деталей
     used_total_volume = 0.
     used_volume = 0.
     number_detail = 0
     priorities = []
-    all_priorities = [1/blank.priority for blank in root.kit]
+    # all_priorities = [1/blank.priority for blank in root.kit]
+    all_priorities = [1/blank.priority for blank in main_kit]
     for node in path:
         if is_cc_node(node):
             used_total_volume += node.bin.volume
@@ -1951,11 +1960,13 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
             priorities.extend(
                 [1/blank.rectangle.priority for blank in node.result]
             )
-            number_detail += node.result.qty()
+            # number_detail += node.result.qty()
+            number_detail += len(node.placed)
             for subtree in node.subtree:
                 for subnode in subtree.root.cc_leaves:
                     used_volume += subnode.result.total_volume
-                    number_detail += subnode.result.qty()
+                    # number_detail += subnode.result.qty()
+                    number_detail += len(node.placed)
                     priorities.extend(
                         [1/blank.rectangle.priority for blank in subnode.result]
                     )
@@ -1968,7 +1979,8 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
             efficiency = used_volume / used_total_volume
     if not is_p or len(set(all_priorities)) == 1:
         if nd and number_detail:
-            efficiency *= number_detail / root.kit.qty()
+            # efficiency *= number_detail / root.kit.qty()
+            efficiency *= number_detail / main_kit.qty()
     else:
         sp = sum(all_priorities)
         priorities = [p / sp for p in priorities]
@@ -1976,21 +1988,21 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
     return efficiency
 
 
-def optimal_configuration(tree, lower=1., nd=False, is_total=False):
+def optimal_configuration(tree, main_kit, lower=1., nd=False, is_total=False):
     solutions = all_solutions(tree)
     if lower == 1:
         result =  max(
             solutions,
-            key=lambda item: solution_efficiency(item[-1], item[:-1],
+            key=lambda item: solution_efficiency(item[-1], item[:-1], main_kit,
                                                  nd=nd, is_total=is_total)
         )
         return solution_efficiency(
-            result[-1], result[:-1], nd=nd, is_total=is_total
+            result[-1], result[:-1], main_kit, nd=nd, is_total=is_total
         ), *copy_tree(tree.root, result)
     result = []
     for item in solutions:
         efficiency = solution_efficiency(
-            item[-1], item[:-1], nd=nd, is_total=is_total
+            item[-1], item[:-1], main_kit, nd=nd, is_total=is_total
         )
         if efficiency >= lower:
             result.append((efficiency, *copy_tree(item[-1], item[:-1])))

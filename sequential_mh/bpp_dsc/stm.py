@@ -122,17 +122,17 @@ def stmh_idrd(tree, in_process_filtering=True, postfiltration=True,
     best = max(
         trees,
         key=lambda item: solution_efficiency(
-            item.root, list(dfs(item.root)), nd=True, is_p=True
+            item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
         )
     )
     total_efficiency = solution_efficiency(
-        best.root, list(dfs(best.root)), is_total=True
+        best.root, list(dfs(best.root)), best.main_kit, is_total=True
     )
     weighted_efficiency = solution_efficiency(
-        best.root, list(dfs(best.root)), nd=True
+        best.root, list(dfs(best.root)), best.main_kit, nd=True
     )
     prioritized_efficiency = solution_efficiency(
-        best.root, list(dfs(best.root)), is_p=True
+        best.root, list(dfs(best.root)), best.main_kit, is_p=True
     )
     print('Построение дерева завершено')
     print(f'Общая эффективность: {total_efficiency:.4f}')

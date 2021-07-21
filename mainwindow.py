@@ -623,7 +623,7 @@ class OCIMainWindow(QMainWindow):
         #             for subnode in subtree.root.cc_leaves:
         #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
 
-        efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
+        efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), tree.main_kit, is_total=True)
 
         return tree, efficiency, .1
 
@@ -679,9 +679,30 @@ class OCIMainWindow(QMainWindow):
         print(f'Годных деревьев: {len(trees)}')
         if progress:
             progress.setLabelText('Выбор оптимального решения...')
+
+        # отладочная визуализация
+        # import os
+        # os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+        # from sequential_mh.bpp_dsc.graph import plot, create_edges
+        # for i, tree in enumerate(trees):
+        #     print(f'Дерево {i}:')
+        #     for node in tree.root.cc_leaves:
+        #         print(f'{node.bin.height}: {len(node.placed)}')
+        #     # graph1, all_nodes1 = plot(tree.root, f'pdf/graph{i}.gv')
+        #     # create_edges(graph1, all_nodes1)
+        #     # graph1.view()
+        #     ef_1 = solution_efficiency(
+        #         tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=False
+        #     )
+        #     print(f'Эффективность без приоритета {ef_1}')
+        #     ef_2 = solution_efficiency(
+        #         tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=True
+        #     )
+        #     print(f'Эффективность c приоритетом {ef_2}')
+        #     print('-' * 50)
         best = max(
             trees, key=lambda item: solution_efficiency(
-                item.root, list(dfs(item.root)), nd=True, is_p=True
+                item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
             )
         )
         for node in best.root.cc_leaves:
@@ -919,7 +940,7 @@ class OCIMainWindow(QMainWindow):
         best = max(
             trees,
             key=lambda item: solution_efficiency(
-                item.root, list(dfs(item.root)), nd=True, is_p=True
+                item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
             )
         )
         get_all_residuals(best)
