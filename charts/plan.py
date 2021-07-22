@@ -194,8 +194,10 @@ class CuttingPlanPainter:
         brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
         
         if self.blanks:
-            bin_rect = QRect(self.vl_point.x() - 5, self.vl_point.y() - 5, self.bin_width, self.bin_lenght)
+            bin_rect = QRectF(self.vl_point.x() - 2, self.vl_point.y() - 2, self.bin_width, self.bin_lenght)
             self.scene.addRect(bin_rect,pen, brush)
+            text = self.scene.addText(f'Размер листа {self.bin_lenght}мм на {self.bin_width}мм')
+            text.setPos(bin_rect.left(), bin_rect.bottom() + 5)
 
     def drawCoords(self):
         self.scene.addLine(self.vl_point.x(), -10,
