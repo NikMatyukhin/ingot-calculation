@@ -28,7 +28,6 @@ from .exception import (
 from .rectangle import BinType, Bin, Direction, Kit, Number, Result, UnsizedBin
 
 from ..tsh.bpp_ts import bpp_ts, Rectangle, RectangleType
-from ..tsh.rect import Rectangle
 
 
 Vec3 = tuple[Number, Number, Number]
@@ -813,10 +812,11 @@ class BinNode(Node):
                         miss_bins=True, restrictions=restrictions
                     )
                 parent = self.get_parent_ubin()
-                parent.fix_sizes(
-                    width, length, is_min=is_min, max_size=max_size,
-                    restrictions=restrictions
-                )
+                if parent:
+                    parent.fix_sizes(
+                        width, length, is_min=is_min, max_size=max_size,
+                        restrictions=restrictions
+                    )
         elif len(last_deformations) == 1:
             # print('Фиксация бина с одной деф')
             if p_cont is not troot and is_ubin_node(p_cont):
@@ -1515,8 +1515,10 @@ class CuttingChartNode(Node):
             height = self.bin.height
         self.result = Result({}, [], 0., 0, height)
         self.hem = (0, 0)
+        self.subtree = []
 
-    def pack(self, sorting='width', max_size=None, restrictions=None):
+    def pack(self, sorting='width', max_size=None, restrictions=None,
+             with_priority=True):
         # if not self.size_check():
         #     self.kit.delete_height(self.bin.height)
         #     return self.result
@@ -1576,11 +1578,15 @@ class CuttingChartNode(Node):
         if isinstance(self.bin, UnsizedBin):
             bin_node.kit.rotate(self.bin.d_height, self.bin.rolldir)
             group = bin_node.kit[self.bin.d_height]
+            if with_priority:
+                first_priority = min([priority for priority, sg in group.items() if sg])
+            else:
+                first_priority = None
             _, main_region, min_rect, result, unplaced, tailings = bpp_ts(
                 bin_node.bin.length, bin_node.bin.width, bin_node.bin.height,
                 bin_node.bin.d_height, group, self.bin.rolldir, x_hem=self.x_hem, y_hem=self.y_hem,
                 allowance=allowance, max_size=max_size,
-                first_priority=min([priority for priority, sg in group.items() if sg]),
+                first_priority=first_priority,
                 is_visualize=False
             )
             width, length = min_rect.width, min_rect.length
@@ -1776,6 +1782,36 @@ class CuttingChartNode(Node):
             parent = parent.parent
         return parent, child
 
+    def efficiency(self):
+        used_volume = self.result.total_volume
+
+        if self.subtree:
+            for subtree in self.subtree:
+                for subnode in subtree.root.cc_leaves:
+                    used_volume += subnode.result.total_volume
+
+        if self.bin.volume != 0:
+            return used_volume / self.bin.volume
+        return 0
+
+    @property
+    def unplaced(self):
+        unplaced = self.result.unplaced
+        for subtree in self.subtree:
+            for node in subtree.root.cc_leaves:
+                unplaced.extend(node.result.unplaced)
+        return unplaced
+
+    @property
+    def placed(self):
+        placed = [blank.rectangle for blank in chain.from_iterable(self.result.blanks.values())]
+        for subtree in self.subtree:
+            for node in subtree.root.cc_leaves:
+                placed.extend(
+                    [blank.rectangle for blank in chain.from_iterable(node.result.blanks.values())]
+                )
+        return placed
+
     @property
     def kit(self):
         if self.parent.parent:
@@ -1791,6 +1827,9 @@ class CuttingChartNode(Node):
 class Tree:
     def __init__(self, root: BinNode) -> None:
         self.root = root
+        # NOTE: костыль
+        self.main_kit = deepcopy(root.kit)
+        self._type = 0  # 0 - дерево, 1 - поддерево
 
     @staticmethod
     def create_template(parent: BinNode, height, cut_thickness=None, direction=0):
@@ -1826,7 +1865,7 @@ class Tree:
         for childe in children:
             branches = all_branches(childe)
             for i, branch in enumerate(branches):
-                new_tree = deepcopy(self)
+                new_tree = copy(self)
                 new_parent = new_tree.node_by_id(parent._id)
                 trees.append((new_tree, new_parent, branch))
         return trees
@@ -1836,6 +1875,12 @@ class Tree:
             if node._id == id_:
                 return node
         return None
+
+    def __copy__(self):
+        obj = self.__class__(deepcopy(self.root))
+        obj._type = self._type
+        obj.main_kit = deepcopy(self.main_kit)
+        return obj
 
 
 def all_branches(root):
@@ -1899,14 +1944,15 @@ def top_down_traversal(start):
     return result
 
 
-def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
+def solution_efficiency(root, path, main_kit, nd=False, is_total=False, is_p=False):
     # is_total - Учитывая весь бин
     # nd - взвешенная на количество деталей
     used_total_volume = 0.
     used_volume = 0.
     number_detail = 0
     priorities = []
-    all_priorities = [1/blank.priority for blank in root.kit]
+    # all_priorities = [1/blank.priority for blank in root.kit]
+    all_priorities = [1/blank.priority for blank in main_kit]
     for node in path:
         if is_cc_node(node):
             used_total_volume += node.bin.volume
@@ -1914,7 +1960,16 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
             priorities.extend(
                 [1/blank.rectangle.priority for blank in node.result]
             )
-            number_detail += node.result.qty()
+            # number_detail += node.result.qty()
+            number_detail += len(node.placed)
+            for subtree in node.subtree:
+                for subnode in subtree.root.cc_leaves:
+                    used_volume += subnode.result.total_volume
+                    # number_detail += subnode.result.qty()
+                    number_detail += len(node.placed)
+                    priorities.extend(
+                        [1/blank.rectangle.priority for blank in subnode.result]
+                    )
     if is_total:
         efficiency = used_volume / root.bin.volume
     else:
@@ -1924,7 +1979,8 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
             efficiency = used_volume / used_total_volume
     if not is_p or len(set(all_priorities)) == 1:
         if nd and number_detail:
-            efficiency *= number_detail / root.kit.qty()
+            # efficiency *= number_detail / root.kit.qty()
+            efficiency *= number_detail / main_kit.qty()
     else:
         sp = sum(all_priorities)
         priorities = [p / sp for p in priorities]
@@ -1932,21 +1988,21 @@ def solution_efficiency(root, path, nd=False, is_total=False, is_p=False):
     return efficiency
 
 
-def optimal_configuration(tree, lower=1., nd=False, is_total=False):
+def optimal_configuration(tree, main_kit, lower=1., nd=False, is_total=False):
     solutions = all_solutions(tree)
     if lower == 1:
         result =  max(
             solutions,
-            key=lambda item: solution_efficiency(item[-1], item[:-1],
+            key=lambda item: solution_efficiency(item[-1], item[:-1], main_kit,
                                                  nd=nd, is_total=is_total)
         )
         return solution_efficiency(
-            result[-1], result[:-1], nd=nd, is_total=is_total
+            result[-1], result[:-1], main_kit, nd=nd, is_total=is_total
         ), *copy_tree(tree.root, result)
     result = []
     for item in solutions:
         efficiency = solution_efficiency(
-            item[-1], item[:-1], nd=nd, is_total=is_total
+            item[-1], item[:-1], main_kit, nd=nd, is_total=is_total
         )
         if efficiency >= lower:
             result.append((efficiency, *copy_tree(item[-1], item[:-1])))
@@ -2180,61 +2236,69 @@ def is_defective_tree(tree, max_size):
                 is_locked = True
             if is_locked:
                 return True
+        elif is_cc_node(node):
+            if node.bin.length < node.result.length or node.bin.width < node.result.width:
+                return True
     return False
 
 
 def get_all_residuals(tree):
     residuals = []
     for leave in tree.root.cc_leaves:
-        residuals.extend(list(filter(
-            lambda item: item.rtype == RectangleType.RESIDUAL,
-            leave.result.tailings
-        )))
+        residuals.extend(get_residuals(leave))
+    return residuals
 
-        bin_length = leave.bin.length
-        bin_width = leave.bin.width
 
-        if bin_length > leave.result.length and leave.result.width == bin_width:
+def get_residuals(node):
+    residuals = list(filter(
+        lambda item: item.rtype == RectangleType.RESIDUAL,
+        node.result.tailings
+    ))
+
+    bin_length = node.bin.length
+    bin_width = node.bin.width
+
+    if bin_length > node.result.length and node.result.width == bin_width:
+        tailing = Rectangle.create_by_size(
+            (0, node.result.length), bin_length - node.result.length, bin_width
+        )
+        tailing.rtype = RectangleType.RESIDUAL
+        residuals.append(tailing)
+        node.result.tailings.append(tailing)
+    elif bin_length == node.result.length and bin_width > node.result.width:
+        tailing = Rectangle.create_by_size(
+            (node.result.width, 0), bin_length, bin_width - node.result.width
+        )
+        tailing.rtype = RectangleType.RESIDUAL
+        residuals.append(tailing)
+        node.result.tailings.append(tailing)
+    elif node.result.length > bin_length and bin_width > node.result.width:
+        area_horizontal = bin_width * (bin_length - node.result.length)
+        area_vertical = bin_length * (bin_width - node.result.width)
+        if area_vertical > area_horizontal:
             tailing = Rectangle.create_by_size(
-                (0, leave.result.length), bin_length - leave.result.length, bin_width
+                (node.result.width, 0), bin_length, bin_width - node.result.width
             )
             tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
-            leave.result.tailings.append(tailing)
-        elif bin_length == leave.result.length and bin_width > leave.result.width:
+            node.result.tailings.append(tailing)
             tailing = Rectangle.create_by_size(
-                (leave.result.width, 0), bin_length, bin_width - leave.result.width
+                (0, node.result.length), bin_length - node.result.length, node.result.width
             )
             tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
-            leave.result.tailings.append(tailing)
-        elif leave.result.length > bin_length and bin_width > leave.result.width:
-            area_horizontal = bin_width * (bin_length - leave.result.length)
-            area_vertical = bin_length * (bin_width - leave.result.width)
-            if area_vertical > area_horizontal:
-                tailing = Rectangle.create_by_size(
-                    (leave.result.width, 0), bin_length, bin_width - leave.result.width
-                )
-                tailing.rtype = RectangleType.RESIDUAL
-                residuals.append(tailing)
-                leave.result.tailings.append(tailing)
-                tailing = Rectangle.create_by_size(
-                    (0, leave.result.length), bin_length - leave.result.length, leave.result.width
-                )
-                tailing.rtype = RectangleType.RESIDUAL
-                residuals.append(tailing)
-                leave.result.tailings.append(tailing)
-            else:
-                tailing = Rectangle.create_by_size(
-                    (0, leave.result.length), bin_length - leave.result.length, bin_width
-                )
-                tailing.rtype = RectangleType.RESIDUAL
-                residuals.append(tailing)
-                leave.result.tailings.append(tailing)
-                tailing = Rectangle.create_by_size(
-                    (leave.result.width, 0), leave.result.length, bin_width - leave.result.width
-                )
-                tailing.rtype = RectangleType.RESIDUAL
-                residuals.append(tailing)
-                leave.result.tailings.append(tailing)
+            node.result.tailings.append(tailing)
+        else:
+            tailing = Rectangle.create_by_size(
+                (0, node.result.length), bin_length - node.result.length, bin_width
+            )
+            tailing.rtype = RectangleType.RESIDUAL
+            residuals.append(tailing)
+            node.result.tailings.append(tailing)
+            tailing = Rectangle.create_by_size(
+                (node.result.width, 0), node.result.length, bin_width - node.result.width
+            )
+            tailing.rtype = RectangleType.RESIDUAL
+            residuals.append(tailing)
+            node.result.tailings.append(tailing)
     return residuals

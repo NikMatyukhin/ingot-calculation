@@ -32,7 +32,7 @@ def patch_rect(axis, point, width, height, **kwargs):
     return obj
 
 
-def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
+def visualize(main_region, rectangles, tailings, xlim=10, ylim=10, prefix=''):
     """Визуализация схемы раскроя
 
     :param main_region: регион раскроя
@@ -49,6 +49,7 @@ def visualize(main_region, rectangles, tailings, xlim=10, ylim=10):
     _, axes = plt.subplots()
     axes.set_xlim([0, xlim])
     axes.set_ylim([0, ylim])
+    axes.set_title(f'{prefix}: Карта толщины {main_region.height}')
     for rect in rectangles:
         patch_rect(
             axes, (rect.x, rect.y), rect.rectangle.width,

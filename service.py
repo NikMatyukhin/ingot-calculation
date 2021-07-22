@@ -1,12 +1,22 @@
 import logging
 from math import prod
-from sqlite3 import connect, Connection, Error, Row
+from sqlite3 import connect, Connection, Error
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import Sequence, Literal, Optional
 from itertools import groupby
 from operator import itemgetter
 from collections import OrderedDict
+
+
+@dataclass
+class IngotStatus:
+    """Статус слитка
+
+    Содержит название статуса и его ID из базы данных.
+    """
+    id_: int
+    name: set
 
 
 @dataclass
@@ -31,7 +41,7 @@ class UpdatableFieldsCollection:
         self.__updatable_data = []
         self.__updatable_columns = columns
         self.__step = 0
-    
+
     def __iter__(self):
         return self
 
@@ -50,7 +60,7 @@ class UpdatableFieldsCollection:
         if set(self.__updatable_columns) != set(names):
             raise ValueError("'UpdatableFieldsCollection' has incompatible column names")
         self.__updatable_data.append(tuple(values))
-    
+
     @property
     def names(self) -> tuple:
         return tuple(self.__updatable_columns)
@@ -127,7 +137,7 @@ class StandardDataService(AbstractDataService):
     def get_table(table: str, connection: Connection = connect(':memory:')) -> list:
         cursor = connection.cursor()
         cursor.execute(f'SELECT * FROM {table}')
-        
+
         return cursor.fetchall()
 
     @staticmethod
@@ -145,7 +155,7 @@ class StandardDataService(AbstractDataService):
         sql = str(f'SELECT * FROM {table} WHERE {condition.name}={condition.value}')
         cursor = connection.cursor()
         cursor.execute(sql)
-        
+
         return cursor.fetchall()
 
     @staticmethod
@@ -155,7 +165,7 @@ class StandardDataService(AbstractDataService):
                   f'WHERE {" AND ".join([f"{key}=:{key}" for key in conditions])}')
         cursor = connection.cursor()
         cursor.execute(sql, conditions)
-        
+
         return cursor.fetchall()
 
     @staticmethod
@@ -185,7 +195,7 @@ class StandardDataService(AbstractDataService):
     def delete_by_id(table: str, id: Field, connection: Connection = connect(':memory:')) -> bool:
         cursor = connection.cursor()
         cursor.execute(f'DELETE FROM {table} WHERE {id.name}={id.value}')
-        
+
         return True
 
     @staticmethod
@@ -200,7 +210,6 @@ class StandardDataService(AbstractDataService):
 
 
 class CatalogDataService(StandardDataService):
-    
     @staticmethod
     @db_connector
     def statuses_list(connection: Connection = connect(':memory:')) -> OrderedDict:
@@ -220,7 +229,7 @@ class CatalogDataService(StandardDataService):
         for item in cursor.fetchall():
             collection[item[1]] = item[0]
         return collection
-    
+
     @staticmethod
     @db_connector
     def fusions_list(connection: Connection = connect(':memory:')) -> OrderedDict:
@@ -236,13 +245,42 @@ class CatalogDataService(StandardDataService):
     def type_list(connection: Connection = connect(':memory:')) -> list:
         cursor = connection.cursor()
         cursor.execute('SELECT DISTINCT type FROM articles')
-        
+
         return list(map(itemgetter(0), cursor.fetchall()))
+
+
+class IngotStatusDataService(StandardDataService):
+    """Сервис работы со статусам слитка"""
+    table = 'ingots_statuses'
+
+    @staticmethod
+    @db_connector
+    def get_table(connection: Connection = connect(':memory:')) -> list:
+        """Получение списка статусов"""
+        # super здесь не работает, можно было подключение через self сделать
+        cursor = connection.cursor()
+        cursor.execute(f'SELECT * FROM {IngotStatusDataService.table}')
+        return [IngotStatus(*item) for item in cursor.fetchall()]
+
+    @staticmethod
+    @db_connector
+    def get_by_field(condition: Field, connection: Connection = connect(':memory:')) -> list:
+        sql = str(f'SELECT * FROM {IngotStatusDataService.table} WHERE {condition.name}={repr(condition.value)}')
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        return [IngotStatus(*item) for item in cursor.fetchall()]
+
+    @classmethod
+    def get_by_name(cls, name: str):
+        """Получение статуса по имени"""
+        field = Field(name='name', value=name)
+        return cls.get_by_field(condition=field)
+
 
 class OrderDataService(StandardDataService):
 
     Category = Literal['unused', 'used', 'planned']
-    
+
     @staticmethod
     @db_connector
     def get_table(status: Field = None, connection: Connection = connect(':memory:')) -> list:
@@ -329,7 +367,7 @@ class OrderDataService(StandardDataService):
         sql = str('UPDATE complects SET {}=?, {}=? WHERE {}=? AND {}=?'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
-        
+
         return True
     
     @staticmethod
@@ -367,9 +405,3 @@ class OrderDataService(StandardDataService):
         ingots_mass = sum(prod(line) for line in cursor.execute(ingots_sql))
         blanks_mass = sum(prod(line) for line in cursor.execute(blanks_sql))
         return round(blanks_mass / ingots_mass, 2)
-
-
-if __name__ == '__main__':
-    from pprint import pprint
-
-    print(OrderDataService.get_table(Field('status_id', 1)))

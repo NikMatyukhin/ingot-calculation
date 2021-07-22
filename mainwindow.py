@@ -1,3 +1,7 @@
+"""Модуль главного окна"""
+
+
+import copy
 import sys
 import pickle
 import logging
@@ -6,7 +10,7 @@ import math
 from typing import Dict, Union
 from itertools import chain
 from functools import partial
-from collections import Counter, deque
+from collections import Counter, deque, namedtuple
 from pathlib import Path
 
 from PyQt5.QtCore import (
@@ -28,7 +32,7 @@ from models import (
 )
 from service import (
     Field, OrderDataService, StandardDataService, UpdatableFieldsCollection,
-    CatalogDataService
+    CatalogDataService, IngotStatusDataService
 )
 from dialogs import (
     IngotAddingDialog, IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
@@ -43,11 +47,11 @@ from exceptions import ForcedTermination
 from log import setup_logging, timeit, log_operation_info
 
 from sequential_mh.bpp_dsc.rectangle import (
-    BinType, Direction, Material, Blank, Kit, Bin
+    BinType, Direction, Material, Blank, Kit, Bin, Rectangle3d
 )
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node,
-    get_all_residuals
+    get_all_residuals, get_residuals
 )
 from sequential_mh.bpp_dsc.exception import BPPError
 from sequential_mh.bpp_dsc.support import dfs
@@ -63,6 +67,7 @@ ListSizes = list[Sizes]
 
 
 class OCIMainWindow(QMainWindow):
+    """Главное окно"""
     def __init__(self):
         super().__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
@@ -315,7 +320,7 @@ class OCIMainWindow(QMainWindow):
 
     def confirm_order_adding(self, data: dict):
         self.order_model.appendRow(data)
-    
+
     def confirm_order_editing(self, data: dict):
         index = self.ui.searchResult_1.currentIndex()
         self.order_model.setData(index, data, Qt.EditRole)
@@ -345,17 +350,11 @@ class OCIMainWindow(QMainWindow):
         self.ui.searchResult_1.clearSelection()
 
     def update_complect_statuses(self, order_id: int, ingot_fusion: int):
+        """Обновление статусов заготовок"""
         # Подсчитываем количество неразмещенных заготовок (название: количество)
-        temp = dict()
+        unplaced_counter = Counter(b.name for b in self.tree.kit)
         for leave in self.tree.cc_leaves:
-            unplaced = leave.result.unplaced
-            if leave.result.height in temp:
-                if not unplaced:
-                    del temp[leave.result.height]
-                    continue
-            temp[leave.result.height] = unplaced
-
-        unplaced_counter = Counter([blank.name for blank in list(chain.from_iterable(temp.values()))])
+            unplaced_counter -= Counter(b.name for b in leave.placed)
 
         # Переходим по всем изделиям в заказе
         model = self.complect_model
@@ -374,18 +373,13 @@ class OCIMainWindow(QMainWindow):
                     continue
 
                 # Собираем все нужные данные по колонкам
-                name: str = model.data(model.index(sub_row, 0, article), Qt.DisplayRole)
-                detail_id: int = model.data(model.index(sub_row, 1, article), Qt.DisplayRole)
-                status_id_index = model.index(sub_row, 2, article)
-                total_index = model.index(sub_row, 8, article)
-                depth: float = model.data(model.index(sub_row, 6, article), Qt.DisplayRole)
-                amount: int = model.data(model.index(sub_row, 7, article), Qt.DisplayRole)
+                name = model.data(model.index(sub_row, 0, article), Qt.DisplayRole)
                 complect_counter[article_name + '_' + name] = {
-                    'detail_id': int(detail_id),
-                    'depth': float(depth),
-                    'amount': int(amount),
-                    'status_id': status_id_index,
-                    'total': total_index
+                    'detail_id': int(model.data(model.index(sub_row, 1, article), Qt.DisplayRole)),
+                    'depth': float(model.data(model.index(sub_row, 6, article), Qt.DisplayRole)),
+                    'amount': int(model.data(model.index(sub_row, 7, article), Qt.DisplayRole)),
+                    'status_id': model.index(sub_row, 2, article),
+                    'total': model.index(sub_row, 8, article)
                 }
 
         # Сначала проходимся по счётчику неразмещённых заготовок
@@ -421,12 +415,12 @@ class OCIMainWindow(QMainWindow):
         for name in complect_counter:
             detail = Field('detail_id', complect_counter[name]['detail_id'])
 
-            if complect_counter[name]['depth'] not in self.steps():
-                updates.append(Field('status_id', 4), Field('total', 0), order, detail)
-                model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
-                model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
+            # if complect_counter[name]['depth'] not in self.steps():
+            #     updates.append(Field('status_id', 4), Field('total', 0), order, detail)
+            #     model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
+            #     model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             # Если количество неразмещённых заготовок равно нулю
-            elif name not in unplaced_counter:
+            if name not in unplaced_counter:
                 updates.append(Field('status_id', 1), Field('total', complect_counter[name]['amount']), order, detail)
                 model.setData(complect_counter[name]['status_id'], 1, Qt.EditRole)
                 model.setData(complect_counter[name]['total'], complect_counter[name]['amount'], Qt.EditRole)
@@ -457,6 +451,7 @@ class OCIMainWindow(QMainWindow):
             self.ui.saveComplect.setText(text[:-1])
 
     def safe_create_tree(self):
+        """Сохранение дерева"""
         self.save_complects()
         self.create_tree()
 
@@ -501,6 +496,7 @@ class OCIMainWindow(QMainWindow):
             _, efficiency, _ = self.create_cut(
                 ingot_size, details, material, progress=progress
             )
+            self.save_residuals()
         except ForcedTermination:
             log_operation_info(
                 'user_inter_cut', {'name': order_name, 'alloy': fusion_name},
@@ -628,19 +624,28 @@ class OCIMainWindow(QMainWindow):
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
         self.tree = tree.root
 
-        efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), is_total=True)
+        # NOTE: своя визуализация для отладки
+        # for node in self.tree.cc_leaves:
+        #     debug_visualize(node, 'Основной')
+        #     if node.subtree:
+        #         for subtree in node.subtree:
+        #             for subnode in subtree.root.cc_leaves:
+        #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
+
+        efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), tree.main_kit, is_total=True)
 
         return tree, efficiency, .1
 
     @timeit
     def stmh_idrd(self, tree, with_filter: bool = True,
-                  restrictions: dict = None, progress: QProgressDialog = None):
+                  restrictions: dict = None, progress: QProgressDialog = None,
+                  level_subtree=0, with_priority=True):
         is_main = True
         doubling = False
         start_step, steps = 0, 0
         if restrictions:
             cut_thickness = restrictions.get('cutting_thickness')
-            if cut_thickness >= max(tree.root.kit.keys()):
+            if cut_thickness and cut_thickness >= max(tree.root.kit.keys()):
                 doubling = True
             else:
                 # cut_thickness = max(tree.root.kit.keys())
@@ -655,14 +660,14 @@ class OCIMainWindow(QMainWindow):
         trees_vertical = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress, end_progress=False,
-            direction=1, steps=steps
+            direction=1, steps=steps, level_subtree=level_subtree, with_priority=with_priority
         )
         if progress:
             start_step = progress.value()
         trees_horizontal = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress, direction=2,
-            start_step=start_step, steps=steps
+            start_step=start_step, steps=steps, level_subtree=level_subtree, with_priority=with_priority
         )
         trees = [*trees_vertical, *trees_horizontal]
 
@@ -670,8 +675,8 @@ class OCIMainWindow(QMainWindow):
             max_size = restrictions.get('max_size')
         else:
             max_size = None
-        # print(f'Количество деревьев: {len(trees)}')
-        progress.setLabelText('Фильтрация решений...')
+        if progress:
+            progress.setLabelText('Фильтрация решений...')
         if with_filter:
             trees = [
                 item for item in trees if not is_defective_tree(item, max_size)
@@ -680,21 +685,46 @@ class OCIMainWindow(QMainWindow):
         if not trees:
             raise BPPError('Не удалось получить раскрой')
 
-        # print(f'Годных деревьев: {len(trees)}')
-        progress.setLabelText('Выбор оптимального решения...')
+        print(f'Годных деревьев: {len(trees)}')
+        if progress:
+            progress.setLabelText('Выбор оптимального решения...')
+
+        # отладочная визуализация
+        # import os
+        # os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+        # from sequential_mh.bpp_dsc.graph import plot, create_edges
+        # for i, tree in enumerate(trees):
+        #     print(f'Дерево {i}:')
+        #     for node in tree.root.cc_leaves:
+        #         print(f'{node.bin.height}: {len(node.placed)}')
+        #     # graph1, all_nodes1 = plot(tree.root, f'pdf/graph{i}.gv')
+        #     # create_edges(graph1, all_nodes1)
+        #     # graph1.view()
+        #     ef_1 = solution_efficiency(
+        #         tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=False
+        #     )
+        #     print(f'Эффективность без приоритета {ef_1}')
+        #     ef_2 = solution_efficiency(
+        #         tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=True
+        #     )
+        #     print(f'Эффективность c приоритетом {ef_2}')
+        #     print('-' * 50)
         best = max(
             trees, key=lambda item: solution_efficiency(
-                item.root, list(dfs(item.root)), nd=True, is_p=True
+                item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
             )
         )
+        for node in best.root.cc_leaves:
+            print(node.bin.height, node._id)
         get_all_residuals(best)
         return best
 
-    @staticmethod
-    def _stmh_idrd(tree, local: bool = False, with_filter: bool = True,
+    # @staticmethod
+    def _stmh_idrd(self, tree, local: bool = False, with_filter: bool = True,
                    restrictions: dict = None,
                    progress: QProgressDialog = None, end_progress=True,
-                   direction=1, start_step=0, steps=0):
+                   direction=1, start_step=0, steps=0,
+                   level_subtree=0, with_priority=True):
         """Последовательная древовидная метаэвристика.
 
         Построение деревьев растроя.
@@ -756,7 +786,14 @@ class OCIMainWindow(QMainWindow):
             nodes = deque(sorted(nodes, key=predicate))
             node = nodes[0]
             if is_cc_node(node):
-                _pack(node, level, restrictions)
+                _pack(node, level, restrictions, with_priority=with_priority)
+                # контролируем уровень построения поддеревьев
+                # FIXME: раскоментировать для учета остатков
+                # if tree._type == 0:
+                #     level_subtree = 0
+                # if level_subtree < 1:
+                #     level_subtree += 1
+                #     self.create_subtree(node, restrictions, level_subtree)
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -781,6 +818,55 @@ class OCIMainWindow(QMainWindow):
 
         return result
 
+    def create_subtree(self, node, restrictions, level_subtree):
+        """Создание поддерева для остатка
+
+        :param node: Узел, содержащий остатки
+        :type node: CuttingChartNode
+        :param restrictions: Ограничения
+        :type restrictions: dict
+        :param level_subtree: Уровень поддерева, ограничивает
+                              рекурсивное построение деревьев
+        :type level_subtree: int
+        """
+        min_size = self.minimum_plate_height, self.minimum_plate_width
+        tailings = get_residuals(node)
+        tailings = filtration_residues(node.result.tailings, min_size=min_size)
+        suitable_residues = [
+            t for t in tailings
+            if incoming_rectangles(t, node.bin.height, node.result.unplaced)
+        ]
+        # если нет прямоугольников для размещения текущей
+        # толщины пробуем упаковать другие
+        adjacent_branch = node.adjacent_branch()
+        adj_node = adjacent_branch.adj_leaves[0]
+        if not suitable_residues and not adj_node.kit.is_empty():
+            # получить неупакованные элементы из соседней ветки
+            # построить дерево для остатков
+            for tailing in tailings:
+                new_root = BinNode(
+                    Bin(
+                        tailing.length, tailing.width, node.bin.height,
+                        material=node.bin.material
+                    ),
+                    copy.deepcopy(adj_node.kit)
+                )
+                new_tree = Tree(new_root)
+                new_tree._type = 1
+                new_tree = self.stmh_idrd(
+                    new_tree, restrictions=restrictions,
+                    level_subtree=level_subtree, with_priority=False
+                )
+                node.subtree.append(new_tree)
+                # как быть если есть приоритет? когда частичная упаковка текущей толщины
+                # получить упакованные элементы
+                # удалить упакованные элементы из соседней ветки
+                for subnode in new_tree.root.cc_leaves:
+                    blanks = [r.rectangle for r in chain.from_iterable(subnode.result.blanks.values())]
+                    adj_node.kit.delete_items(list(blanks), subnode.bin.height)
+                if adj_node.kit.is_empty():
+                    break
+
     @timeit
     def optimal_ingot_size(self, main_tree, min_size, max_size, restrictions, progress=None):
         """Определение размеров слитка
@@ -803,7 +889,10 @@ class OCIMainWindow(QMainWindow):
         start_step, steps = 0, 0
         if restrictions:
             cut_thickness = restrictions.get('cutting_thickness')
-            doubling = cut_thickness >= max(main_tree.root.kit.keys())
+            if cut_thickness and cut_thickness >= max(main_tree.root.kit.keys()):
+                doubling = True
+            else:
+                restrictions['cutting_thickness'] = max(main_tree.root.kit.keys())
         if progress:
             steps = number_of_steps(len(main_tree.root.kit.keys()), doubling=doubling)
             # Костыль. Умножение на константу для учета одинаковых веток
@@ -860,14 +949,27 @@ class OCIMainWindow(QMainWindow):
         best = max(
             trees,
             key=lambda item: solution_efficiency(
-                item.root, list(dfs(item.root)), nd=True, is_p=True
+                item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
             )
         )
         get_all_residuals(best)
+
+        # NOTE: своя визуализация для отладки
+        # for node in best.root.cc_leaves:
+        #     debug_visualize(node, 'Основной')
+        #     if node.subtree:
+        #         for subtree in node.subtree:
+        #             for subnode in subtree.root.cc_leaves:
+        #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
         return best
 
     def save_residuals(self):
         """Сохранение остатков в БД"""
+        # по второму кругу получаем слиток для определения партии
+        ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
+        # гемор с партией, без ООП тяжко
+        batch = ingot['batch']
+        order_id = ingot['order_id']
         min_size = self.minimum_plate_height, self.minimum_plate_width
         if self.tree is None:
             raise ValueError('Дерево не рассчитано')
@@ -875,9 +977,26 @@ class OCIMainWindow(QMainWindow):
             tailings = filtration_residues(node.result.tailings, min_size=min_size)
             print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
             for i, tailing in enumerate(tailings):
-                print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}')
+                print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}; {node.bin.material}')
 
-            # TODO: дописать логику сохранения в БД
+                # получаем сплав
+                fusions = CatalogDataService.fusions_list()
+                fusion = fusions[node.bin.material.name]
+
+                statuses = IngotStatusDataService.get_by_name('Остаток')
+                if statuses:
+                    status = statuses[0]
+                else:
+                    raise ValueError('Статус "Остаток" не найден')
+
+                # делаем остаток
+                _id = StandardDataService.save_record(
+                    'ingots', fusion_id=fusion, batch=batch, status_id=status.id_,
+                    length=tailing.length, width=tailing.width,
+                    height=node.bin.height
+                )
+                print(f'Остаток сохранен: {_id = }')
+                # прявязка к заказу
 
     def steps(self):
         """Список толщин"""
@@ -902,7 +1021,7 @@ class OCIMainWindow(QMainWindow):
 
         self.sourcePage()
 
-        # Кнопку заверешния заказа меняем на кнопку перехода на след.шаг
+        # Кнопку завершения заказа меняем на кнопку перехода на след.шаг
         # depth = order['current_depth']
         # self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
 
@@ -1035,7 +1154,7 @@ class OCIMainWindow(QMainWindow):
         window = IngotAddingDialog(self)
         if window.exec_() == QDialog.Accepted:
             pass
-    
+
     def open_assign_dialog(self):
         """Добавление слитка к заказу"""
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
@@ -1248,9 +1367,14 @@ def create_bins_residues(items, height: Number,
     :type material: Material, optional
     :return: Список контейнеров-остатков
     :rtype: list[Bin]
-    """ 
+    """
     args = (height, rolldir, material, BinType.residue)
     return [Bin(item.length, item.width, *args) for item in items]
+
+
+def incoming_rectangles(rect, height, kit):
+    """Прямоугольники входящие в rect"""
+    return [Rectangle3d(rect.length, rect.width, height).is_subrectangle(b, b.is_rotatable) for b in kit]
 
 
 def filtration_residues(items, min_size=None):
@@ -1268,6 +1392,23 @@ def filtration_residues(items, min_size=None):
     if min_size:
         residues = filter(p_is_suitable_sizes, residues)
     return list(residues)
+
+
+def debug_visualize(node, name):
+    # NOTE: своя визуализация для отладки
+    from sequential_mh.tsh import rect
+    from sequential_mh.tsh.est import Estimator
+    from sequential_mh.tsh.visualize import visualize
+    main_rect = rect.Rectangle.create_by_size(
+        (0, 0), node.bin.length, node.bin.width
+    )
+    main_region = Estimator(main_rect, node.bin.height, node.bin.height)
+    rectangles = list(chain.from_iterable(node.result.blanks.values()))
+    visualize(
+        main_region, rectangles, node.result.tailings,
+        xlim=node.bin.width + 50, ylim=node.bin.length + 50,
+        prefix=name
+    )
 
 
 def is_residual(item) -> bool:
