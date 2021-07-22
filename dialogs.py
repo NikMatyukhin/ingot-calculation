@@ -7,7 +7,7 @@ from collections import Counter
 from itertools import chain
 
 from PyQt5.QtCore import (
-    QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex, QObject
+    QItemSelectionModel, QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex, QObject
 )
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
@@ -268,7 +268,7 @@ class OrderAddingDialog(QDialog):
         menu.exec_(self.mapToGlobal(point))
 
     def add_entity_filter(self, index: QModelIndex):
-        if index.column() in [7, 9]:
+        if index.column() in [7, 6]:
             return
         if index.parent().isValid():
             self.add_detail_to_complect()
@@ -315,7 +315,7 @@ class OrderAddingDialog(QDialog):
         self.ui.complects_view.expandAll()
 
     def remove_entity_filter(self, index: QModelIndex):
-        if index.column() in [7, 9]:
+        if index.column() in [7, 6]:
             return
         if index.parent().isValid():
             self.remove_detail_from_complect()
@@ -963,6 +963,7 @@ class IngotAssignmentDialog(QDialog):
                 'batch': None,
                 'size': sizes,
             })
+            self.ui.ingots_view.selectionModel().select(self.ingot_model.index(0, 0, QModelIndex()), QItemSelectionModel.SelectionFlag.Select)
             self.predicted_ingots[fusion_id] = {'tree': tree.root, 'efficiency': round(efficiency, 2)}
         progress.close()
 
