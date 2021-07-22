@@ -1002,7 +1002,7 @@ class OCIMainWindow(QMainWindow):
                 # делаем остаток
                 _id = StandardDataService.save_record(
                     'ingots', fusion_id=fusion, batch=batch, status_id=status.id_,
-                    length=tailing.length, width=tailing.width,
+                    length=int(tailing.length), width=int(tailing.width),
                     height=node.bin.height
                 )
                 print(f'Остаток сохранен: {_id = }')
