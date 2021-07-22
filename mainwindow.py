@@ -1046,7 +1046,6 @@ class OCIMainWindow(QMainWindow):
         self.graphicsView.setScene(self.map_scene)
 
     def stepPage(self, index: int):
-        order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         self.graphicsView.setScene(self.plan_scene)
         pack = self.tree.cc_leaves[index]
         depth = pack.bin.height

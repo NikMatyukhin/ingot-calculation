@@ -1,5 +1,5 @@
 import random
-from PyQt5.QtCore import QPoint, Qt, QRectF, QPointF
+from PyQt5.QtCore import QPoint, QRect, Qt, QRectF, QPointF
 from PyQt5.QtWidgets import (
     QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QWidget,
     QGraphicsSceneHoverEvent, QMenu, QGraphicsView
@@ -160,7 +160,7 @@ class CuttingPlanPainter:
                  name: str):
         self.blanks.append([x, y, w, h, name])
         if name not in self.blanks_colors:
-            self.blanks_colors[name] = self.randomColor().lighter(130)
+            self.blanks_colors[name] = self.randomColor()
         if x < self.vl_point.x():
             self.vl_point.setX(x)
             self.vl_point.setY(y)
@@ -194,13 +194,8 @@ class CuttingPlanPainter:
         brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
         
         if self.blanks:
-            self.scene.addRect(self.vl_point.x() - 5,
-                               self.vl_point.y() - 5,
-                               self.vr_point.x() - self.vl_point.x() + 10,
-                               self.lb_point.y() - self.vl_point.y() + 10,
-                               pen, brush)
-        else:
-            self.scene.addRect(0.0, 0.0, self.bin_width, self.bin_lenght, pen, brush)\
+            bin_rect = QRect(self.vl_point.x() - 5, self.vl_point.y() - 5, self.bin_width, self.bin_lenght)
+            self.scene.addRect(bin_rect,pen, brush)
 
     def drawCoords(self):
         self.scene.addLine(self.vl_point.x(), -10,
@@ -234,7 +229,7 @@ class CuttingPlanPainter:
         color.setNamedColor(
             "#"+''.join(
                 [
-                    random.choice('0123456789ABCDEF') for j in range(6)
+                    random.choice('456789ABCDEF') for j in range(6)
                 ]
             )
         )
