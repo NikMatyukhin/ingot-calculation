@@ -845,7 +845,7 @@ class Ui_MainWindow(object):
         self.edit_order.setText(_translate("MainWindow", "Редактировать\n"
 "заказ"))
         self.label_3.setText(_translate("MainWindow", "Слитки"))
-        self.label_7.setText(_translate("MainWindow", "Карта раскроя (позже уберём отсюда)"))
+        self.label_7.setText(_translate("MainWindow", "Карта раскроя"))
         self.recalculate.setText(_translate("MainWindow", "Пересчитать"))
         self.fullScreen.setText(_translate("MainWindow", "На весь экран"))
         self.detailedPlan.setText(_translate("MainWindow", "Перейти к плану"))
