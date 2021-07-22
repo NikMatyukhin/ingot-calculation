@@ -974,7 +974,7 @@ class IngotAssignmentDialog(QDialog):
         tree = self.parent().optimal_ingot_size(
             tree, min_size, max_size, self.settings, progress=progress
         )
-        efficiency = round(solution_efficiency(tree.root, list(dfs(tree.root)), is_total=True), 2)
+        efficiency = round(solution_efficiency(tree.root, list(dfs(tree.root)), tree.main_kit, is_total=True), 2)
         print(f'Эффективность после расчета: {efficiency}')
 
         # size_error = self.ingot_settings['size_error']

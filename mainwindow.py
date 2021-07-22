@@ -10,7 +10,7 @@ import math
 from typing import Dict, Union
 from itertools import chain
 from functools import partial
-from collections import Counter, deque, namedtuple
+from collections import Counter, deque
 from pathlib import Path
 
 from PyQt5.QtCore import (
@@ -844,6 +844,7 @@ class OCIMainWindow(QMainWindow):
             # получить неупакованные элементы из соседней ветки
             # построить дерево для остатков
             for tailing in tailings:
+                node.result.tailings.remove(tailing)
                 new_root = BinNode(
                     Bin(
                         tailing.length, tailing.width, node.bin.height,
@@ -973,12 +974,21 @@ class OCIMainWindow(QMainWindow):
         min_size = self.minimum_plate_height, self.minimum_plate_width
         if self.tree is None:
             raise ValueError('Дерево не рассчитано')
+        tailings = [adj_node.bin for adj_node in self.tree.adj_leaves]
         for node in self.tree.cc_leaves:
-            tailings = filtration_residues(node.result.tailings, min_size=min_size)
+            tailings.extend(node.result.tailings)
+            for subtree in node.subtree:
+                for subnode in subtree.root.cc_leaves:
+                    tailings.extend(subnode.result.tailings)
+                tailings.extend([adj_node.bin for adj_node in subtree.root.adj_leaves])
+            tailings = filtration_residues(tailings, min_size=min_size)
+            print('-'*50)
+            print('Список сохраняемых остатков:')
+            for tailing in tailings:
+                print(tailing)
+            print('-'*50)
             print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
-            for i, tailing in enumerate(tailings):
-                print(f'\t{i:< 4}{tailing.length, tailing.width}; {tailing.rtype}; {node.bin.material}')
-
+            for tailing in tailings:
                 # получаем сплав
                 fusions = CatalogDataService.fusions_list()
                 fusion = fusions[node.bin.material.name]
@@ -1418,7 +1428,7 @@ def is_residual(item) -> bool:
     :return: True если остаток и False в противном случае
     :rtype: bool
     """
-    return item.rtype == RectangleType.RESIDUAL
+    return isinstance(item, Bin) or item.rtype == RectangleType.RESIDUAL
 
 
 def is_suitable_sizes(item, min_size: tuple[Number, Number]) -> bool:
@@ -1432,7 +1442,13 @@ def is_suitable_sizes(item, min_size: tuple[Number, Number]) -> bool:
              и False в противном случае
     :rtype: bool
     """
-    return item.min_side >= min(min_size) and item.max_side >= max(min_size)
+    if isinstance(item, Bin):
+        min_side = min(item.size[:2])
+        max_side = max(item.size[:2])
+    else:
+        min_side = item.min_side
+        max_side = item.max_side
+    return min_side >= min(min_size) and max_side >= max(min_size)
 
 
 if __name__ == '__main__':
