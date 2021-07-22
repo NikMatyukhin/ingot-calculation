@@ -99,7 +99,7 @@ class OCIMainWindow(QMainWindow):
         # TODO: пока заказ не выбран пусть содержит свободные слитки,
         #       чтобы потом показывать их на главном экране - пойдёт на склад
         self.ingot_model = IngotModel('unused')
-        self.ingot_delegate = IngotSectionDelegate(self.ui.ingotsView)
+        self.ingot_delegate = IngotSectionDelegate(numerable = True, parent = self.ui.ingotsView)
         self.ui.ingotsView.setModel(self.ingot_model)
         self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
         self.ui.ingotsView.clicked.connect(self.show_ingot_information)

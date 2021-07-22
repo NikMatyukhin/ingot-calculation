@@ -343,9 +343,10 @@ class IngotSectionDelegate(QStyledItemDelegate):
     deleteFromOrderClicked = pyqtSignal(QModelIndex)
     margin = 5
 
-    def __init__(self, show_close: True, parent: typing.Optional[QObject] = None) -> None:
+    def __init__(self, show_close: bool = True, numerable: bool = False, parent: typing.Optional[QObject] = None) -> None:
         super(IngotSectionDelegate, self).__init__(parent)
         self.show_close = show_close
+        self.numerable = numerable
     
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         opt = QStyleOptionViewItem(option)
@@ -387,11 +388,11 @@ class IngotSectionDelegate(QStyledItemDelegate):
         painter.setFont(font)
         painter.setPen(Qt.black)
 
-        # Надпись с партией слитка
-        batch = 'Партия: №' + str(ingot['batch']) if ingot['status_id'] not in [3, 4] else 'Партия: не указана'
+        # Надпись с партией слитка        
+        batch = f"{f'№{index.row()+1} ' if self.numerable else ''}Партия: {str(ingot['batch']) if ingot['status_id'] not in [3, 4] else 'нет'}"
         batch_rect = QRect(self.textBox(font, batch))
         batch_rect.moveTo(contentRect.left(), contentRect.top())
-        painter.drawText(batch_rect, Qt.TextSingleLine, batch)
+        painter.drawText(batch_rect, Qt.AlignCenter, batch)
 
         # Надпись с размерами слитка
         size = 'Размеры: ' + 'х'.join(map(str, ingot['size']))
