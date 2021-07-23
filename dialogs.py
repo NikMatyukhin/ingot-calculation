@@ -508,7 +508,7 @@ class OrderEditingDialog(QDialog):
         menu.exec_(self.mapToGlobal(point))
 
     def add_entity_filter(self, index: QModelIndex):
-        if index.column() in [7, 9]:
+        if index.column() in [7, 6]:
             return
         if index.parent().isValid():
             self.add_detail_to_complect()
@@ -555,7 +555,7 @@ class OrderEditingDialog(QDialog):
         self.ui.complects_view.expandAll()
 
     def remove_entity_filter(self, index: QModelIndex):
-        if index.column() in [7, 9]:
+        if index.column() in [7, 6]:
             return
         if index.parent().isValid():
             self.remove_detail_from_complect()
