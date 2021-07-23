@@ -457,20 +457,35 @@ class OCIMainWindow(QMainWindow):
         self.create_tree()
 
     def create_all_tree(self):
-        # TODO: добавить фильтрацию зеленых слитков
-        # TODO: добавить сортировку слитков
         order_index = self.ui.searchResult_1.currentIndex()
         order = order_index.data(Qt.DisplayRole)
         model = self.ui.ingotsView.model()
 
         all_blanks = self.get_all_blanks()
         placed_blanks = {}
+        ingots = []
         for ingot_index in range(model.rowCount()):
             ingot_idx_model = model.index(ingot_index, 0)
             ingot_data = ingot_idx_model.data()
             fusion = StandardDataService.get_by_id('fusions', Field('id', ingot_data['fusion_id']))
             material = Material(fusion[1], fusion[2], 1.)
 
+            # фильтрация зеленых слитков и запоминание размещенных элементов
+            if ingot_data['status_id'] == 3:
+                if material.name not in placed_blanks:
+                    placed_blanks[material.name] = Counter()
+
+                self.load_tree(order, ingot_data)
+
+                for leave in self.tree.cc_leaves:
+                    placed_blanks[material.name] += Counter(b.name for b in leave.placed)
+            else:
+                ingots.append((ingot_data, material))
+
+        # сортируем по объему в порядке неубывания
+        ingots.sort(key=lambda item: math.prod(item[0]['size']))
+
+        for ingot, material in ingots:
             if material.name not in placed_blanks:
                 placed_blanks[material.name] = Counter()
 
@@ -478,7 +493,7 @@ class OCIMainWindow(QMainWindow):
                 all_blanks[material.name], material, placed_blanks[material.name]
             )
 
-            ef_res = self.create_tree(order, ingot_data, material, kit)
+            ef_res = self.create_tree(order, ingot, material, kit)
             if ef_res:
                 efficiency, order_efficiency = ef_res
 
@@ -491,7 +506,7 @@ class OCIMainWindow(QMainWindow):
                 )
 
             for leave in self.tree.cc_leaves:
-                placed_blanks[fusion[1]] += Counter(b.name for b in leave.placed)
+                placed_blanks[material.name] += Counter(b.name for b in leave.placed)
 
     def create_tree(self, order, ingot, material, details):
         # Отображение прогресса раскроя
@@ -643,6 +658,7 @@ class OCIMainWindow(QMainWindow):
         :return: Набор заготовок
         :rtype: Kit
         """
+        # TODO: Удалить метод
         model = self.complect_model
         details = []
         # Переходим по всем изделиям в заказе
