@@ -2093,6 +2093,8 @@ def is_imt_node(node):
 
 def to_delete(length, width, max_size):
     """Проверка на максимальные размеры"""
+    # if min(length, width) / max(length, width) > 0.8:
+    #     return max_size and (length > 350 or width > max_size[LENGTH])
     return max_size and (length > max_size[WIDTH] or width > max_size[LENGTH])
 
 
