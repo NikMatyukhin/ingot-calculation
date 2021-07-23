@@ -94,6 +94,8 @@ class OCIMainWindow(QMainWindow):
         self.ui.searchResult_1.setModel(self.order_model)
         self.ui.searchResult_1.setItemDelegate(self.order_delegate)
         self.order_delegate.deleteIndexClicked.connect(self.confirm_order_removing)
+        self.order_delegate.editIndexClicked.connect(self.open_edit_dialog)
+        self.order_delegate.completeIndexClicked.connect(self.confirm_order_completing)
 
         # Модель слитков (обновляется при изменении текущего заказа)
         # TODO: пока заказ не выбран пусть содержит свободные слитки,
@@ -348,6 +350,9 @@ class OCIMainWindow(QMainWindow):
             self.order_model.deleteRow(index.row())
             self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
         self.ui.searchResult_1.clearSelection()
+
+    def confirm_order_completing(self, index: QModelIndex):
+        pass
 
     def update_complect_statuses(self, order_id: int, ingot_fusion: int):
         """Обновление статусов заготовок"""

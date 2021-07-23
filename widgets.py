@@ -9,7 +9,7 @@ from PyQt5.QtCore import (
     QLocale, QModelIndex
 )
 from PyQt5.QtWidgets import (
-    QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
+    QAbstractItemView, QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
     QScrollArea, QItemDelegate, QStyleOptionViewItem, QComboBox, QPushButton,
     QStyledItemDelegate, QStyle
 )
@@ -18,7 +18,7 @@ from PyQt5.QtGui import (
 )
 
 from service import StandardDataService, Field
-from models import IngotModel
+from models import IngotModel, OrderModel
 
 
 class ExclusiveButton(QPushButton):
@@ -230,6 +230,8 @@ class Section(QWidget):
 class OrderSectionDelegate(QStyledItemDelegate):
 
     deleteIndexClicked = pyqtSignal(QModelIndex)
+    editIndexClicked = pyqtSignal(QModelIndex)
+    completeIndexClicked = pyqtSignal(QModelIndex)
     margin = 5   
 
     def __init__(self, parent: typing.Optional[QObject] = None) -> None:
@@ -246,12 +248,16 @@ class OrderSectionDelegate(QStyledItemDelegate):
         contentRect = QRect(rect.adjusted(self.margin, self.margin, self.margin, self.margin))
         
         title_font.setPointSize(11)
-        small_font.setPointSize(self.informationFontPointSize(title_font))
+        small_font.setPointSize(int(self.informationFontPointSize(title_font)))
         
         bottomEdge = rect.bottom()
         lastIndex = (index.model().rowCount() - 1) == index.row()
-        self.deleteIcon = QPixmap(':icons/remove.png').scaled(15, 15, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.deleteIcon = QPixmap(':icons/remove.png').scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         self.deleteIconPos = QPoint(contentRect.right() - self.deleteIcon.width() - self.margin * 2, contentRect.top())
+        self.editIcon = QPixmap(':icons/edit.png').scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        self.editIconPos = QPoint(contentRect.right() - self.editIcon.width() - self.margin * 2, contentRect.top() + self.margin + self.editIcon.height())
+        self.completeIcon = QPixmap(':icons/complete.png').scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        self.completeIconPos = QPoint(contentRect.right() - self.completeIcon.width() - self.margin * 2, contentRect.top() + self.margin * 2 + self.completeIcon.height() * 2)
 
         painter.save()
         painter.setClipping(True)
@@ -311,6 +317,8 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
         if opt.state & QStyle.State_Selected:
             painter.drawPixmap(self.deleteIconPos, self.deleteIcon)
+            painter.drawPixmap(self.editIconPos, self.editIcon)
+            painter.drawPixmap(self.completeIconPos, self.completeIcon)
 
         painter.restore()
 
@@ -325,14 +333,22 @@ class OrderSectionDelegate(QStyledItemDelegate):
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
 
-        return QSize(opt.rect.width(), 70)
+        return QSize(opt.rect.width(), 90)
     
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
         if event.type() == QEvent.MouseButtonRelease:
             deleteIconRect = self.deleteIcon.rect().translated(self.deleteIconPos)
-
             if(deleteIconRect.contains(event.pos())):
                 self.deleteIndexClicked.emit(index)
+
+            editIconRect = self.editIcon.rect().translated(self.editIconPos)
+            if(editIconRect.contains(event.pos())):
+                self.editIndexClicked.emit(index)
+
+            completeIconRect = self.completeIcon.rect().translated(self.completeIconPos)
+            if(completeIconRect.contains(event.pos())):
+                self.completeIndexClicked.emit(index)
+            
         return super().editorEvent(event, model, option, index)
 
 
@@ -352,13 +368,9 @@ class IngotSectionDelegate(QStyledItemDelegate):
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
 
-        palette = QPalette(opt.palette)
-        rect = QRect(opt.rect)
+        palette, rect, font = opt.palette, opt.rect, opt.font
         contentRect = QRect(rect.adjusted(self.margin * 2, self.margin, -self.margin * 2, -self.margin))
-        font = QFont(opt.font)
-
         font.setPointSize(8)
-        # font.setBold(True)
 
         ingot = index.data(Qt.DisplayRole)
         fill_color = palette.light().color()
@@ -428,7 +440,8 @@ class IngotSectionDelegate(QStyledItemDelegate):
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
 
-        return QSize(135, opt.rect.height())
+        # Минимальный размер 135х185, максимальный 135х"высота контейнера"
+        return QSize(135, max(opt.rect.height(), 185))
 
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
         if event.type() == QEvent.MouseButtonRelease:
@@ -447,18 +460,21 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
 
 if __name__ == '__main__':
-    application = QApplication()
+    application = QApplication([])
     window = QListView()
     window.setFlow(QListView.LeftToRight)
     window.setSelectionMode(QListView.MultiSelection)
+    window.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
 
-    model = IngotModel()
-    model.setupModelData()
+    model = IngotModel('unused')
+    # model = OrderModel(Field('status_id', 1))
+    # model.setupModelData()
 
     delegate = IngotSectionDelegate(window)
+    # delegate = OrderSectionDelegate(window)
 
     window.setModel(model)
     window.setItemDelegate(delegate)
     window.show()
 
-    application.exec_()
+    application.exec()
