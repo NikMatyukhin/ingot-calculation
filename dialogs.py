@@ -896,11 +896,18 @@ class IngotAssignmentDialog(QDialog):
         order_name = 'НОВЫЙ ЗАКАЗ'
         progress.setLabelText('Процесс расчета слитка под ПЗ...')
         
-        details = self.parent().get_details_kit(material)
-        if details.is_empty():
-            QMessageBox.information(self, 'Добавление слитка', 'Слитки такого сплава не найдены.', QMessageBox.Ok)
+        # details = self.parent().get_details_kit(material)
+        details = self.parent().get_all_blanks()
+        if material.name not in details:
+            QMessageBox.information(
+                self, 'Добавление слитка', 'Слитки такого сплава не найдены.',
+                QMessageBox.Ok
+            )
             progress.close()
             return
+        details = self.parent().create_details_kit(
+            details[material.name], material
+        )
         
         log_operation_info(
             'start_ic',
