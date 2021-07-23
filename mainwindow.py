@@ -10,7 +10,7 @@ import math
 from typing import Dict, Union
 from itertools import chain
 from functools import partial
-from collections import Counter, deque
+from collections import Counter, deque, namedtuple
 from pathlib import Path
 
 from PyQt5.QtCore import (
@@ -204,7 +204,7 @@ class OCIMainWindow(QMainWindow):
 
         # Кнопки страницы заказа
         self.ui.fullScreen.clicked.connect(self.open_fullscreen_window)
-        self.ui.recalculate.clicked.connect(self.create_tree)
+        self.ui.recalculate.clicked.connect(self.create_all_tree)
 
     def show_order_information(self, index: QModelIndex):
         """Переключатель активных заказов и открытых секций.
@@ -461,20 +461,61 @@ class OCIMainWindow(QMainWindow):
         self.save_complects()
         self.create_tree()
 
-    def create_tree(self):
-        # Пока работаем только с одном слитком
-        order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
-        ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
-        fusion = StandardDataService.get_by_id('fusions', Field('id', ingot['fusion_id']))
-        material = Material(fusion[1], fusion[2], 1.)
+    def create_all_tree(self):
+        order_index = self.ui.searchResult_1.currentIndex()
+        order = order_index.data(Qt.DisplayRole)
+        model = self.ui.ingotsView.model()
 
-        # Выбор заготовок и удаление лишних значений
-        details = None
-        try:
-            details = self.get_details_kit(material)
-        except Exception as exception:
-            QMessageBox.critical(self, 'Ошибка сборки', f'{exception}', QMessageBox.Ok)
-            return
+        all_blanks = self.get_all_blanks()
+        placed_blanks = {}
+        ingots = []
+        for ingot_index in range(model.rowCount()):
+            ingot_idx_model = model.index(ingot_index, 0)
+            ingot_data = ingot_idx_model.data()
+            fusion = StandardDataService.get_by_id('fusions', Field('id', ingot_data['fusion_id']))
+            material = Material(fusion[1], fusion[2], 1.)
+
+            # фильтрация зеленых слитков и запоминание размещенных элементов
+            if ingot_data['status_id'] == 3:
+                if material.name not in placed_blanks:
+                    placed_blanks[material.name] = Counter()
+
+                self.load_tree(order, ingot_data)
+
+                for leave in self.tree.cc_leaves:
+                    placed_blanks[material.name] += Counter(b.name for b in leave.placed)
+            else:
+                ingots.append((ingot_data, material))
+
+        # сортируем по объему в порядке неубывания
+        ingots.sort(key=lambda item: math.prod(item[0]['size']))
+
+        for ingot, material in ingots:
+            if material.name not in placed_blanks:
+                placed_blanks[material.name] = Counter()
+
+            kit = self.create_details_kit(
+                all_blanks[material.name], material, placed_blanks[material.name]
+            )
+            if kit.is_empty():
+                break
+
+            ef_res = self.create_tree(order, ingot, material, kit)
+            if ef_res:
+                efficiency, order_efficiency = ef_res
+
+                self.ingot_model.setData(
+                    ingot_idx_model, {'efficiency': round(efficiency, 2)},
+                    Qt.EditRole
+                )
+                self.order_model.setData(
+                    order_index, {'efficiency': order_efficiency}, Qt.EditRole
+                )
+
+                for leave in self.tree.cc_leaves:
+                    placed_blanks[material.name] += Counter(b.name for b in leave.placed)
+
+    def create_tree(self, order, ingot, material, details):
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)
@@ -484,7 +525,7 @@ class OCIMainWindow(QMainWindow):
         ingot_size = ingot['size']
         order_id = int(order['id'])
         log_operation_info(
-            'create_cut', {'name': order_name, 'alloy': fusion[1]},
+            'create_cut', {'name': order_name, 'alloy': material.name},
             identifier=order_id
         )
         progress.setLabelText('Процесс раскроя...')
@@ -492,7 +533,7 @@ class OCIMainWindow(QMainWindow):
             log_operation_info(
                 'cut_info',
                 {
-                    'name': order_name, 'alloy': fusion[1],
+                    'name': order_name, 'alloy': material.name,
                     'size': 'x'.join(map(str, ingot_size)),
                     'blanks': details.qty(), 'heights': len(details.keys())
                 }, identifier=order_id
@@ -503,7 +544,7 @@ class OCIMainWindow(QMainWindow):
             # self.save_residuals()
         except ForcedTermination:
             log_operation_info(
-                'user_inter_cut', {'name': order_name, 'alloy': fusion[1]},
+                'user_inter_cut', {'name': order_name, 'alloy': material.name},
                 identifier=order_id
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
@@ -516,44 +557,105 @@ class OCIMainWindow(QMainWindow):
         else:
             progress.setLabelText('Завершение раскроя...')
 
-            ingot_index = self.ui.ingotsView.currentIndex()
-            self.ingot_model.setData(ingot_index, {'efficiency': round(efficiency, 2)}, Qt.EditRole)
             StandardDataService.update_record(
-                'ingots', Field('id', ingot_index.data(Qt.DisplayRole)['id']), efficiency=round(efficiency, 2)
+                'ingots', Field('id', ingot['id']), efficiency=round(efficiency, 2)
             )
+            self.update_complect_statuses(order['id'], ingot['fusion_id'])
 
-            order_index = self.ui.searchResult_1.currentIndex()
-
-            self.update_complect_statuses(
-                order_index.data(Qt.DisplayRole)['id'],
-                ingot_index.data(Qt.DisplayRole)['fusion_id']
-            )
-
-            order_efficiency = OrderDataService.efficiency(Field('order_id', order_index.data(Qt.DisplayRole)['id']))
-            self.order_model.setData(order_index, {'efficiency': order_efficiency}, Qt.EditRole)
+            order_efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
             StandardDataService.update_record(
-                'orders', Field('id', order_index.data(Qt.DisplayRole)['id']), efficiency=order_efficiency
+                'orders', Field('id', order['id']), efficiency=order_efficiency
             )
 
-            # order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
-            # ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
             self.save_tree(order, ingot)
             self.redraw_map(ingot)
 
             log_operation_info(
                 'end_cut',
                 {
-                    'name': order_name, 'alloy': fusion[1],
+                    'name': order_name, 'alloy': material.name,
                     'efficiency': efficiency, 'total_efficiency': order_efficiency
                 }, identifier=order_id
             )
         progress.close()
+        return efficiency, order_efficiency
 
     def redraw_map(self, ingot: Dict):
         self.map_scene.clear()
         self.map_painter.setTree(self.tree)
         self.map_painter.setEfficiency(round(ingot['efficiency'], 2))
         self.map_painter.drawTree()
+
+    def get_all_blanks(self):
+        """Получение всех заготовок из заказа
+
+        :return: Набор заготовок сгруппированных по сплаву в виде словаря
+        :rtype: Dict[str, list]
+        """
+        Detail = namedtuple(
+            'Detail',
+            ('length', 'width', 'height', 'priority', 'direction', 'name', 'amount')
+        )
+        model = self.complect_model
+        details = {}
+        # Переходим по всем изделиям в заказе
+        for row in range(model.rowCount(QModelIndex())):
+            parent = model.index(row, 0, QModelIndex())
+            parent_name = model.data(parent, Qt.DisplayRole)
+
+            # Переходим по всем заготовкам в изделии
+            for sub_row in range(model.rowCount(parent)):
+                fusion_id = model.data(model.index(sub_row, 3, parent), Qt.DisplayRole)
+                detail_fusion = StandardDataService.get_by_id('fusions', Field('id', fusion_id))[1]
+
+                # Собираем все нужные данные по колонкам
+                name: str = model.data(model.index(sub_row, 0, parent), Qt.DisplayRole)
+                direction_id = int(model.data(model.index(sub_row, 10, parent), Qt.DisplayRole))
+                direction_code = 3 if direction_id == 0 else 2
+                direction = Direction(direction_code)
+
+                detail=Detail(
+                    length=int(model.data(model.index(sub_row, 4, parent), Qt.DisplayRole)),
+                    width=int(model.data(model.index(sub_row, 5, parent), Qt.DisplayRole)),
+                    height=float(model.data(model.index(sub_row, 6, parent), Qt.DisplayRole)),
+                    priority = int(model.data(model.index(sub_row, 9, parent), Qt.DisplayRole)),
+                    direction=direction,
+                    name = parent_name + '_' + name,
+                    amount=int(model.data(model.index(sub_row, 7, parent), Qt.DisplayRole))
+                )
+                if detail_fusion not in details:
+                    details[detail_fusion] = []
+                details[detail_fusion].append(detail)
+        return details
+
+    @staticmethod
+    def create_details_kit(blanks, material: Material, exclude=None) -> Kit:
+        """Создание набора заготовок
+
+        :param blanks: Набор заготовок в виде списка кортежей.
+                        Кортежи должны иметь формат:
+                        (length, width, height, priority, direction, name, amount)
+        :type blanks: list[tuple]
+        :param material: Материал
+        :type material: Material
+        :param exclude: Набор заготовок, которые нужно исключить.
+                        Формат: {имя_заготовки: количество}, defaults to None
+        :type exclude: dict, optional
+        :return: Набор заготовок
+        :rtype: Kit
+        """
+        kit = []
+        if exclude is None:
+            exclude = {}
+        for detail in blanks:
+            number = detail[-1]
+            for _ in range(number - exclude.get(detail[-2], 0)):
+                blank = Blank(*detail[:4], direction=detail[4], material=material)
+                blank.name = detail[-2]
+                kit.append(blank)
+        kit = Kit(kit)
+        kit.sort('width')
+        return kit
 
     def get_details_kit(self, material: Material) -> Kit:
         """Формирование набора заготовок
@@ -563,6 +665,7 @@ class OCIMainWindow(QMainWindow):
         :return: Набор заготовок
         :rtype: Kit
         """
+        # TODO: Удалить метод
         model = self.complect_model
         details = []
         # Переходим по всем изделиям в заказе
