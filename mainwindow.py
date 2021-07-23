@@ -474,7 +474,7 @@ class OCIMainWindow(QMainWindow):
             if material.name not in placed_blanks:
                 placed_blanks[material.name] = Counter()
 
-            kit = create_details_kit(
+            kit = self.create_details_kit(
                 all_blanks[material.name], material, placed_blanks[material.name]
             )
 
@@ -605,6 +605,35 @@ class OCIMainWindow(QMainWindow):
                     details[detail_fusion] = []
                 details[detail_fusion].append(detail)
         return details
+
+    @staticmethod
+    def create_details_kit(blanks, material: Material, exclude=None) -> Kit:
+        """Создание набора заготовок
+
+        :param blanks: Набор заготовок в виде списка кортежей.
+                        Кортежи должны иметь формат:
+                        (length, width, height, priority, direction, name, amount)
+        :type blanks: list[tuple]
+        :param material: Материал
+        :type material: Material
+        :param exclude: Набор заготовок, которые нужно исключить.
+                        Формат: {имя_заготовки: количество}, defaults to None
+        :type exclude: dict, optional
+        :return: Набор заготовок
+        :rtype: Kit
+        """
+        kit = []
+        if exclude is None:
+            exclude = {}
+        for detail in blanks:
+            number = detail[-1]
+            for _ in range(number - exclude.get(detail[-2], 0)):
+                blank = Blank(*detail[:4], direction=detail[4], material=material)
+                blank.name = detail[-2]
+                kit.append(blank)
+        kit = Kit(kit)
+        kit.sort('width')
+        return kit
 
     def get_details_kit(self, material: Material) -> Kit:
         """Формирование набора заготовок
@@ -1392,35 +1421,6 @@ def get_abs_path(file_name, path=None) -> Path:
     else:
         abs_path = dir_path / file_name
     return abs_path
-
-
-def create_details_kit(blanks, material: Material, exclude=None) -> Kit:
-    """Создание набора заготовок
-
-    :param blanks: Набор заготовок в виде списка кортежей.
-                    Кортежи должны иметь формат:
-                    (length, width, height, priority, direction, name, amount)
-    :type blanks: list[tuple]
-    :param material: Материал
-    :type material: Material
-    :param exclude: Набор заготовок, которые нужно исключить.
-                    Формат: {имя_заготовки: количество}, defaults to None
-    :type exclude: dict, optional
-    :return: Набор заготовок
-    :rtype: Kit
-    """
-    kit = []
-    if exclude is None:
-        exclude = {}
-    for detail in blanks:
-        number = detail[-1]
-        for _ in range(number - exclude.get(detail[-2], 0)):
-            blank = Blank(*detail[:4], direction=detail[4], material=material)
-            blank.name = detail[-2]
-            kit.append(blank)
-    kit = Kit(kit)
-    kit.sort('width')
-    return kit
 
 
 def number_of_steps(num_of_heights, doubling=True):
