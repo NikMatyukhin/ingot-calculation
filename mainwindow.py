@@ -492,6 +492,8 @@ class OCIMainWindow(QMainWindow):
             kit = self.create_details_kit(
                 all_blanks[material.name], material, placed_blanks[material.name]
             )
+            if kit.is_empty():
+                break
 
             ef_res = self.create_tree(order, ingot, material, kit)
             if ef_res:
@@ -505,8 +507,8 @@ class OCIMainWindow(QMainWindow):
                     order_index, {'efficiency': order_efficiency}, Qt.EditRole
                 )
 
-            for leave in self.tree.cc_leaves:
-                placed_blanks[material.name] += Counter(b.name for b in leave.placed)
+                for leave in self.tree.cc_leaves:
+                    placed_blanks[material.name] += Counter(b.name for b in leave.placed)
 
     def create_tree(self, order, ingot, material, details):
         # Отображение прогресса раскроя
