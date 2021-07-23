@@ -281,13 +281,14 @@ class OCIMainWindow(QMainWindow):
 
         message = QMessageBox(self)
         message.setWindowTitle('Подтверждение удаления')
-        message.setText(f'Вы уверены, что хотите удалить этот слиток?')
+        message.setText('Вы уверены, что хотите удалить этот слиток?')
         message.setIcon(QMessageBox.Icon.Question)
         answer = message.addButton('Да', QMessageBox.ButtonRole.AcceptRole)
         message.addButton('Отмена', QMessageBox.ButtonRole.RejectRole)
         message.exec()
 
         if answer == message.clickedButton():
+            success = False
             if ingot['status_id'] == 3:
                 success = StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
             elif ingot['status_id'] in [1, 2]:
@@ -464,10 +465,8 @@ class OCIMainWindow(QMainWindow):
         # Пока работаем только с одном слитком
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
-        fusion_name = StandardDataService.get_by_id('fusions', Field('id', ingot['fusion_id']))[1]
-
-        # TODO: Вторым аргументом нужно вставить плотность сплава
-        material = Material(fusion_name, 2.2, 1.)
+        fusion = StandardDataService.get_by_id('fusions', Field('id', ingot['fusion_id']))
+        material = Material(fusion[1], fusion[2], 1.)
 
         # Выбор заготовок и удаление лишних значений
         details = None
@@ -485,7 +484,7 @@ class OCIMainWindow(QMainWindow):
         ingot_size = ingot['size']
         order_id = int(order['id'])
         log_operation_info(
-            'create_cut', {'name': order_name, 'alloy': fusion_name},
+            'create_cut', {'name': order_name, 'alloy': fusion[1]},
             identifier=order_id
         )
         progress.setLabelText('Процесс раскроя...')
@@ -493,7 +492,7 @@ class OCIMainWindow(QMainWindow):
             log_operation_info(
                 'cut_info',
                 {
-                    'name': order_name, 'alloy': fusion_name,
+                    'name': order_name, 'alloy': fusion[1],
                     'size': 'x'.join(map(str, ingot_size)),
                     'blanks': details.qty(), 'heights': len(details.keys())
                 }, identifier=order_id
@@ -504,7 +503,7 @@ class OCIMainWindow(QMainWindow):
             # self.save_residuals()
         except ForcedTermination:
             log_operation_info(
-                'user_inter_cut', {'name': order_name, 'alloy': fusion_name},
+                'user_inter_cut', {'name': order_name, 'alloy': fusion[1]},
                 identifier=order_id
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
@@ -536,15 +535,15 @@ class OCIMainWindow(QMainWindow):
                 'orders', Field('id', order_index.data(Qt.DisplayRole)['id']), efficiency=order_efficiency
             )
 
-            order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
-            ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
+            # order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+            # ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
             self.save_tree(order, ingot)
             self.redraw_map(ingot)
 
             log_operation_info(
                 'end_cut',
                 {
-                    'name': order_name, 'alloy': fusion_name,
+                    'name': order_name, 'alloy': fusion[1],
                     'efficiency': efficiency, 'total_efficiency': order_efficiency
                 }, identifier=order_id
             )
