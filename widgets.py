@@ -318,7 +318,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
         if opt.state & QStyle.State_Selected:
             painter.drawPixmap(self.deleteIconPos, self.deleteIcon)
             painter.drawPixmap(self.editIconPos, self.editIcon)
-            painter.drawPixmap(self.completeIconPos, self.completeIcon)
+            # painter.drawPixmap(self.completeIconPos, self.completeIcon)
 
         painter.restore()
 
@@ -345,9 +345,9 @@ class OrderSectionDelegate(QStyledItemDelegate):
             if(editIconRect.contains(event.pos())):
                 self.editIndexClicked.emit(index)
 
-            completeIconRect = self.completeIcon.rect().translated(self.completeIconPos)
-            if(completeIconRect.contains(event.pos())):
-                self.completeIndexClicked.emit(index)
+            # completeIconRect = self.completeIcon.rect().translated(self.completeIconPos)
+            # if(completeIconRect.contains(event.pos())):
+            #     self.completeIndexClicked.emit(index)
             
         return super().editorEvent(event, model, option, index)
 

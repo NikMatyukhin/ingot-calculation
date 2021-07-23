@@ -828,14 +828,14 @@ class OrderInformationComplectsModel(TreeModel):
             return None
 
         # Проверка переданных ролей
-        if role not in self.AVAILABLE_ROLES:
+        if role not in self.AVAILABLE_DATA_ROLES:
             return None
 
         item = index.internalPointer()
 
         # Оцентровка всех колонок с цифровыми значениями
         if role == Qt.TextAlignmentRole:
-            if index.column() in self.NUMERIC_COLUMNS:
+            if self.Col(index.column()) in self.NUMERIC_COLUMNS:
                 return Qt.AlignHCenter
             else:
                 return Qt.AlignLeft
