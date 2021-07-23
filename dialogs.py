@@ -750,9 +750,6 @@ class IngotAssignmentDialog(QDialog):
         self.ui.add.clicked.connect(self.confirm_ingots_assinging)
 
     def confirm_ingots_assinging(self):
-        if self.repeatable_fusions():
-            QMessageBox.critical(self, 'Ошибка добавления', 'Невозможно выбрать несколько слитков одного сплава', QMessageBox.Close)
-            return
         if not self.ui.ingots_view.selectedIndexes():
             QMessageBox.critical(self, 'Ошибка добавления', 'Не выбраны слитки', QMessageBox.Close)
             return
