@@ -29,7 +29,7 @@ from gui import (
     ui_ready_ingot_dialog, ui_assign_ingot_dialog, ui_edit_order_dialog
 )
 from service import (
-    OrderDataService, StandardDataService, CatalogDataService, Field, UpdatableFieldsCollection
+    OrderDataService, StandardDataService, CatalogDataService, Field, FieldCollection
 )
 from models import (
    OrderComplectsFilterProxyModel, ComplectsModel, IngotModel, 
@@ -393,7 +393,7 @@ class OrderAddingDialog(QDialog):
         # Добавляем записи о комплектации заказа в целом
         marked_rows = self.model.added()
         complects = marked_rows['complects']
-        updates = UpdatableFieldsCollection(['order_id', 'article_id', 'detail_id', 'status_id', 'amount', 'priority'])
+        updates = FieldCollection(['order_id', 'article_id', 'detail_id', 'status_id', 'amount', 'priority'])
         order = Field('order_id', order_id)
         status = Field('status_id', 0)
         for article, details in complects.items():
@@ -645,7 +645,7 @@ class OrderEditingDialog(QDialog):
         # Добавляем записи о комплектации заказа в целом
         marked_rows = self.model.added()
         complects = marked_rows['complects']
-        updates = UpdatableFieldsCollection(['order_id', 'article_id', 'detail_id', 'status_id', 'amount', 'priority'])
+        updates = FieldCollection(['order_id', 'article_id', 'detail_id', 'status_id', 'amount', 'priority'])
         order = Field('order_id', self.order['id'])
         status = Field('status_id', 0)
         for article, details in complects.items():
@@ -832,7 +832,7 @@ class IngotAssignmentDialog(QDialog):
             unplaced_counter = self.unplaced_list(fusion)
 
             # Сначала проходимся по счётчику неразмещённых заготовок
-            updates = UpdatableFieldsCollection(['status_id', 'total', 'order_id', 'detail_id'])
+            updates = FieldCollection(['status_id', 'total', 'order_id', 'detail_id'])
             order = Field('order_id', self.order['id'])
 
             for name in unplaced_counter:

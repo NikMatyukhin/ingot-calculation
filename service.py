@@ -30,7 +30,7 @@ class Field:
     value: object
 
 
-class UpdatableFieldsCollection:
+class FieldCollection:
     """Класс управления итерируемой коллекцией обновляемых статусов.
 
     Для оптимизации работы запросов обновления, сначала все обновляемые данные
@@ -58,7 +58,7 @@ class UpdatableFieldsCollection:
             names.append(field.name)
             values.append(field.value)
         if set(self.__updatable_columns) != set(names):
-            raise ValueError("'UpdatableFieldsCollection' has incompatible column names")
+            raise ValueError("'FieldCollection' has incompatible column names")
         self.__updatable_data.append(tuple(values))
 
     @property
@@ -354,7 +354,7 @@ class OrderDataService(StandardDataService):
 
     @staticmethod
     @db_connector
-    def update_statuses(updates: UpdatableFieldsCollection, connection: Connection = connect(':memory:')):
+    def update_statuses(updates: FieldCollection, connection: Connection = connect(':memory:')):
         sql = str('UPDATE complects SET {}=?, {}=? WHERE {}=? AND {}=?'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
@@ -363,7 +363,7 @@ class OrderDataService(StandardDataService):
 
     @staticmethod
     @db_connector
-    def update_complects(updates: UpdatableFieldsCollection, connection: Connection = connect(':memory:')) -> bool:
+    def update_complects(updates: FieldCollection, connection: Connection = connect(':memory:')) -> bool:
         sql = str('UPDATE complects SET {}=?, {}=? WHERE {}=? AND {}=?'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
@@ -372,7 +372,7 @@ class OrderDataService(StandardDataService):
     
     @staticmethod
     @db_connector
-    def save_complects(updates: UpdatableFieldsCollection, connection: Connection = connect(':memory:')) -> bool:
+    def save_complects(updates: FieldCollection, connection: Connection = connect(':memory:')) -> bool:
         sql = str('INSERT INTO complects ({}, {}, {}, {}, {}, {}) VALUES (?, ?, ?, ?, ?, ?)'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
@@ -381,7 +381,7 @@ class OrderDataService(StandardDataService):
 
     @staticmethod
     @db_connector
-    def discard_statuses(updates: UpdatableFieldsCollection, connection: Connection = connect(':memory:')) -> bool:
+    def discard_statuses(updates: FieldCollection, connection: Connection = connect(':memory:')) -> bool:
         sql = str('UPDATE complects SET {}=? WHERE {}=? AND {}=?'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)

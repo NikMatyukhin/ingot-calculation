@@ -1,3 +1,4 @@
+from enum import Enum
 import application_rc
 from typing import Any, Optional
 
@@ -10,7 +11,7 @@ from PyQt5.QtGui import (
 )
 
 from service import (
-    Field, StandardDataService, OrderDataService, UpdatableFieldsCollection
+    Field, StandardDataService, OrderDataService, FieldCollection
 )
 
 
@@ -398,6 +399,11 @@ class TreeModel(QAbstractItemModel):
         self.endRemoveRows()
         return result
 
+    def clear(self):
+        self.beginResetModel()
+        self.root_item.removeChildren(0, self.root_item.childCount())
+        self.endResetModel()
+
     def setupModelData(self):
         pass
 
@@ -770,9 +776,27 @@ class ComplectsModel(TreeModel):
 
 class OrderInformationComplectsModel(TreeModel):
 
+    class Col(Enum):
+        NAME = 0
+        ID = 1
+        STATUS = 2
+        FUSION = 3
+        LENGTH = 4
+        WIDTH = 5
+        HEIGHT = 6
+        AMOUNT = 7
+        TOTAL = 8
+        PRIORITY = 9
+        DIRECTION = 10
+    EDITABLE_COLUMNS = [Col.AMOUNT, Col.PRIORITY]
+    SIZE_COLUMNS = [Col.LENGTH, Col.WIDTH, Col.HEIGHT]
+    NUMERIC_COLUMNS = SIZE_COLUMNS + EDITABLE_COLUMNS + [Col.TOTAL]
+    AVAILABLE_DATA_ROLES = (Qt.DisplayRole, Qt.EditRole, Qt.TextAlignmentRole,
+                            Qt.BackgroundRole)
+
     def __init__(self, headers: list, parent: Optional[QObject] = None):
         super(OrderInformationComplectsModel, self).__init__(headers, parent=parent)
-        self.__order_id = None
+        self.__order_id: int = None
 
     @property
     def order(self):
@@ -788,45 +812,56 @@ class OrderInformationComplectsModel(TreeModel):
         self.__order_id = None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        # Проверка валидности индекса, чтобы не вернуть флаги для root
         if not index.isValid():
             return Qt.NoItemFlags
-        if index.column() == 7 or index.column() == 9:
+        
+        # Разрешение редактирования колонок с количеством и приоритетом
+        if index.column() in self.EDITABLE_COLUMNS:
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
+        
         return QAbstractItemModel.flags(self, index)
 
     def data(self, index: QModelIndex, role: int) -> Any:
+        # Проверка валидности индекса, чтобы не вернуть root данные
         if not index.isValid():
             return None
-        if role != Qt.DisplayRole and role != Qt.EditRole and role != Qt.TextAlignmentRole and role != Qt.BackgroundRole:
+
+        # Проверка переданных ролей
+        if role not in self.AVAILABLE_ROLES:
             return None
 
         item = index.internalPointer()
 
+        # Оцентровка всех колонок с цифровыми значениями
         if role == Qt.TextAlignmentRole:
-            if index.column() in [4, 5, 6, 7, 8, 9]:
+            if index.column() in self.NUMERIC_COLUMNS:
                 return Qt.AlignHCenter
             else:
                 return Qt.AlignLeft
 
+        # Окраска строк заготовок в соответствии со статусом
         if role == Qt.BackgroundRole:
-            if item.data(2):    
-                if int(item.data(2)) == 2:
+            status = item.data(2)
+            if isinstance(status, str) and status.isdigit():
+                if int(status) == 2:
                     return QColor('#a2ff85')
-                if int(item.data(2)) == 3:
+                if int(status) == 3:
                     return QColor('#fa6464')
-                if int(item.data(2)) == 4:
+                if int(status) == 4:
                     return QColor('#ffff88')
-                if int(item.data(2)) == 5:
+                if int(status) == 5:
                     return QColor('#ffb34d')
-                if int(item.data(2)) == 6:
+                if int(status) == 6:
                     return QColor('#bbdaff')
 
         return item.data(index.column())
 
     def discard_statuses(self, order_id: int, fusion_id: int):
-        updates = UpdatableFieldsCollection(['status_id', 'order_id', 'detail_id'])
-        order = Field('order_id', order_id)
-        status = Field('status_id', 0)
+        updates = FieldCollection(
+            ['status_id', 'order_id', 'detail_id']
+        )
+        order, status = Field('order_id', order_id), Field('status_id', 0)
         for article in self.root_item._child_items:
             for detail in article._child_items:
                 if int(detail.data(3)) != fusion_id:
@@ -834,11 +869,6 @@ class OrderInformationComplectsModel(TreeModel):
                 updates.append(status, order, Field('detail_id', detail.data(1)))
         OrderDataService.discard_statuses(updates)
         self.setupModelData()
-
-    def clear(self):
-        self.beginResetModel()
-        self.root_item.removeChildren(0, self.root_item.childCount())
-        self.endResetModel()
 
     def setupModelData(self):
         if self.root_item.childCount():

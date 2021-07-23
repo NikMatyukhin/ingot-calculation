@@ -31,7 +31,7 @@ from models import (
     IngotModel, OrderInformationComplectsModel, OrderModel
 )
 from service import (
-    Field, OrderDataService, StandardDataService, UpdatableFieldsCollection,
+    Field, OrderDataService, StandardDataService, FieldCollection,
     CatalogDataService, IngotStatusDataService
 )
 from dialogs import (
@@ -388,7 +388,7 @@ class OCIMainWindow(QMainWindow):
                 }
 
         # Сначала проходимся по счётчику неразмещённых заготовок
-        updates = UpdatableFieldsCollection(['status_id', 'total', 'order_id', 'detail_id'])
+        updates = FieldCollection(['status_id', 'total', 'order_id', 'detail_id'])
         order = Field('order_id', order_id)
 
         for name in unplaced_counter:
@@ -437,7 +437,7 @@ class OCIMainWindow(QMainWindow):
             order_id = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)['id']
             order = Field('order_id', order_id)
 
-            updates = UpdatableFieldsCollection(['amount', 'priority', 'order_id', 'detail_id'])
+            updates = FieldCollection(['amount', 'priority', 'order_id', 'detail_id'])
             model = self.complect_model
 
             for row in range(model.rowCount(QModelIndex())):
