@@ -1081,9 +1081,13 @@ class OCIMainWindow(QMainWindow):
         min_size = self.minimum_plate_height, self.minimum_plate_width
         if self.tree is None:
             raise ValueError('Дерево не рассчитано')
-        tailings = [adj_node.bin for adj_node in self.tree.adj_leaves]
+        for adj_node in self.tree.adj_leaves:
+            save_tailing(
+                adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
+                adj_node.bin.material, batch
+            )
         for node in self.tree.cc_leaves:
-            tailings.extend(node.result.tailings)
+            tailings = list(node.result.tailings)
             for subtree in node.subtree:
                 for subnode in subtree.root.cc_leaves:
                     tailings.extend(subnode.result.tailings)
@@ -1097,23 +1101,10 @@ class OCIMainWindow(QMainWindow):
             print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
             for tailing in tailings:
                 # получаем сплав
-                fusions = CatalogDataService.fusions_list()
-                fusion = fusions[node.bin.material.name]
-
-                statuses = IngotStatusDataService.get_by_name('Остаток')
-                if statuses:
-                    status = statuses[0]
-                else:
-                    raise ValueError('Статус "Остаток" не найден')
-
-                # делаем остаток
-                _id = StandardDataService.save_record(
-                    'ingots', fusion_id=fusion, batch=batch, status_id=status.id_,
-                    length=int(tailing.length), width=int(tailing.width),
-                    height=node.bin.height
+                save_tailing(
+                    tailing.length, tailing.width, node.bin.height,
+                    node.bin.material, batch
                 )
-                print(f'Остаток сохранен: {_id = }')
-                # прявязка к заказу
 
     def steps(self):
         """Список толщин"""
@@ -1556,6 +1547,25 @@ def is_suitable_sizes(item, min_size: tuple[Number, Number]) -> bool:
         min_side = item.min_side
         max_side = item.max_side
     return min_side >= min(min_size) and max_side >= max(min_size)
+
+
+def save_tailing(length, width, height, material, batch):
+    fusions = CatalogDataService.fusions_list()
+    fusion = fusions[material.name]
+
+    statuses = IngotStatusDataService.get_by_name('Остаток')
+    if statuses:
+        status = statuses[0]
+    else:
+        raise ValueError('Статус "Остаток" не найден')
+
+    # делаем остаток
+    _id = StandardDataService.save_record(
+        'ingots', fusion_id=fusion, batch=batch, status_id=status.id_,
+        length=int(length), width=int(width),
+        height=height
+    )
+    print(f'Остаток сохранен: {_id = }')
 
 
 if __name__ == '__main__':
