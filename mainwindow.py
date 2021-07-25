@@ -1081,11 +1081,16 @@ class OCIMainWindow(QMainWindow):
         min_size = self.minimum_plate_height, self.minimum_plate_width
         if self.tree is None:
             raise ValueError('Дерево не рассчитано')
+        all_tailings = []
         for adj_node in self.tree.adj_leaves:
-            save_tailing(
-                adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
-                adj_node.bin.material, batch
+            all_tailings.append(
+                (adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
+                adj_node.bin.material, batch)
             )
+            # save_tailing(
+            #     adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
+            #     adj_node.bin.material, batch
+            # )
         for node in self.tree.cc_leaves:
             tailings = list(node.result.tailings)
             for subtree in node.subtree:
@@ -1093,18 +1098,23 @@ class OCIMainWindow(QMainWindow):
                     tailings.extend(subnode.result.tailings)
                 tailings.extend([adj_node.bin for adj_node in subtree.root.adj_leaves])
             tailings = filtration_residues(tailings, min_size=min_size)
-            print('-'*50)
-            print('Список сохраняемых остатков:')
-            for tailing in tailings:
-                print(tailing)
-            print('-'*50)
-            print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
+            # print('-'*50)
+            # print('Список сохраняемых остатков:')
+            # for tailing in tailings:
+            #     print(tailing)
+            # print('-'*50)
+            # print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
             for tailing in tailings:
                 # получаем сплав
-                save_tailing(
-                    tailing.length, tailing.width, node.bin.height,
-                    node.bin.material, batch
+                all_tailings.append(
+                    (tailing.length, tailing.width, node.bin.height,
+                     node.bin.material, batch)
                 )
+                # save_tailing(
+                #     tailing.length, tailing.width, node.bin.height,
+                #     node.bin.material, batch
+                # )
+        return all_tailings
 
     def steps(self):
         """Список толщин"""
