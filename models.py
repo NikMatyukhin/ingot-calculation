@@ -1,14 +1,13 @@
 from enum import Enum
-import application_rc
 from typing import Any, Optional
 
 from PyQt5.QtCore import (
-    Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot, QObject,
-    QAbstractListModel
+    Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot,
+    QObject, QAbstractListModel
 )
-from PyQt5.QtGui import (
-    QBrush, QColor, QIcon
-)
+from PyQt5.QtGui import QColor, QIcon
+
+import application_rc
 
 from service import (
     Field, StandardDataService, OrderDataService, FieldCollection
@@ -16,7 +15,6 @@ from service import (
 
 
 class TreeItem:
-
     def __init__(self, data: list, parent: Optional[QObject] = None):
         self._item_data = data
         self._parent_item = parent
@@ -156,9 +154,8 @@ class TreeItem:
 
 
 class TreeModel(QAbstractItemModel):
-
     def __init__(self, headers: list, parent: Optional[QObject] = None):
-        super(TreeModel, self).__init__(parent)
+        super().__init__(parent)
         self.root_data = headers
         self.root_item = TreeItem(self.root_data)
 
@@ -409,12 +406,11 @@ class TreeModel(QAbstractItemModel):
 
 
 class TableModel(QAbstractItemModel):
-    
     def __init__(self, headers: list, parent: Optional[QObject] = None):
-        super(TableModel, self).__init__(parent)
+        super().__init__(parent)
         self.__headers = headers
         self.__items_data = []
-    
+
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         if not index.isValid():
             return Qt.NoItemFlags
@@ -428,19 +424,19 @@ class TableModel(QAbstractItemModel):
         if index.isValid() and role == Qt.DisplayRole or role == Qt.EditRole:
             return self.__items_data[index.row()][index.column()]
         return None
-    
+
     def setData(self, index: QModelIndex, value: Any, role: int) -> bool:
         if index.isValid() and role == Qt.EditRole:
             self.__items_data[index.row()][index.column()] = value
             self.dataChanged.emit(index, index, [role])
             return True
         return False
-    
+
     def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> Any:
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.__headers[section]
         return None
-    
+
     def setHeaderData(self, section: int, orientation: Qt.Orientation, value: Any, role: int) -> bool:
         if orientation == Qt.Horizontal and role == Qt.EditRole:
             self.__headers[section] = value
@@ -455,13 +451,13 @@ class TableModel(QAbstractItemModel):
             item = self.__items_data[row][column]
             return self.createIndex(row, column, item)
         return QModelIndex()
-    
+
     def rowCount(self, parent: QModelIndex) -> int:
         return len(self.__items_data)
-    
+
     def columnCount(self, parent: QModelIndex) -> int:
         return len(self.__headers)
-    
+
     def appendRow(self, data: list, index: QModelIndex) -> bool:
         if not self.insertRow(self.rowCount(QModelIndex()), index):
             return False
@@ -489,21 +485,20 @@ class TableModel(QAbstractItemModel):
 
 
 class ListModel(QAbstractListModel):
-    
     def __init__(self, parent: Optional[QObject]) -> None:
-        super(ListModel, self).__init__(parent)
+        super().__init__(parent)
         self.items_data = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self.items_data)
-    
+
     def data(self, index: QModelIndex, role: int) -> Any:
         if not index.isValid():
             return None
         if role == Qt.DisplayRole:
             return self.items_data[index.row()]
         return None
-    
+
     def setData(self, index: QModelIndex, value: dict, role: int) -> bool:
         if index.isValid() and role == Qt.EditRole:
             self.items_data[index.row()].update(value)
@@ -515,7 +510,7 @@ class ListModel(QAbstractListModel):
         if not self.insertRows(0, 1, index):
             return False
         self.items_data[0] = data
-    
+
     def deleteRow(self, row: int, index: QModelIndex = QModelIndex()) -> bool:
         if 0 > row > len(self.items_data):
             return False
@@ -539,9 +534,8 @@ class ListModel(QAbstractListModel):
 
 
 class OrderModel(ListModel):
-
     def __init__(self, status: Field, parent: Optional[QObject] = None):
-        super(OrderModel, self).__init__(parent)
+        super().__init__(parent)
         self.__status = status
         self.setupModelData()
 
@@ -563,9 +557,8 @@ class OrderModel(ListModel):
 
 
 class IngotModel(ListModel):
-
     def __init__(self, category: OrderDataService.Category, parent: Optional[QObject] = None) -> None:
-        super(IngotModel, self).__init__(parent)
+        super().__init__(parent)
         self.__category = category
         self.__order_id = None
         self.setupModelData()
@@ -578,7 +571,7 @@ class IngotModel(ListModel):
     def order(self, value):
         self.__order_id = value
         self.setupModelData()
-    
+
     @order.deleter
     def order(self):
         self.__order_id = None
@@ -609,9 +602,8 @@ class IngotModel(ListModel):
 
 
 class CatalogArticlesModel(TreeModel):
-
     def __init__(self, headers: list, parent: Optional[QObject] = None):
-        super(CatalogArticlesModel, self).__init__(headers, parent)
+        super().__init__(headers, parent)
         self.__warning = QIcon(':icons/warning.png')
         self.setupModelData()
 
@@ -665,11 +657,10 @@ class CatalogArticlesModel(TreeModel):
 
 
 class CatalogDetailsModel(TableModel):
-    
     def __init__(self, headers: list, parent: Optional[QObject] = None):
-        super(CatalogDetailsModel, self).__init__(headers, parent)
+        super().__init__(headers, parent)
         self.__article_id = None
-    
+
     @property
     def article(self):
         return self.__article_id
@@ -678,7 +669,7 @@ class CatalogDetailsModel(TableModel):
     def article(self, value):
         self.__article_id = value
         self.setupModelData()
-    
+
     @article.deleter
     def article(self):
         self.__article_id = None
@@ -709,9 +700,8 @@ class CatalogDetailsModel(TableModel):
 
 
 class ComplectsModel(TreeModel):
-
     def __init__(self, headers: list, parent: Optional[QObject] = None):
-        super(ComplectsModel, self).__init__(headers, parent)
+        super().__init__(headers, parent)
         self.setupModelData()
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
@@ -728,7 +718,7 @@ class ComplectsModel(TreeModel):
             return None
 
         item = index.internalPointer()
-        
+
         if role == Qt.TextAlignmentRole:
             if index.column() not in [1, 2, 8]:
                 return Qt.AlignHCenter
@@ -763,11 +753,11 @@ class ComplectsModel(TreeModel):
             # Получение индекса только что добавленной записи изделия
             parent = self.index(0, 0, QModelIndex())
             detail = StandardDataService.get_by_field('details', Field('article_id', article_id))
-            
+
             # Для удаления из списка изеделий без заготовок
             if not detail:
                 self.removeRows(0, 1, QModelIndex())
-            
+
             # Выполнение для всех деталей, связанных с заданной ведомостью
             for sub_line in detail:
                 detail_id, _, fusion_id, direction_id, name, l, w, d, amount, priority = sub_line
@@ -806,7 +796,7 @@ class OrderInformationComplectsModel(TreeModel):
     def order(self, value):
         self.__order_id = value
         self.setupModelData()
-    
+
     @order.deleter
     def order(self):
         self.__order_id = None
@@ -815,11 +805,11 @@ class OrderInformationComplectsModel(TreeModel):
         # Проверка валидности индекса, чтобы не вернуть флаги для root
         if not index.isValid():
             return Qt.NoItemFlags
-        
+
         # Разрешение редактирования колонок с количеством и приоритетом
         if index.column() in self.EDITABLE_COLUMNS:
             return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
-        
+
         return QAbstractItemModel.flags(self, index)
 
     def data(self, index: QModelIndex, role: int) -> Any:
@@ -873,7 +863,7 @@ class OrderInformationComplectsModel(TreeModel):
     def setupModelData(self):
         if self.root_item.childCount():
             self.clear()
-        
+
         complects = OrderDataService.complects(Field('order_id', self.__order_id))
         for article in complects:
             article_id, name = article
@@ -891,7 +881,7 @@ class OrderInformationComplectsModel(TreeModel):
 
 class CatalogFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
-        super(CatalogFilterProxyModel, self).__init__(parent)
+        super().__init__(parent)
         self.name_filter = str('')
 
     def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
@@ -911,7 +901,6 @@ class CatalogFilterProxyModel(QSortFilterProxyModel):
 
 
 class OrderComplectsFilterProxyModel(QSortFilterProxyModel):
-
     def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex) -> bool:
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
         if not index.parent().isValid():

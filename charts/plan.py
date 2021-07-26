@@ -1,12 +1,12 @@
 import random
-from PyQt5.QtCore import QPoint, QRect, Qt, QRectF, QPointF
+
+from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtWidgets import (
     QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QWidget,
-    QGraphicsSceneHoverEvent, QMenu, QGraphicsView
+    QGraphicsSceneHoverEvent, QGraphicsView
 )
 from PyQt5.QtGui import (
-    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QPolygonF, QTransform,
-    QPolygonF
+    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics
 )
 
 
@@ -43,9 +43,8 @@ class MyQGraphicsView(QGraphicsView):
 
 
 class ButtEdgeGraphicsItem(QGraphicsItem):
-
     def __init__(self, x, y, w, h, parent=None):
-        super(ButtEdgeGraphicsItem, self).__init__(parent)
+        super().__init__(parent)
         self.x_pos = x
         self.y_pos = y
         self.width = w
@@ -57,7 +56,7 @@ class ButtEdgeGraphicsItem(QGraphicsItem):
                       self.y_pos - pen_width / 2,
                       self.width + pen_width,
                       self.height + pen_width)
-    
+
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem,
               widget: QWidget) -> None:
         painter.setRenderHint(QPainter.Antialiasing)
@@ -66,19 +65,18 @@ class ButtEdgeGraphicsItem(QGraphicsItem):
                    Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                    Qt.PenJoinStyle.RoundJoin)
         brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
-        
+
         rect = QRectF(self.x_pos, self.y_pos, self.width, self.height)
-        
+
         painter.setPen(pen)
         painter.setBrush(brush)
         painter.drawChord(rect, 15 * 16, 145 * 16)
 
 
 class DetailGraphicsItem(QGraphicsItem):
-
     def __init__(self, x, y, w, h, txt, idx=0,
                  clr=QColor(100, 100, 100), parent=None):
-        super(DetailGraphicsItem, self).__init__(parent)
+        super().__init__(parent)
         self.x_pos = x
         self.y_pos = y
         self.width = w
@@ -135,7 +133,6 @@ class DetailGraphicsItem(QGraphicsItem):
 
 
 class CuttingPlanPainter:
-
     def __init__(self, scene: QGraphicsScene):
         self.scene = scene
         self.font = QFont('Century Gothic', 6)
@@ -192,7 +189,7 @@ class CuttingPlanPainter:
                    Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                    Qt.PenJoinStyle.RoundJoin)
         brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
-        
+
         if self.blanks:
             bin_rect = QRectF(self.vl_point.x() - 2, self.vl_point.y() - 2, self.bin_width, self.bin_lenght)
             self.scene.addRect(bin_rect,pen, brush)

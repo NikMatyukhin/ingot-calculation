@@ -1,4 +1,5 @@
 import logging
+
 from math import prod
 from sqlite3 import connect, Connection, Error
 from dataclasses import dataclass
@@ -142,8 +143,8 @@ class StandardDataService(AbstractDataService):
 
     @staticmethod
     @db_connector
-    def get_by_id(table: str, id: Field, connection: Connection = connect(':memory:')) -> list:
-        sql = str(f'SELECT * FROM {table} WHERE {id.name}={id.value}')
+    def get_by_id(table: str, id_: Field, connection: Connection = connect(':memory:')) -> list:
+        sql = str(f'SELECT * FROM {table} WHERE {id_.name}={id_.value}')
         cursor = connection.cursor()
         cursor.execute(sql)
 
@@ -181,10 +182,10 @@ class StandardDataService(AbstractDataService):
 
     @staticmethod
     @db_connector
-    def update_record(table: str, id: Field, connection: Connection = connect(':memory:'), **fields: dict) -> bool:
+    def update_record(table: str, id_: Field, connection: Connection = connect(':memory:'), **fields: dict) -> bool:
         sql = str(f'UPDATE {table} '
                   f'SET {", ".join([f"{key}=:{key}" for key in fields])} '
-                  f'WHERE {id.name}={id.value}')
+                  f'WHERE {id_.name}={id_.value}')
         cursor = connection.cursor()
         cursor.execute(sql, fields)
 
@@ -192,9 +193,9 @@ class StandardDataService(AbstractDataService):
 
     @staticmethod
     @db_connector
-    def delete_by_id(table: str, id: Field, connection: Connection = connect(':memory:')) -> bool:
+    def delete_by_id(table: str, id_: Field, connection: Connection = connect(':memory:')) -> bool:
         cursor = connection.cursor()
-        cursor.execute(f'DELETE FROM {table} WHERE {id.name}={id.value}')
+        cursor.execute(f'DELETE FROM {table} WHERE {id_.name}={id_.value}')
 
         return True
 
@@ -369,14 +370,14 @@ class OrderDataService(StandardDataService):
         cursor.executemany(sql, updates)
 
         return True
-    
+
     @staticmethod
     @db_connector
     def save_complects(updates: FieldCollection, connection: Connection = connect(':memory:')) -> bool:
         sql = str('INSERT INTO complects ({}, {}, {}, {}, {}, {}) VALUES (?, ?, ?, ?, ?, ?)'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
-        
+
         return True
 
     @staticmethod
@@ -385,7 +386,7 @@ class OrderDataService(StandardDataService):
         sql = str('UPDATE complects SET {}=? WHERE {}=? AND {}=?'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
-        
+
         return True
 
     @staticmethod
