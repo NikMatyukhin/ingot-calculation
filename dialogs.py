@@ -10,7 +10,7 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
-    QDialog, QGraphicsScene, QMessageBox, QMenu, QToolTip, QWidget,
+    QDialog, QGraphicsScene, QMessageBox, QMenu, QPushButton, QToolTip, QWidget,
     QProgressDialog, QAction
 )
 
@@ -728,15 +728,21 @@ class IngotAssignmentDialog(QDialog):
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
 
         # Назначение меню кнопке
-        self.menu = QMenu()
         self.fusions = CatalogDataService.fusions_list()
-        self.directions = CatalogDataService.directions_list()
-        for fusion in self.fusions:
-            # Под каждый сплав создаётся отдельное событие выпадающего меню
-            action: QAction = self.menu.addAction(fusion)
-            action.setObjectName(fusion)
-            action.triggered.connect(self.calculate_ingot)
-        self.ui.predict.setMenu(self.menu)
+        fusions = list(self.parent().get_all_blanks().keys())
+        if len(fusions) == 1:
+            self.ui.predict.setText(f'Рассчитать {fusions[0]}')
+            self.ui.predict.setObjectName(fusions[0])
+            self.ui.predict.clicked.connect(self.calculate_ingot)
+        else:
+            self.menu = QMenu()
+            self.directions = CatalogDataService.directions_list()
+            for fusion in sorted(fusions, key=lambda item: self.fusions[item]):
+                # Под каждый сплав создаётся отдельное событие выпадающего меню
+                action: QAction = self.menu.addAction(fusion)
+                action.setObjectName(fusion)
+                action.triggered.connect(self.calculate_ingot)
+            self.ui.predict.setMenu(self.menu)
 
         self.predicted_ingots = {}
 
