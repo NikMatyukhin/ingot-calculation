@@ -266,8 +266,10 @@ class OrderSectionDelegate(QStyledItemDelegate):
         order = index.data(Qt.DisplayRole)
 
         fill_color = palette.light().color()
-        if order['status_id'] == 3:
+        if order['status_id'] == 2:
             fill_color = QColor('#77e07e')
+        elif order['status_id'] == 3:
+            fill_color = QColor('#00ffff')
         if opt.state & QStyle.State_Selected:
             painter.fillRect(rect, fill_color.darker(115))
         elif opt.state & QStyle.State_MouseOver:
@@ -456,6 +458,87 @@ class IngotSectionDelegate(QStyledItemDelegate):
             forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos)
             if ingot['status_id'] == 3 and forgeIconRect.contains(event.pos()):
                 self.forgedIndexClicked.emit(index)
+        return super().editorEvent(event, model, option, index)
+
+
+class ResidualsSectionDelegate(QStyledItemDelegate):
+    
+    deleteIndexClicked = pyqtSignal(QModelIndex)
+    margin = 5
+
+    def __init__(self, parent: typing.Optional[QObject] = None) -> None:
+        super(ResidualsSectionDelegate, self).__init__(parent)
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
+        opt = QStyleOptionViewItem(option)
+        self.initStyleOption(opt, index)
+
+        rect = QRect(opt.rect)
+        palette = QPalette(opt.palette)
+        title_font = QFont(opt.font)
+        small_font = QFont(opt.font)
+        contentRect = QRect(rect.adjusted(self.margin, self.margin, self.margin, self.margin))
+        small_font.setPointSize(title_font.pointSize() * 0.87)
+
+        bottomEdge = rect.bottom()
+        lastIndex = (index.model().rowCount() - 1) == index.row()
+
+        painter.save()
+        painter.setClipping(True)
+        painter.setClipRect(rect)
+
+        residual = index.data(Qt.DisplayRole)
+
+        fill_color = QColor(255, 255, 255)
+        if opt.state & QStyle.State_Selected:
+            painter.fillRect(rect, fill_color.darker(115))
+        elif opt.state & QStyle.State_MouseOver:
+            painter.fillRect(rect, fill_color.darker(105))
+        else:
+            painter.fillRect(rect, fill_color)
+
+        painter.setPen(palette.dark().color())
+        if lastIndex:
+            painter.drawLine(rect.left(), bottomEdge, rect.right(), bottomEdge)
+        else:
+            painter.drawLine(self.margin, bottomEdge, rect.right(), bottomEdge)    
+
+        painter.setFont(title_font)
+        painter.setPen(palette.text().color())
+
+        name_text = f'Остаток №{residual["num"]} ({residual["batch"]})'
+        name_rect = QRect(self.textBox(title_font, name_text))
+        name_rect.moveTo(contentRect.left(), contentRect.top())
+        painter.drawText(name_rect, Qt.TextSingleLine | Qt.AlignBottom, name_text)
+
+        painter.setFont(small_font)
+
+        size_text = f'{residual["length"]} x {residual["width"]} x {residual["height"]}'
+        size_rect = QRect(self.textBox(small_font, size_text))
+        size_rect.moveTo(contentRect.left(), contentRect.top() + name_rect.height())
+        painter.drawText(size_rect, Qt.TextSingleLine | Qt.AlignBottom, size_text)
+
+        self.closeIcon = QPixmap(':icons/cancel.png').scaled(15, 15, aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio, transformMode=Qt.TransformationMode.SmoothTransformation)
+        self.closeIconPos = QPoint(contentRect.right() - 2 * self.closeIcon.width() + self.margin, contentRect.top())
+        painter.drawPixmap(self.closeIconPos, self.closeIcon)
+
+        painter.restore()
+
+    def textBox(self, font: QFont, data: str) -> QRect:
+        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 10, 0)
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+
+        opt = QStyleOptionViewItem(option)
+        self.initStyleOption(opt, index)
+
+        return QSize(opt.rect.width(), 45)
+
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+        if event.type() == QEvent.MouseButtonRelease:
+            closeIconRect = self.closeIcon.rect().translated(self.closeIconPos)
+            if closeIconRect.contains(event.pos()):
+                self.deleteIndexClicked.emit(index)
         return super().editorEvent(event, model, option, index)
 
 

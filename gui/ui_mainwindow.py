@@ -147,39 +147,6 @@ class Ui_MainWindow(object):
         self.newOrder.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.newOrder.setObjectName("newOrder")
         self.horizontalLayout_2.addWidget(self.newOrder)
-        self.newIngot = QtWidgets.QToolButton(self.topBar)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Maximum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.newIngot.sizePolicy().hasHeightForWidth())
-        self.newIngot.setSizePolicy(sizePolicy)
-        self.newIngot.setMinimumSize(QtCore.QSize(50, 0))
-        self.newIngot.setMaximumSize(QtCore.QSize(16777215, 80))
-        self.newIngot.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.newIngot.setStyleSheet("QToolButton {\n"
-"    background-color: rgb(225, 225, 225);\n"
-"    border-radius: 3px;\n"
-"    padding-top: 2px;\n"
-"    color: black;\n"
-"    border: none;\n"
-"}\n"
-"\n"
-"QToolButton:hover {\n"
-"    background-color: rgb(210, 210, 210);\n"
-"}\n"
-"\n"
-"QToolButton:pressed {\n"
-"    background-color: rgb(189, 189, 189);\n"
-"    padding-left: 0px;\n"
-"    padding-top: 2px;\n"
-"}")
-        icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(":/icons/ingot.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.newIngot.setIcon(icon2)
-        self.newIngot.setIconSize(QtCore.QSize(30, 30))
-        self.newIngot.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
-        self.newIngot.setObjectName("newIngot")
-        self.horizontalLayout_2.addWidget(self.newIngot)
         self.line_1 = QtWidgets.QFrame(self.topBar)
         self.line_1.setMinimumSize(QtCore.QSize(0, 0))
         self.line_1.setFrameShape(QtWidgets.QFrame.VLine)
@@ -213,9 +180,9 @@ class Ui_MainWindow(object):
 "    padding-left: 0px;\n"
 "    padding-top: 2px;\n"
 "}")
-        icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(":/icons/book.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.catalog.setIcon(icon3)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap(":/icons/book.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.catalog.setIcon(icon2)
         self.catalog.setIconSize(QtCore.QSize(40, 30))
         self.catalog.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.catalog.setObjectName("catalog")
@@ -245,9 +212,9 @@ class Ui_MainWindow(object):
 "    padding-left: 0px;\n"
 "    padding-top: 2px;\n"
 "}")
-        icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(":/icons/gold-ingot.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.storage.setIcon(icon4)
+        icon3 = QtGui.QIcon()
+        icon3.addPixmap(QtGui.QPixmap(":/icons/gold-ingot.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.storage.setIcon(icon3)
         self.storage.setIconSize(QtCore.QSize(40, 40))
         self.storage.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.storage.setObjectName("storage")
@@ -273,9 +240,9 @@ class Ui_MainWindow(object):
 "    padding-left: 0px;\n"
 "    padding-top: 2px;\n"
 "}")
-        icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap(":/icons/settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.settings.setIcon(icon5)
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap(":/icons/settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.settings.setIcon(icon4)
         self.settings.setIconSize(QtCore.QSize(40, 30))
         self.settings.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.settings.setObjectName("settings")
@@ -401,7 +368,7 @@ class Ui_MainWindow(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 850, 1382))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 859, 1382))
         self.scrollAreaWidgetContents.setStyleSheet("QWidget {\n"
 "    margin-right: 7px;\n"
 "}\n"
@@ -504,11 +471,11 @@ class Ui_MainWindow(object):
         self.assign_ingot.setMaximumSize(QtCore.QSize(120, 16777215))
         self.assign_ingot.setObjectName("assign_ingot")
         self.horizontalLayout_9.addWidget(self.assign_ingot)
-        self.edit_order = QtWidgets.QPushButton(self.frame)
-        self.edit_order.setMinimumSize(QtCore.QSize(120, 35))
-        self.edit_order.setMaximumSize(QtCore.QSize(120, 16777215))
-        self.edit_order.setObjectName("edit_order")
-        self.horizontalLayout_9.addWidget(self.edit_order)
+        self.complete_order = QtWidgets.QPushButton(self.frame)
+        self.complete_order.setMinimumSize(QtCore.QSize(120, 35))
+        self.complete_order.setMaximumSize(QtCore.QSize(120, 16777215))
+        self.complete_order.setObjectName("complete_order")
+        self.horizontalLayout_9.addWidget(self.complete_order)
         spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_9.addItem(spacerItem2)
         self.verticalLayout_4.addWidget(self.frame)
@@ -829,8 +796,6 @@ class Ui_MainWindow(object):
         self.chart.setText(_translate("MainWindow", "Карта раскроя"))
         self.newOrder.setText(_translate("MainWindow", "Новый\n"
 "заказ"))
-        self.newIngot.setText(_translate("MainWindow", "Новый\n"
-"слиток"))
         self.catalog.setText(_translate("MainWindow", "Cправочник\n"
 "заготовок"))
         self.storage.setText(_translate("MainWindow", "Склад\n"
@@ -842,10 +807,10 @@ class Ui_MainWindow(object):
         self.label_4.setText(_translate("MainWindow", "Заготовки"))
         self.assign_ingot.setText(_translate("MainWindow", "Добавить\n"
 "слиток"))
-        self.edit_order.setText(_translate("MainWindow", "Редактировать\n"
+        self.complete_order.setText(_translate("MainWindow", "Завершить\n"
 "заказ"))
         self.label_3.setText(_translate("MainWindow", "Слитки"))
-        self.label_7.setText(_translate("MainWindow", "Карта раскроя"))
+        self.label_7.setText(_translate("MainWindow", "Карта раскроя (позже уберём отсюда)"))
         self.recalculate.setText(_translate("MainWindow", "Пересчитать"))
         self.fullScreen.setText(_translate("MainWindow", "На весь экран"))
         self.detailedPlan.setText(_translate("MainWindow", "Перейти к плану"))

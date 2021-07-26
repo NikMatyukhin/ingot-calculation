@@ -26,18 +26,20 @@ from sequential_mh.bpp_dsc.support import dfs
 from gui import (
     ui_add_article_dialog, ui_add_detail_dialog,
     ui_add_order_dialog, ui_add_ingot_dialog, ui_full_screen,
-    ui_ready_ingot_dialog, ui_assign_ingot_dialog, ui_edit_order_dialog
+    ui_ready_ingot_dialog, ui_assign_ingot_dialog, ui_edit_order_dialog,
+    ui_finish_step_dialog
 )
 from service import (
     OrderDataService, StandardDataService, CatalogDataService, Field, FieldCollection
 )
 from models import (
    OrderComplectsFilterProxyModel, ComplectsModel, IngotModel, 
-   CatalogFilterProxyModel, OrderInformationComplectsModel
+   CatalogFilterProxyModel, OrderInformationComplectsModel, ResidualsModel
 )
 from widgets import (
     IngotSectionDelegate,
-    ListValuesDelegate
+    ListValuesDelegate,
+    ResidualsSectionDelegate
 )
 from exceptions import ForcedTermination
 from log import log_operation_info
@@ -608,6 +610,7 @@ class OrderEditingDialog(QDialog):
 
     def restore_state(self, model: OrderInformationComplectsModel):
         articles = {}
+        details_data = {}
         for row in range(model.rowCount(QModelIndex())):
             article_index = model.index(row, 1, QModelIndex())
             article_id = model.data(article_index, Qt.DisplayRole)
@@ -618,7 +621,12 @@ class OrderEditingDialog(QDialog):
             for sub_row in range(model.rowCount(article_index)):
                 detail_index = model.index(sub_row, 1, hack_index)
                 detail_id = model.data(detail_index, Qt.DisplayRole)
+                amount_index = model.index(sub_row, 7, hack_index)
+                amount = model.data(amount_index, Qt.DisplayRole)
+                priority_index = model.index(sub_row, 9, hack_index)
+                priority = model.data(priority_index, Qt.DisplayRole)
                 details.append(detail_id)
+                details_data[detail_id] = (amount, priority)
             articles[article_id] = details
         for row in range(self.model.rowCount(QModelIndex())):
             article_index = self.model.index(row, 0, QModelIndex())
@@ -634,6 +642,10 @@ class OrderEditingDialog(QDialog):
                 if detail_id in articles[article_id]:
                     added_index = self.model.index(sub_row, 10, article_index)
                     self.model.setData(added_index, True, Qt.EditRole)
+                    amount_index = self.model.index(sub_row, 6, article_index)
+                    self.model.setData(amount_index, details_data[detail_id][0], Qt.EditRole)
+                    priority_index = self.model.index(sub_row, 7, article_index)
+                    self.model.setData(priority_index, details_data[detail_id][1], Qt.EditRole)
 
     def confirm_order_editing(self):
         if not self.choice_proxy.rowCount(QModelIndex()):
@@ -659,6 +671,58 @@ class OrderEditingDialog(QDialog):
             'details': marked_rows['details_count'],
         })
         logging.info('Заказ %(name)s обновлён в базе.', {'name': self.order['id']})
+        self.accept()
+
+
+class OrderCompletingDialog(QDialog):
+    
+    def __init__(self, residuals: list, parent: typing.Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.ui = ui_finish_step_dialog.Ui_Dialog()
+        self.ui.setupUi(self)
+
+        self.ui.lineEdit.setValidator(QIntValidator())
+
+        # Настройка списка со сплавами
+        self.fusions_list = CatalogDataService.fusions_list()
+        self.ui.comboBox.addItems(list(self.fusions_list.keys()))
+
+        self.residuals_model = ResidualsModel(residuals)
+        self.ui.leftoversTable.setModel(self.residuals_model)
+        self.residuals_delegate = ResidualsSectionDelegate()
+        self.ui.leftoversTable.setItemDelegate(self.residuals_delegate)
+        self.residuals_delegate.deleteIndexClicked.connect(self.confirm_residual_removing)
+
+        self.ui.leftover.clicked.connect(self.confirm_residual_adding)
+        self.ui.finish.clicked.connect(self.confirm_order_completing)
+
+    def confirm_residual_adding(self):
+        
+        if not self.ui.lineEdit.text():
+            return
+        
+        data_row = {
+            'num': self.residuals_model.counter,
+            'length': self.ui.leftover_leigth.value(),
+            'width': self.ui.leftover_width.value(),
+            'height': self.ui.doubleSpinBox.value(),
+            'batch': int(self.ui.lineEdit.text()),
+            'fusion_id': self.fusions_list[self.ui.comboBox.currentText()],
+        }
+        self.residuals_model.appendRow(data_row)
+
+    def confirm_residual_removing(self, index: QModelIndex):
+        self.residuals_model.deleteRow(index.row())
+
+    def confirm_order_completing(self):
+        for row in range(self.residuals_model.rowCount()):
+            r = self.residuals_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
+            fusions = CatalogDataService.fusions_list()
+            fusion = fusions[r['fusion_id']]
+            suc = StandardDataService.save_record(
+                'ingots', length=r['length'], width=r['width'], height=r['height'],
+                batch=r['batch'], fusion_id=fusion, status_id=2
+            )
         self.accept()
 
 
@@ -727,6 +791,7 @@ class IngotAssignmentDialog(QDialog):
         self.ui.setupUi(self)
 
         self.order = order
+        self.predicted = False
 
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel('unused')
@@ -766,11 +831,11 @@ class IngotAssignmentDialog(QDialog):
                     'ingots', length=ingot['size'][0], width=ingot['size'][1], height=ingot['size'][2],
                     order_id=self.order['id'], status_id=3, efficiency=predicted_efficiency, fusion_id=ingot['fusion_id']
                 )
-                print(ingot['id'])
                 ingot['status_id'] = 3
                 ingot['efficiency'] = predicted_efficiency
                 self.predictedIngotSaved.emit({'id': self.order['id'], 'date': self.order['date']}, ingot, predicted_tree)
                 used_fusions.append(ingot['fusion_id'])
+                self.predicted = True
             # Если текущий слиток <слиток>, то обновляем связку
             else:
                 StandardDataService.update_record('ingots', Field('id', ingot['id']), order_id=self.order['id'])

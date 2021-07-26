@@ -608,6 +608,33 @@ class IngotModel(ListModel):
             self.appendRow(data_row)
 
 
+class ResidualsModel(ListModel):
+    
+    def __init__(self, residuals: list, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent)
+        self.residuals = residuals
+        self.counter = 1
+        self.setupModelData()
+    
+    def appendRow(self, data: dict, index: QModelIndex = QModelIndex()) -> bool:
+        if not self.insertRows(len(self.items_data), 1, index):
+            return False
+        self.items_data[-1] = data
+        self.counter += 1
+
+    def setupModelData(self):
+        for r in self.residuals:
+            data_row = {
+                'num': self.counter,
+                'length': int(r[0]),
+                'width': int(r[1]),
+                'height': round(r[2], 1),
+                'fusion_id': r[3].name,
+                'batch': r[4],
+            }
+            self.appendRow(data_row)
+
+
 class CatalogArticlesModel(TreeModel):
 
     def __init__(self, headers: list, parent: Optional[QObject] = None):

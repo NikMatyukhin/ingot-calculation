@@ -36,7 +36,7 @@ from service import (
 )
 from dialogs import (
     IngotAddingDialog, IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
-    FullScreenWindow, OrderEditingDialog
+    FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
 from storage import Storage
 from charts.plan import CuttingPlanPainter, MyQGraphicsView
@@ -95,13 +95,13 @@ class OCIMainWindow(QMainWindow):
         self.ui.searchResult_1.setItemDelegate(self.order_delegate)
         self.order_delegate.deleteIndexClicked.connect(self.confirm_order_removing)
         self.order_delegate.editIndexClicked.connect(self.open_edit_dialog)
-        self.order_delegate.completeIndexClicked.connect(self.confirm_order_completing)
 
         # Модель слитков (обновляется при изменении текущего заказа)
         # TODO: пока заказ не выбран пусть содержит свободные слитки,
         #       чтобы потом показывать их на главном экране - пойдёт на склад
         self.ingot_model = IngotModel('unused')
         self.ingot_delegate = IngotSectionDelegate(numerable = True, parent = self.ui.ingotsView)
+        self.ingot_delegate_unclosed = IngotSectionDelegate(show_close = False, numerable = True, parent = self.ui.ingotsView)
         self.ui.ingotsView.setModel(self.ingot_model)
         self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
         self.ui.ingotsView.clicked.connect(self.show_ingot_information)
@@ -174,9 +174,8 @@ class OCIMainWindow(QMainWindow):
         self.ui.catalog.clicked.connect(self.open_catalog_window)
         self.ui.settings.clicked.connect(self.open_settings_dialog)
         self.ui.storage.clicked.connect(self.open_storage_window)
-        self.ui.newIngot.clicked.connect(self.open_ingot_dialog)
         self.ui.assign_ingot.clicked.connect(self.open_assign_dialog)
-        self.ui.edit_order.clicked.connect(self.open_edit_dialog)
+        self.ui.complete_order.clicked.connect(self.open_complete_dialog)
 
         # Сигнал возврата на исходную страницу с информацией о заказах
         self.ui.information.clicked.connect(
@@ -215,6 +214,13 @@ class OCIMainWindow(QMainWindow):
         if not index.isValid():
             return
         order = index.data(Qt.DisplayRole)
+
+        if order['status_id'] == 3:
+            self.ui.recalculate.hide()
+            self.ui.ingotsView.setItemDelegate(self.ingot_delegate_unclosed)
+        else:
+            self.ui.recalculate.show()
+            self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
 
         self.ingot_model.order = order['id']
         self.ui.ingotsView.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
@@ -351,9 +357,6 @@ class OCIMainWindow(QMainWindow):
             self.order_model.deleteRow(index.row())
             self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
         self.ui.searchResult_1.clearSelection()
-
-    def confirm_order_completing(self, index: QModelIndex):
-        pass
 
     def update_complect_statuses(self, order_id: int, ingot_fusion: int):
         """Обновление статусов заготовок"""
@@ -1071,16 +1074,17 @@ class OCIMainWindow(QMainWindow):
         #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
         return best
 
-    def save_residuals(self):
+    def save_residuals(self, ingot: dict, order: dict):
         """Сохранение остатков в БД"""
-        # по второму кругу получаем слиток для определения партии
-        ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
         # гемор с партией, без ООП тяжко
         batch = ingot['batch']
-        order_id = ingot['order_id']
         min_size = self.minimum_plate_height, self.minimum_plate_width
+        
+        if self.is_file_exist(order, ingot):
+            self.load_tree(order, ingot)
         if self.tree is None:
             raise ValueError('Дерево не рассчитано')
+
         all_tailings = []
         for adj_node in self.tree.adj_leaves:
             all_tailings.append(
@@ -1266,12 +1270,6 @@ class OCIMainWindow(QMainWindow):
         if window.exec_() == QDialog.Accepted:
             self.read_settings()
 
-    def open_ingot_dialog(self):
-        """Добавление нового слитка вручную"""
-        window = IngotAddingDialog(self)
-        if window.exec_() == QDialog.Accepted:
-            pass
-
     def open_assign_dialog(self):
         """Добавление слитка к заказу"""
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
@@ -1298,8 +1296,12 @@ class OCIMainWindow(QMainWindow):
         window.predictedIngotSaved.connect(self.save_tree)
         if window.exec() == QDialog.Accepted:
             efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
+            status_id = order['status_id']
+            if window.predicted and status_id != 2:
+                status_id = 2
+                self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'status_id': status_id}, Qt.EditRole)
             self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'efficiency': efficiency}, Qt.EditRole)
-            StandardDataService.update_record('orders', Field('id', order['id']), efficiency=efficiency)
+            StandardDataService.update_record('orders', Field('id', order['id']), efficiency=efficiency, status_id=status_id)
         self.show_order_information(self.ui.searchResult_1.currentIndex())
 
     def open_order_dialog(self):
@@ -1307,6 +1309,21 @@ class OCIMainWindow(QMainWindow):
         window = OrderAddingDialog(self)
         window.recordSavedSuccess.connect(self.confirm_order_adding)
         window.exec_()
+
+    def open_complete_dialog(self):
+        """Заврешение выбранного заказа и добавление остатков"""
+        residuals = []
+        for row in range(self.ingot_model.rowCount()):
+            ingot = self.ingot_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
+            order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+            try:
+                residuals.extend(self.save_residuals(ingot, order))
+            except TypeError as e:
+                pass
+        window = OrderCompletingDialog(residuals, self)
+        if window.exec() == QDialog.Accepted:
+            self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'status_id': 3}, Qt.EditRole)
+            StandardDataService.update_record('orders', Field('id', order['id']), status_id=3)
 
     def open_edit_dialog(self):
         """Изменение текущего заказа"""
