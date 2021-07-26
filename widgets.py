@@ -1,7 +1,6 @@
-from logging import currentframe
 import math
 import typing
-import application_rc
+
 
 from PyQt5.QtCore import (
     QPoint, Qt, pyqtSignal, QPropertyAnimation, QParallelAnimationGroup,
@@ -10,21 +9,23 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtWidgets import (
     QAbstractItemView, QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
-    QScrollArea, QItemDelegate, QStyleOptionViewItem, QComboBox, QPushButton,
+    QScrollArea, QStyleOptionViewItem, QComboBox, QPushButton,
     QStyledItemDelegate, QStyle
 )
 from PyQt5.QtGui import (
-    QBrush, QPen, QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
+    QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
 )
 
+import application_rc
+
 from service import StandardDataService, Field
-from models import IngotModel, OrderModel
+from models import IngotModel
 
 
 class ExclusiveButton(QPushButton):
     def __init__(self, parent: typing.Optional[QObject] = None,
                  depth: float = 0, name='', index=0):
-        super(ExclusiveButton, self).__init__(parent)
+        super().__init__(parent)
         self.depth = depth
         self.index = index
         if name:
@@ -66,9 +67,8 @@ class ExclusiveButton(QPushButton):
 
 
 class ListValuesDelegate(QStyledItemDelegate):
-
     def __init__(self, values: dict, parent: typing.Optional[QObject] = None):
-        super(ListValuesDelegate, self).__init__(parent)
+        super().__init__(parent)
         self.values = values
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
@@ -89,7 +89,7 @@ class ListValuesDelegate(QStyledItemDelegate):
 
     def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         editor.setGeometry(option.rect)
-    
+
     def displayText(self, value: typing.Any, locale: QLocale) -> str:
         for name in self.values:
             if int(value) == self.values[name]:
@@ -101,7 +101,7 @@ class Section(QWidget):
     clicked = pyqtSignal()
 
     def __init__(self, id: int, name: str):
-        super(Section, self).__init__()
+        super().__init__()
         self.id = id
         self.name = name
         self.depth = None
@@ -232,10 +232,10 @@ class OrderSectionDelegate(QStyledItemDelegate):
     deleteIndexClicked = pyqtSignal(QModelIndex)
     editIndexClicked = pyqtSignal(QModelIndex)
     completeIndexClicked = pyqtSignal(QModelIndex)
-    margin = 5   
+    margin = 5
 
     def __init__(self, parent: typing.Optional[QObject] = None) -> None:
-        super(OrderSectionDelegate, self).__init__(parent)
+        super().__init__(parent)
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         opt = QStyleOptionViewItem(option)
@@ -246,10 +246,10 @@ class OrderSectionDelegate(QStyledItemDelegate):
         title_font = QFont(opt.font)
         small_font = QFont(opt.font)
         contentRect = QRect(rect.adjusted(self.margin, self.margin, self.margin, self.margin))
-        
+
         title_font.setPointSize(11)
         small_font.setPointSize(int(self.informationFontPointSize(title_font)))
-        
+
         bottomEdge = rect.bottom()
         lastIndex = (index.model().rowCount() - 1) == index.row()
         self.deleteIcon = QPixmap(':icons/remove.png').scaled(15, 15, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
@@ -294,7 +294,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
         efficiency_text = str(round(order['efficiency'] * 100, 2)) + '%' if order['efficiency'] > 0.0 else 'Не указан'
         status_text = StandardDataService.get_by_id('orders_statuses', Field('id', order['status_id']))[1]
-              
+
         visible_info = {
             'status_name': f'Статус: {status_text}',
             'efficiency': f'Выход годного: {efficiency_text}',
@@ -306,14 +306,14 @@ class OrderSectionDelegate(QStyledItemDelegate):
 
         painter.setFont(small_font)
         painter.setPen(palette.shadow().color())
-        
+
         for row, key in enumerate(visible_info):
             row_text = visible_info[key]
             row_rect = QRect(self.textBox(small_font, row_text))
-            
+
             margin_left = 160 * int((row + 1) > rows) + self.margin
             margin_top = 20 * int(row % rows) + name_rect.bottom() + self.margin 
-            
+
             row_rect.moveTo(margin_left, margin_top)
             painter.drawText(row_rect, Qt.TextSingleLine, row_text)
 
@@ -336,7 +336,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
         self.initStyleOption(opt, index)
 
         return QSize(opt.rect.width(), 90)
-    
+
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
         if event.type() == QEvent.MouseButtonRelease:
             deleteIconRect = self.deleteIcon.rect().translated(self.deleteIconPos)
@@ -350,7 +350,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
             # completeIconRect = self.completeIcon.rect().translated(self.completeIconPos)
             # if(completeIconRect.contains(event.pos())):
             #     self.completeIndexClicked.emit(index)
-            
+
         return super().editorEvent(event, model, option, index)
 
 
@@ -365,7 +365,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
         super(IngotSectionDelegate, self).__init__(parent)
         self.show_close = show_close
         self.numerable = numerable
-    
+
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
         opt = QStyleOptionViewItem(option)
         self.initStyleOption(opt, index)
@@ -390,15 +390,15 @@ class IngotSectionDelegate(QStyledItemDelegate):
             painter.fillRect(rect, fill_color.darker(105))
         else:
             painter.fillRect(rect, fill_color)
-        
+
         if self.show_close:
             self.closeIcon = QPixmap(':icons/cancel.png').scaled(15, 15, aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio, transformMode=Qt.TransformationMode.SmoothTransformation)
             self.closeIconPos = QPoint(contentRect.right() - self.closeIcon.width() + self.margin, contentRect.top())
             painter.drawPixmap(self.closeIconPos, self.closeIcon)
-        
+
         painter.setPen(palette.shadow().color())
         painter.drawLine(rect.right(), rect.top(), rect.right(), rect.bottom())
-        
+
         painter.setFont(font)
         painter.setPen(Qt.black)
 
@@ -433,10 +433,10 @@ class IngotSectionDelegate(QStyledItemDelegate):
         painter.drawPixmap(self.forgeIconPos, self.forgeIcon)
 
         painter.restore()
-    
+
     def textBox(self, font: QFont, data: str) -> QRect:
         return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 1, 1)
-    
+
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
 
         opt = QStyleOptionViewItem(option)

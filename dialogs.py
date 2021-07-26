@@ -2,26 +2,22 @@ import math
 import logging
 import typing
 from datetime import datetime
-from typing import Dict, List, Union, Optional
+from typing import Dict, Union, Optional
 from collections import Counter
-from itertools import chain
 
 from PyQt5.QtCore import (
     QItemSelectionModel, QPoint, QTimer, Qt, pyqtSignal, QPointF, QModelIndex, QObject
 )
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
-    QDialog, QCompleter, QGraphicsScene, QMessageBox, QMenu, QToolTip, QWidget,
-    QGraphicsDropShadowEffect, QProgressDialog, QAction
+    QDialog, QGraphicsScene, QMessageBox, QMenu, QPushButton, QToolTip, QWidget,
+    QProgressDialog, QAction
 )
 
-from sequential_mh.bpp_dsc.rectangle import (
-    Direction, Material, Blank, Kit, Bin
-)
+from sequential_mh.bpp_dsc.rectangle import Material, Kit, Bin
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency
 )
-# from sequential_mh.bpp_dsc.prediction import optimal_ingot_size
 from sequential_mh.bpp_dsc.support import dfs
 from gui import (
     ui_add_article_dialog, ui_add_detail_dialog,
@@ -55,11 +51,11 @@ class ArticleDialog(QDialog):
     После добавления новой продукции посылает сигнал с параметрами для того,
     чтобы основное окно каталога обновило данные в модели.
     """
-    
+
     recordSavedSuccess = pyqtSignal(list)
 
     def __init__(self, parent: Optional[QObject] = None):
-        super(ArticleDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_add_article_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -77,22 +73,22 @@ class ArticleDialog(QDialog):
 
         Данные собираются с формы диалогового окна и проверяются на заполнение.
         """
-        id = self.ui.regnum.text()
+        id_ = self.ui.regnum.text()
         name = self.ui.name.text()
 
         # Если номер ведомости, тип и описание заполнены, то можно добавлять
-        if not id or not name:
+        if not id_ or not name:
             self.timer.start(1500)
             self.highlight()
             return
-        
-        id = StandardDataService.save_record('articles', id=id, name=name)
-        if not id:
-            QMessageBox.critical(self, 'Ошибка добавления', f'Изделие не было добавлено в базу!', QMessageBox.Ok)
+
+        id_ = StandardDataService.save_record('articles', id=id_, name=name)
+        if not id_:
+            QMessageBox.critical(self, 'Ошибка добавления', 'Изделие не было добавлено в базу!', QMessageBox.Ok)
             return
-        
-        QMessageBox.information(self, f'Изделие {id}', f'Изделие №{id} успешно добавлено!', QMessageBox.Ok)
-        self.recordSavedSuccess.emit([id, name])
+
+        QMessageBox.information(self, f'Изделие {id_}', f'Изделие №{id_} успешно добавлено!', QMessageBox.Ok)
+        self.recordSavedSuccess.emit([id_, name])
 
     def highlight(self):
         if not self.ui.regnum.text():
@@ -116,13 +112,13 @@ class DetailDialog(QDialog):
 
     recordSavedSuccess = pyqtSignal(list)
 
-    def __init__(self, name: str, id: int, parent: Optional[QObject] = None):
+    def __init__(self, name: str, id_: int, parent: Optional[QObject] = None):
         super(DetailDialog, self).__init__(parent)
         self.ui = ui_add_detail_dialog.Ui_Dialog()
         self.ui.setupUi(self)
-        
+
         # Идентификатор изделия, к которому привязываются заготовки
-        self.article_id = id
+        self.article_id = id_
 
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
@@ -160,7 +156,7 @@ class DetailDialog(QDialog):
             direction_id=direction_id, length=l, width=w, height=h,
             amount=amount, priority=priority
         )
-        
+
         if not detail_id:
             QMessageBox.critical(self, 'Ошибка добавления', f'Деталь {name}не была добавлена в базу!', QMessageBox.Ok)
             return
@@ -387,7 +383,7 @@ class OrderAddingDialog(QDialog):
 
         creation_date = datetime.today().strftime("%d_%m_%Y")
         order_id = StandardDataService.save_record('orders', status_id=0, name=order_name, date=creation_date)
-        
+
         if not order_id:
             QMessageBox.critical(self, 'Ошибка добавления', f'Заказ {order_name} не был добавлен в базу!', QMessageBox.Ok)
             return
@@ -749,28 +745,28 @@ class IngotAddingDialog(QDialog):
         batch = int(self.ui.batch.text())
         length = int(self.ui.length.value())
         width = int(self.ui.width.value())
-        heigth = float(self.ui.height.value())
+        height = float(self.ui.height.value())
         fusion = self.fusions[self.ui.fusion.currentText()]
 
         if not batch:
             self.timer.start(1500)
             self.highlight()
             return
-        
-        id = StandardDataService.save_record('ingots', fusion_id=fusion, batch=batch, length=length, width=width, height=heigth)
-        if not id:
+
+        id_ = StandardDataService.save_record('ingots', fusion_id=fusion, batch=batch, length=length, width=width, height=height)
+        if not id_:
             QMessageBox.critical(self, 'Ошибка добавления', f'Слиток из партии {batch} не был добавлен в базу!',QMessageBox.Ok)
             return
         self.ingotSavedSuccess.emit({
-            'id': id,
+            'id': id_,
             'order_id': None,
             'fusion_id': fusion,
             'status_id': 1,
-            'size': [length, width, heigth],
+            'size': [length, width, height],
             'batch': batch,
             'efficiency': 0.0,
         })
-        
+
         QMessageBox.information(self, f'Партия {batch}', f'Слиток из партии {batch}\nуспешно добавлен!', QMessageBox.Ok)
 
     def highlight(self):
@@ -782,7 +778,7 @@ class IngotAddingDialog(QDialog):
 
 
 class IngotAssignmentDialog(QDialog):
-    
+
     predictedIngotSaved = pyqtSignal(dict, dict, BinNode)
 
     def __init__(self, order: dict, parent: typing.Optional[QWidget] = None) -> None:    
@@ -798,17 +794,23 @@ class IngotAssignmentDialog(QDialog):
         self.ingot_delegate = IngotSectionDelegate(False, self.ui.ingots_view)
         self.ui.ingots_view.setModel(self.ingot_model)
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
-        
+
         # Назначение меню кнопке
-        self.menu = QMenu()
         self.fusions = CatalogDataService.fusions_list()
-        self.directions = CatalogDataService.directions_list()
-        for fusion in self.fusions:
-            # Под каждый сплав создаётся отдельное событие выпадающего меню
-            action: QAction = self.menu.addAction(fusion)
-            action.setObjectName(fusion)
-            action.triggered.connect(self.calculate_ingot)
-        self.ui.predict.setMenu(self.menu)
+        fusions = list(self.parent().get_all_blanks().keys())
+        if len(fusions) == 1:
+            self.ui.predict.setText(f'Рассчитать {fusions[0]}')
+            self.ui.predict.setObjectName(fusions[0])
+            self.ui.predict.clicked.connect(self.calculate_ingot)
+        else:
+            self.menu = QMenu()
+            self.directions = CatalogDataService.directions_list()
+            for fusion in sorted(fusions, key=lambda item: self.fusions[item]):
+                # Под каждый сплав создаётся отдельное событие выпадающего меню
+                action: QAction = self.menu.addAction(fusion)
+                action.setObjectName(fusion)
+                action.triggered.connect(self.calculate_ingot)
+            self.ui.predict.setMenu(self.menu)
 
         self.predicted_ingots = {}
 
@@ -858,7 +860,7 @@ class IngotAssignmentDialog(QDialog):
     def update_statuses(self, fusions: list):
         if not self.predicted_ingots:
             return
-        
+
         model = self.parent().complect_model
         complect_counter = {}
 
@@ -960,7 +962,7 @@ class IngotAssignmentDialog(QDialog):
         # FIXME: а имени может и не быть, расчёт слитков происходит при добавлении заказа
         order_name = 'НОВЫЙ ЗАКАЗ'
         progress.setLabelText('Процесс расчета слитка под ПЗ...')
-        
+
         # details = self.parent().get_details_kit(material)
         details = self.parent().get_all_blanks()
         if material.name not in details:
@@ -973,7 +975,7 @@ class IngotAssignmentDialog(QDialog):
         details = self.parent().create_details_kit(
             details[material.name], material
         )
-        
+
         log_operation_info(
             'start_ic',
             {
@@ -981,7 +983,7 @@ class IngotAssignmentDialog(QDialog):
                 'blanks': details.qty(), 'heights': len(details.keys())
             },
         )
-        
+
         try:
             sizes, tree, efficiency = self.predict_size(
                 material, details, progress=progress
@@ -1089,7 +1091,7 @@ class IngotReadinessDialog(QDialog):
             self.timer.start(1500)
             self.highlight()
             return
-        
+
         success = StandardDataService.update_record('ingots', Field('id', self.id), status_id=1, batch=batch)
         if not success:
             QMessageBox.critical(self, 'Ошибка добавления', f'Слиток из партии {batch} не был добавлен в базу.', QMessageBox.Ok)

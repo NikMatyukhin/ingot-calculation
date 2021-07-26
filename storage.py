@@ -1,7 +1,5 @@
-from service import Field, StandardDataService
-from dialogs import IngotAddingDialog
 import sys
-from models import IngotModel
+
 from typing import Optional, Union
 
 from PyQt5.QtCore import Qt, QModelIndex
@@ -9,12 +7,14 @@ from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox, QWidget
 
 from gui import ui_storage
 from widgets import IngotSectionDelegate
+from models import IngotModel
+from service import Field, StandardDataService
+from dialogs import IngotAddingDialog
 
 
 class Storage(QDialog):
-
     def __init__(self, parent: Optional[QWidget] = None, flags: Union[Qt.WindowFlags, Qt.WindowType] = Qt.Window) -> None:
-        super(Storage, self).__init__(parent, flags)
+        super().__init__(parent, flags)
         self.ui = ui_storage.Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -67,6 +67,6 @@ class Storage(QDialog):
 
 if __name__ == '__main__':
     application = QApplication(sys.argv)
-    window = Storage()
-    window.show()
+    storage_window = Storage()
+    storage_window.show()
     sys.exit(application.exec())

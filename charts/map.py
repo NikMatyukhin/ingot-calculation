@@ -1,28 +1,27 @@
 import math
+
+import application_rc
+
 from PyQt5.QtWidgets import (
-    QGraphicsItem, QGraphicsScene, QGraphicsView, QApplication, QWidget,
-    QStyleOptionGraphicsItem, QGraphicsSceneHoverEvent, QMenu
+    QGraphicsItem, QGraphicsScene, QWidget, QStyleOptionGraphicsItem
 )
 from PyQt5.QtCore import Qt, QRectF, QPointF, QLineF, QSizeF
 from PyQt5.QtGui import (
-    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QTransform, QPixmap,
+    QPainter, QPen, QBrush, QColor, QFont, QFontMetrics, QPixmap,
     QPolygonF, QIcon
 )
 from sequential_mh.bpp_dsc.tree import (
-    Operations, CuttingChartNode, is_op_node, is_bin_node, is_cc_node
+    Operations, is_op_node, is_bin_node, is_cc_node
 )
 from sequential_mh.bpp_dsc.rectangle import (
     BinType
 )
 from sequential_mh.bpp_dsc.support import dfs
-import application_rc
-from math import atan2, sin, cos
 
 
 class PlateGraphicsItem (QGraphicsItem):
-
     def __init__(self, txt, x, y, clr=QColor(255, 255, 255)):
-        super(PlateGraphicsItem, self).__init__()
+        super().__init__()
         self.x_pos = x
         self.y_pos = y
         self.width = 120
@@ -62,17 +61,16 @@ class PlateGraphicsItem (QGraphicsItem):
                          self.visible_text)
 
 
-class OperationGraphicsItem (QGraphicsItem):
-
-    def __init__(self, x, y, type):
-        super(OperationGraphicsItem, self).__init__()
+class OperationGraphicsItem(QGraphicsItem):
+    def __init__(self, x, y, type_):
+        super().__init__()
         self.x_pos = x
         self.y_pos = y
         self.radius = 30
         self.width = self.radius * 2
         self.height = self.radius * 2
         self.color = QColor(100, 100, 150)
-        self.type = type
+        self.type = type_
 
     @property
     def left(self):
@@ -131,7 +129,7 @@ class Edge(QGraphicsItem):
     :type QGraphicsItem: class
     """
     def __init__(self, source: QPointF, dest: QPointF):
-        super(Edge, self).__init__()
+        super().__init__()
         self.sourcePoint: QPointF = source
         self.destPoint: QPointF = dest
         self.arrowSize = 5
@@ -155,16 +153,15 @@ class Edge(QGraphicsItem):
             QPen(Qt.black, 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         )
         painter.drawLine(line)
-        angle = atan2(-line.dy(), line.dx())
+        angle = math.atan2(-line.dy(), line.dx())
 
-        M_PI = 3.14
         destArrowP1 = self.destPoint + QPointF(
-            sin(angle - M_PI / 3) * self.arrowSize,
-            cos(angle - M_PI / 3) * self.arrowSize
+            math.sin(angle - math.pi / 3) * self.arrowSize,
+            math.cos(angle - math.pi / 3) * self.arrowSize
         )
         destArrowP2 = self.destPoint + QPointF(
-            sin(angle - M_PI + M_PI / 3) * self.arrowSize,
-            cos(angle - M_PI + M_PI / 3) * self.arrowSize
+            math.sin(angle - math.pi + math.pi / 3) * self.arrowSize,
+            math.cos(angle - math.pi + math.pi / 3) * self.arrowSize
         )
 
         painter.setBrush(Qt.black)
@@ -312,7 +309,7 @@ class CuttingMapPainter:
         Если `in_width` = True, т.е. всё ещё строится главная ветка, то блоки
         располагаются горизонтально и меняется только координата по иксу.
         Если `in_width` = False, т.е. строится одна из побочных веток, то
-        элемнеты располагаются горизонтально и меняется координата по игреку.
+        элементы располагаются горизонтально и меняется координата по игреку.
         Если `residue` = True, т.е. только сменилось положение ветки, то нужно
         поменять координату по иксу на координату родительского узла.
         Если `pop` = True, т.е. нужно снять со стека один узел разреза, то мы

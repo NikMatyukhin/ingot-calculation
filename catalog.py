@@ -1,5 +1,5 @@
 import sys
-import application_rc
+
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QPointF, QModelIndex, QObject
@@ -34,9 +34,8 @@ DETAIL_HEADERS = ['Название',
 
 
 class Catalog(QDialog):
-
     def __init__(self, parent: Optional[QObject] = None):
-        super(Catalog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_catalog.Ui_Form()
         self.ui.setupUi(self)
         self.setWindowFlags(Qt.Window)
@@ -79,13 +78,13 @@ class Catalog(QDialog):
     def show_details(self, current_index: QModelIndex):
         index = self.search_proxy.mapToSource(current_index)
         parent = self.articles_model.parent(index)
-        
+
         if parent.isValid():
             return
-        
+
         id_index = self.articles_model.index(index.row(), 0, parent)
-        id = self.articles_model.data(id_index, Qt.DisplayRole)
-        self.details_model.article = id
+        id_ = self.articles_model.data(id_index, Qt.DisplayRole)
+        self.details_model.article = id_
 
         for column in range(0, 8):
             self.ui.details_view.resizeColumnToContents(column)
@@ -106,17 +105,17 @@ class Catalog(QDialog):
                 if not self.ui.articles_view.currentIndex().parent().isValid():
                     add = menu.addAction('Добавить заготовку')
                     delete = menu.addAction('Удалить изделие')
-        
+
                     add.triggered.connect(self.open_detail_dialog)
                     delete.triggered.connect(self.confirm_article_removing)
-        
+
         elif self.ui.details_view.hasFocus():
             add = menu.addAction('Добавить заготовку')
             delete = menu.addAction('Удалить заготовку')
-        
+
             add.triggered.connect(self.open_detail_dialog)
             delete.triggered.connect(self.confirm_detail_removing)
-        
+
         menu.exec_(self.mapToGlobal(point))
 
     def open_article_dialog(self):
@@ -129,13 +128,13 @@ class Catalog(QDialog):
         index = self.search_proxy.mapToSource(self.ui.articles_view.currentIndex())
         if not index.isValid():
             return False
-        
+
         id_index = self.articles_model.index(index.row(), 0, QModelIndex())
         name_index = self.articles_model.index(index.row(), 1, QModelIndex())
-        id = self.articles_model.data(id_index, Qt.DisplayRole)
+        id_ = self.articles_model.data(id_index, Qt.DisplayRole)
         name = self.articles_model.data(name_index, Qt.DisplayRole)
-        
-        window = DetailDialog(name, id, self)
+
+        window = DetailDialog(name, id_, self)
         window.recordSavedSuccess.connect(self.confirm_detail_adding)
 
         window.exec_()
@@ -144,39 +143,39 @@ class Catalog(QDialog):
         id_index = self.articles_model.index(index.row(), 0, QModelIndex())
         name_index = self.articles_model.index(index.row(), 1, QModelIndex())
 
-        id = self.articles_model.data(id_index, Qt.DisplayRole)
+        id_ = self.articles_model.data(id_index, Qt.DisplayRole)
         name = self.articles_model.data(name_index, Qt.DisplayRole)
 
-        success = StandardDataService.update_record('articles', Field('id', id), name=name)
+        success = StandardDataService.update_record('articles', Field('id', id_), name=name)
         if not success:
-            QMessageBox.critical(self, f'Ошибка обновления', f'SqlDatabaseError: can not update record.', QMessageBox.Ok)
+            QMessageBox.critical(self, 'Ошибка обновления', 'SqlDatabaseError: can not update record.', QMessageBox.Ok)
 
     def update_detail(self, index: QModelIndex, temp: QModelIndex, roles: list):
         id_index = self.details_model.index(index.row(), 8, QModelIndex())
-        id = self.details_model.data(id_index, Qt.DisplayRole)
-        
+        id_ = self.details_model.data(id_index, Qt.DisplayRole)
+
         changed_index = self.details_model.index(index.row(), index.column(), QModelIndex())
         changed = self.details_model.data(changed_index, Qt.DisplayRole)
 
         if index.column() == 0:
-            success = StandardDataService.update_record('details', Field('id', id), name=changed)
+            success = StandardDataService.update_record('details', Field('id', id_), name=changed)
         elif index.column() == 1:
-            success = StandardDataService.update_record('details', Field('id', id), fusion_id=changed)
+            success = StandardDataService.update_record('details', Field('id', id_), fusion_id=changed)
         elif index.column() == 2:
-            success = StandardDataService.update_record('details', Field('id', id), length=changed)
+            success = StandardDataService.update_record('details', Field('id', id_), length=changed)
         elif index.column() == 3:
-            success = StandardDataService.update_record('details', Field('id', id), width=changed)
+            success = StandardDataService.update_record('details', Field('id', id_), width=changed)
         elif index.column() == 4:
-            success = StandardDataService.update_record('details', Field('id', id), height=changed)
+            success = StandardDataService.update_record('details', Field('id', id_), height=changed)
         elif index.column() == 5:
-            success = StandardDataService.update_record('details', Field('id', id), amount=changed)
+            success = StandardDataService.update_record('details', Field('id', id_), amount=changed)
         elif index.column() == 6:
-            success = StandardDataService.update_record('details', Field('id', id), priority=changed)
+            success = StandardDataService.update_record('details', Field('id', id_), priority=changed)
         elif index.column() == 7:
-            success = StandardDataService.update_record('details', Field('id', id), direction_id=changed)
-        
+            success = StandardDataService.update_record('details', Field('id', id_), direction_id=changed)
+
         if not success:
-            QMessageBox.critical(self, f'Ошибка обновления', f'SqlDatabaseError: can not update record.', QMessageBox.Ok)
+            QMessageBox.critical(self, 'Ошибка обновления', 'SqlDatabaseError: can not update record.', QMessageBox.Ok)
 
     def confirm_article_adding(self, data: list):
         self.articles_model.appendRow(data, QModelIndex())
@@ -187,9 +186,9 @@ class Catalog(QDialog):
     def confirm_article_removing(self):
         index = self.search_proxy.mapToSource(self.ui.articles_view.currentIndex())
         id_index = self.articles_model.index(index.row(), 0, QModelIndex())
-        id = self.articles_model.data(id_index, Qt.DisplayRole)
-        
-        success = StandardDataService.delete_by_id('articles', Field('id', id))
+        id_ = self.articles_model.data(id_index, Qt.DisplayRole)
+
+        success = StandardDataService.delete_by_id('articles', Field('id', id_))
         if success:
             self.articles_model.removeRows(index.row(), 1, QModelIndex())
         else:
@@ -199,9 +198,9 @@ class Catalog(QDialog):
     def confirm_detail_removing(self):
         index = self.ui.details_view.currentIndex()
         id_index = self.details_model.index(index.row(), 8, QModelIndex())
-        id = self.details_model.data(id_index, Qt.DisplayRole)
+        id_ = self.details_model.data(id_index, Qt.DisplayRole)
 
-        success = StandardDataService.delete_by_id('details', Field('id', id))
+        success = StandardDataService.delete_by_id('details', Field('id', id_))
         if success:
             self.details_model.removeRow(index.row(), QModelIndex())
         else:
