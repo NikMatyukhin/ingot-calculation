@@ -34,6 +34,7 @@ jobs:
       - name: Lint with pylint
         uses: sunnysid3up/python-linter@master
         with:
+          mypy-options: "--ignore-missing-imports"
           pylint-options: "--rcfile=.pylintrc"
 #      - name: Hard lint with pylint
 #        run: |
