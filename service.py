@@ -4,7 +4,7 @@ from math import prod
 from sqlite3 import connect, Connection, Error
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from typing import Sequence, Literal, Optional
+from typing import Any, List, Sequence, Literal, Optional, Tuple
 from itertools import groupby
 from operator import itemgetter
 from collections import OrderedDict
@@ -38,15 +38,15 @@ class FieldCollection:
     записываются в коллекцию, после чего она используется в методе сервиса
     заказов update_statuses.
     """
-    def __init__(self, columns: list):
-        self.__updatable_data = []
+    def __init__(self, columns: List[str]):
+        self.__updatable_data: List[Tuple] = []
         self.__updatable_columns = columns
         self.__step = 0
 
     def __iter__(self):
         return self
 
-    def __next__(self) -> tuple:
+    def __next__(self) -> Tuple[Any]:
         if self.__step >= len(self.__updatable_data):
             raise StopIteration
         self.__step += 1
@@ -63,7 +63,7 @@ class FieldCollection:
         self.__updatable_data.append(tuple(values))
 
     @property
-    def names(self) -> tuple:
+    def names(self) -> Tuple[str]:
         return tuple(self.__updatable_columns)
 
 
@@ -99,34 +99,42 @@ def db_connector(func):
 class AbstractDataService(ABC):
 
     @abstractmethod
+    @staticmethod
     def get_table(table: str, connection: Connection = connect(':memory:')) -> list:
         pass
 
     @abstractmethod
+    @staticmethod
     def get_by_id(table: str, record_id: Field, connection: Connection = connect(':memory:')) -> list:
         pass
 
     @abstractmethod
+    @staticmethod
     def get_by_field(table: str, srch_field: Field, connection: Connection = connect(':memory:')) -> list:
         pass
 
     @abstractmethod
+    @staticmethod
     def get_by_fields(table: str, connection: Connection = connect(':memory:'), **srch_fields: Sequence[Field]) -> list:
         pass
 
     @abstractmethod
+    @staticmethod
     def save_record(table: str, connection: Connection = connect(':memory:'), **saved_fields: Sequence[Field]) -> bool:
         pass
 
     @abstractmethod
+    @staticmethod
     def update_record(table: str, record_id: Field, connection: Connection = connect(':memory:'), **upd_fields: Sequence[Field]) -> bool:
         pass
 
     @abstractmethod
+    @staticmethod
     def delete_by_id(table: str, record_id: Field, connection: Connection = connect(':memory:')) -> bool:
         pass
 
     @abstractmethod
+    @staticmethod
     def delete_by_fields(table: str, connection: Connection = connect(':memory:'), **srch_fields: Sequence[Field]) -> bool:
         pass
 
@@ -341,7 +349,7 @@ class OrderDataService(StandardDataService):
 
     @staticmethod
     @db_connector
-    def cut_blanks(order: Field, height: Optional[float] = None, connection: Connection = connect(':memory:')) -> dict:
+    def cut_blanks(order: Field, height: Optional[float] = None, connection: Connection = connect(':memory:')) -> List[Any]:
         sql = str('SELECT c.detail_id, d.fusion_id, d.name, c.amount, '
                   'd.length, d.width, d.height FROM complects AS c '
                   'INNER JOIN details AS d '

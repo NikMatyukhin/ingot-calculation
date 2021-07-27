@@ -2,7 +2,7 @@ import math
 import logging
 import typing
 from datetime import datetime
-from typing import Dict, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional
 from collections import Counter
 
 from PyQt5.QtCore import (
@@ -42,7 +42,7 @@ from log import log_operation_info
 
 
 Number = Union[int, float]
-Sizes = tuple[Number, Number, Number]
+Sizes = Tuple[Number, Number, Number]
 
 
 class ArticleDialog(QDialog):
@@ -428,7 +428,7 @@ class OrderEditingDialog(QDialog):
         # Иерархическая модель изделие->заготовки для формирования заказа
         # ID (int) - идентификатор конкретного изделия или заготовки
         # ADDED (bool) - статус добавления этой заготовки или изделия в заказ
-        self.headers = [
+        self.headers: List[str] = [
             'Ведомость', 'Название', 'Сплав', 'Длина', 'Ширина', 'Толщина',
             'Количество', 'Приоритет', 'Направление', 'Идентификатор', 'Добавлено'
         ]
@@ -740,16 +740,16 @@ class IngotAddingDialog(QDialog):
         self.ui.add.clicked.connect(self.confirm_adding)
 
     def confirm_adding(self):
+        if not self.ui.batch.text():
+            self.timer.start(1500)
+            self.highlight()
+            return
+        
         batch = int(self.ui.batch.text())
         length = int(self.ui.length.value())
         width = int(self.ui.width.value())
         height = float(self.ui.height.value())
         fusion = self.fusions[self.ui.fusion.currentText()]
-
-        if not batch:
-            self.timer.start(1500)
-            self.highlight()
-            return
 
         id_ = StandardDataService.save_record('ingots', fusion_id=fusion, batch=batch, length=length, width=width, height=height)
         if not id_:
@@ -813,7 +813,7 @@ class IngotAssignmentDialog(QDialog):
                 action.triggered.connect(self.calculate_ingot)
             self.ui.predict.setMenu(self.menu)
 
-        self.predicted_ingots = {}
+        self.predicted_ingots: Dict[int, Dict] = dict()
 
         self.ui.add.clicked.connect(self.confirm_ingots_assinging)
 
