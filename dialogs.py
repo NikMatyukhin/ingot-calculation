@@ -10,7 +10,7 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
-    QDialog, QGraphicsScene, QMessageBox, QMenu, QPushButton, QToolTip, QWidget,
+    QDialog, QGraphicsScene, QMessageBox, QMenu, QToolTip, QWidget,
     QProgressDialog, QAction
 )
 
@@ -671,7 +671,6 @@ class OrderEditingDialog(QDialog):
 
 
 class OrderCompletingDialog(QDialog):
-    
     def __init__(self, residuals: list, parent: typing.Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.ui = ui_finish_step_dialog.Ui_Dialog()
@@ -693,10 +692,9 @@ class OrderCompletingDialog(QDialog):
         self.ui.finish.clicked.connect(self.confirm_order_completing)
 
     def confirm_residual_adding(self):
-        
         if not self.ui.lineEdit.text():
             return
-        
+
         data_row = {
             'num': self.residuals_model.counter,
             'length': self.ui.leftover_leigth.value(),
@@ -789,15 +787,18 @@ class IngotAssignmentDialog(QDialog):
         self.order = order
         self.predicted = False
 
+        # Сплавы
+        self.fusions = CatalogDataService.fusions_list()
+        fusions = list(self.parent().get_all_blanks().keys())
+        fusions_id = [id_ for name, id_ in self.fusions.items() if name in fusions]
+
         # Модель данных со свободными слитками
-        self.ingot_model = IngotModel('unused')
+        self.ingot_model = IngotModel('unused', fusions_id=fusions_id)
         self.ingot_delegate = IngotSectionDelegate(False, self.ui.ingots_view)
         self.ui.ingots_view.setModel(self.ingot_model)
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
 
         # Назначение меню кнопке
-        self.fusions = CatalogDataService.fusions_list()
-        fusions = list(self.parent().get_all_blanks().keys())
         if len(fusions) == 1:
             self.ui.predict.setText(f'Рассчитать {fusions[0]}')
             self.ui.predict.setObjectName(fusions[0])
@@ -817,6 +818,7 @@ class IngotAssignmentDialog(QDialog):
         self.ui.add.clicked.connect(self.confirm_ingots_assinging)
 
     def confirm_ingots_assinging(self):
+        """Обработчик события добавление слитка"""
         if not self.ui.ingots_view.selectedIndexes():
             QMessageBox.critical(self, 'Ошибка добавления', 'Не выбраны слитки', QMessageBox.Close)
             return

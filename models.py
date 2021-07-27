@@ -353,7 +353,7 @@ class TreeModel(QAbstractItemModel):
         child_item = parent_item.child(0)
 
         for i, field in enumerate(data):
-            if type(field) is bool or field is None:
+            if isinstance(field, bool) or field is None:
                 child_item.setData(i, field)
             else:
                 child_item.setData(i, str(field))
@@ -557,10 +557,12 @@ class OrderModel(ListModel):
 
 
 class IngotModel(ListModel):
-    def __init__(self, category: OrderDataService.Category, parent: Optional[QObject] = None) -> None:
+    def __init__(self, category: OrderDataService.Category, 
+                 fusions_id=None, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self.__category = category
         self.__order_id = None
+        self._fusions_id = fusions_id
         self.setupModelData()
 
     @property
@@ -589,31 +591,32 @@ class IngotModel(ListModel):
         else:
             result = OrderDataService.ware_ingots(self.__category)
         for ingot in result:
-            data_row = {
-                'id': ingot[0],
-                'order_id': self.__order_id if self.__order_id else None,
-                'fusion_id': ingot[2],
-                'status_id': ingot[3],
-                'size': [ingot[4], ingot[5], round(ingot[6], 1)],
-                'batch': ingot[7],
-                'efficiency': ingot[8],
-            }
-            self.appendRow(data_row)
+            if self._fusions_id is None or ingot[2] in self._fusions_id:
+                data_row = {
+                    'id': ingot[0],
+                    'order_id': self.__order_id if self.__order_id else None,
+                    'fusion_id': ingot[2],
+                    'status_id': ingot[3],
+                    'size': [ingot[4], ingot[5], round(ingot[6], 1)],
+                    'batch': ingot[7],
+                    'efficiency': ingot[8],
+                }
+                self.appendRow(data_row)
 
 
 class ResidualsModel(ListModel):
-    
     def __init__(self, residuals: list, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self.residuals = residuals
         self.counter = 1
         self.setupModelData()
-    
+
     def appendRow(self, data: dict, index: QModelIndex = QModelIndex()) -> bool:
         if not self.insertRows(len(self.items_data), 1, index):
             return False
         self.items_data[-1] = data
         self.counter += 1
+        return True
 
     def setupModelData(self):
         for r in self.residuals:
