@@ -7,7 +7,7 @@ import pickle
 import logging
 import time
 import math
-from typing import Dict, Union, List, Tuple
+from typing import Any, Dict, Sequence, Union, List, Tuple
 from itertools import chain
 from functools import partial
 from collections import Counter, deque, namedtuple
@@ -460,18 +460,13 @@ class OCIMainWindow(QMainWindow):
             OrderDataService.update_complects(updates)
             self.ui.saveComplect.setText(text[:-1])
 
-    def safe_create_tree(self) -> None:
-        """Сохранение дерева"""
-        self.save_complects()
-        _, _ = self.create_tree()
-
     def create_all_tree(self) -> None:
         order_index = self.ui.searchResult_1.currentIndex()
         order = order_index.data(Qt.DisplayRole)
         model = self.ui.ingotsView.model()
 
         all_blanks = self.get_all_blanks()
-        placed_blanks = {}
+        placed_blanks: Dict[str, Counter] = {}
         ingots = []
         for ingot_index in range(model.rowCount()):
             ingot_idx_model = model.index(ingot_index, 0)
@@ -504,7 +499,9 @@ class OCIMainWindow(QMainWindow):
             if kit.is_empty():
                 break
 
-            ef_res, _ = self.create_tree(order, ingot, material, kit)
+            ef_res: Tuple[float, float] = self.create_tree(
+                order, ingot, material, kit
+            )
             if ef_res:
                 efficiency, order_efficiency = ef_res
 
@@ -602,7 +599,7 @@ class OCIMainWindow(QMainWindow):
             ('length', 'width', 'height', 'priority', 'direction', 'name', 'amount')
         )
         model = self.complect_model
-        details = {}
+        details: Dict[str, List[Detail]] = {}
         # Переходим по всем изделиям в заказе
         for row in range(model.rowCount(QModelIndex())):
             parent = model.index(row, 0, QModelIndex())
@@ -610,8 +607,8 @@ class OCIMainWindow(QMainWindow):
 
             # Переходим по всем заготовкам в изделии
             for sub_row in range(model.rowCount(parent)):
-                fusion_id = model.data(model.index(sub_row, 3, parent), Qt.DisplayRole)
-                detail_fusion = StandardDataService.get_by_id('fusions', Field('id', fusion_id))[1]
+                fusion_id: int = model.data(model.index(sub_row, 3, parent), Qt.DisplayRole)
+                detail_fusion: str = StandardDataService.get_by_id('fusions', Field('id', fusion_id))[1]
 
                 # Собираем все нужные данные по колонкам
                 name: str = model.data(model.index(sub_row, 0, parent), Qt.DisplayRole)
@@ -649,7 +646,7 @@ class OCIMainWindow(QMainWindow):
         :return: Набор заготовок
         :rtype: Kit
         """
-        kit = []
+        kit_: List[Blank] = []
         if exclude is None:
             exclude = {}
         for detail in blanks:
@@ -657,8 +654,8 @@ class OCIMainWindow(QMainWindow):
             for _ in range(number - exclude.get(detail[-2], 0)):
                 blank = Blank(*detail[:4], direction=detail[4], material=material)
                 blank.name = detail[-2]
-                kit.append(blank)
-        kit = Kit(kit)
+                kit_.append(blank)
+        kit: Kit = Kit(kit_)
         kit.sort('width')
         return kit
 
@@ -692,7 +689,7 @@ class OCIMainWindow(QMainWindow):
                 length = int(model.data(model.index(sub_row, 4, parent), Qt.DisplayRole))
                 width = int(model.data(model.index(sub_row, 5, parent), Qt.DisplayRole))
                 depth = float(model.data(model.index(sub_row, 6, parent), Qt.DisplayRole))
-                sizes: Sizes = [length, width, depth]
+                sizes: Sizes = (length, width, depth)
                 amount = int(model.data(model.index(sub_row, 7, parent), Qt.DisplayRole))
                 priority = int(model.data(model.index(sub_row, 9, parent), Qt.DisplayRole))
                 direction_id = int(model.data(model.index(sub_row, 10, parent), Qt.DisplayRole))
@@ -835,7 +832,7 @@ class OCIMainWindow(QMainWindow):
                    with_filter: bool = True, restrictions: dict = None,
                    progress: QProgressDialog = None, end_progress: bool = True,
                    direction: int = 1, start_step: int = 0, steps: int = 0,
-                   lvl_sub: int = 0, with_priority: bool = True) -> List[Tree]:
+                   level_subtree: int = 0, with_priority: bool = True) -> List[Tree]:
         """Последовательная древовидная метаэвристика.
 
         Построение деревьев растроя.
@@ -867,7 +864,7 @@ class OCIMainWindow(QMainWindow):
 
         while level:
             step += 1
-            new_level = deque([])
+            new_level: deque = deque([])
             for _, tree_ in enumerate(level):
                 # Костыль для небольшого увеличения прогресса
                 # в случае, когда он переполняется
@@ -891,10 +888,10 @@ class OCIMainWindow(QMainWindow):
                 break
 
             tree = level.popleft()
-            nodes = [
+            nodes_: List[Any] = [
                 node for node in tree.root.leaves() if not is_empty_node(node)
             ]
-            nodes = deque(sorted(nodes, key=predicate))
+            nodes: deque = deque(sorted(nodes_, key=predicate))
             node = nodes[0]
             if is_cc_node(node):
                 _pack(node, level, restrictions, with_priority=with_priority)
@@ -1078,7 +1075,7 @@ class OCIMainWindow(QMainWindow):
         #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
         return best
 
-    def save_residuals(self, ingot: Dict, order: Dict) -> List[Tuple]:
+    def save_residuals(self, ingot: Dict, order: Dict) -> Sequence[Tuple]:
         """Сохранение остатков в БД"""
         batch = ingot['batch']
         min_size = self.minimum_plate_height, self.minimum_plate_width
@@ -1496,12 +1493,12 @@ def create_bins_residues(items, height: Number,
     return [Bin(item.length, item.width, *args) for item in items]
 
 
-def incoming_rectangles(rect, height: float, kit: Kit):
+def incoming_rectangles(rect, height: float, kit: List[Any]):
     """Прямоугольники входящие в rect"""
     return [Rectangle3d(rect.length, rect.width, height).is_subrectangle(b, b.is_rotatable) for b in kit]
 
 
-def filtration_residues(items: List, min_size: Sizes = None):
+def filtration_residues(items: List, min_size: Tuple[Number, Number] = None):
     """Фильтрация остатков
 
     :param items: список прямоугольников
@@ -1546,7 +1543,7 @@ def is_residual(item) -> bool:
     return isinstance(item, Bin) or item.rtype == RectangleType.RESIDUAL
 
 
-def is_suitable_sizes(item, min_size: tuple[Number, Number]) -> bool:
+def is_suitable_sizes(item, min_size: Tuple[Number, Number]) -> bool:
     """Проверка минимальных размеров
 
     :param item: Прямоугольник

@@ -1,4 +1,5 @@
 import math
+from typing import Union
 
 import application_rc
 
@@ -11,7 +12,7 @@ from PyQt5.QtGui import (
     QPolygonF, QIcon
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Operations, is_op_node, is_bin_node, is_cc_node
+    BinNode, CuttingChartNode, OperationNode, Operations, is_op_node, is_bin_node, is_cc_node
 )
 from sequential_mh.bpp_dsc.rectangle import (
     BinType
@@ -240,7 +241,7 @@ class CuttingMapPainter:
                 self.prev_type = node.bin.bin_type
             self.skip = False
 
-    def createItem(self, node: BinNode):
+    def createItem(self, node: Union[BinNode, OperationNode, CuttingChartNode]):
         item = None
         if is_bin_node(node):
             h, w, d = node.bin.size

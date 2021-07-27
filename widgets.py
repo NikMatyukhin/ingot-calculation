@@ -94,6 +94,8 @@ class ListValuesDelegate(QStyledItemDelegate):
         for name in self.values:
             if int(value) == self.values[name]:
                 return name
+        return 'Ошибка'
+            
 
 
 class Section(QWidget):

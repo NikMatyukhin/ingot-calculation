@@ -2,7 +2,7 @@ import math
 import logging
 import typing
 from datetime import datetime
-from typing import Dict, Tuple, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional
 from collections import Counter
 
 from PyQt5.QtCore import (
@@ -428,7 +428,7 @@ class OrderEditingDialog(QDialog):
         # Иерархическая модель изделие->заготовки для формирования заказа
         # ID (int) - идентификатор конкретного изделия или заготовки
         # ADDED (bool) - статус добавления этой заготовки или изделия в заказ
-        self.headers = [
+        self.headers: List[str] = [
             'Ведомость', 'Название', 'Сплав', 'Длина', 'Ширина', 'Толщина',
             'Количество', 'Приоритет', 'Направление', 'Идентификатор', 'Добавлено'
         ]

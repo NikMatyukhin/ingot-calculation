@@ -374,7 +374,7 @@ class TreeModel(QAbstractItemModel):
         result = self.root_item.removeColumns(position, columns)
         self.endRemoveColumns()
         if self.root_item.columnCount() == 0:
-            self.removeRows(0, self.root_item.childCount())
+            self.removeRows(0, self.root_item.childCount(), parent)
         return result
 
     def insertRows(self, position: int, rows: int,
