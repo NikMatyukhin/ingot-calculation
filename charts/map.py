@@ -11,7 +11,7 @@ from PyQt5.QtGui import (
     QPolygonF, QIcon
 )
 from sequential_mh.bpp_dsc.tree import (
-    Operations, is_op_node, is_bin_node, is_cc_node
+    BinNode, Operations, is_op_node, is_bin_node, is_cc_node
 )
 from sequential_mh.bpp_dsc.rectangle import (
     BinType
@@ -179,10 +179,10 @@ class CuttingMapPainter:
         self.scene = scene
         self.font = QFont('Segoe UI', 9)
 
-    def setTree(self, tree):
+    def setTree(self, tree: BinNode):
         self.tree = tree
 
-    def setEfficiency(self, efficiency):
+    def setEfficiency(self, efficiency: float):
         self.efficiency = efficiency * 100
 
     def drawTree(self):
@@ -240,7 +240,7 @@ class CuttingMapPainter:
                 self.prev_type = node.bin.bin_type
             self.skip = False
 
-    def createItem(self, node):
+    def createItem(self, node: BinNode):
         item = None
         if is_bin_node(node):
             h, w, d = node.bin.size
@@ -303,7 +303,8 @@ class CuttingMapPainter:
             self.changePos()
         return item
 
-    def changePos(self, operation=False, residue=False, pop=False):
+    def changePos(self, operation: bool = False, residue: bool = False,
+                  pop: bool = False):
         """Смена позиции в зависимости от типа созданного блока.
 
         Если `in_width` = True, т.е. всё ещё строится главная ветка, то блоки

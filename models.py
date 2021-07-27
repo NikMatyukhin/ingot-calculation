@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from PyQt5.QtCore import (
     Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot,
@@ -18,7 +18,7 @@ class TreeItem:
     def __init__(self, data: list, parent: Optional[QObject] = None):
         self._item_data = data
         self._parent_item = parent
-        self._child_items = []
+        self._child_items: List[TreeItem] = []
 
     def child(self, number: int):
         """Получение наследника по индексу
@@ -90,6 +90,7 @@ class TreeItem:
 
         for child_item in self._child_items:
             child_item.insertColumns(position, columns)
+        return True
 
     def parent(self):
         """Получение предка объекта (предыдущий узел дерева)"""
@@ -130,6 +131,7 @@ class TreeItem:
 
         for child_item in self._child_items:
             child_item.removeColumns(position, columns)
+        return True
 
     def childNumber(self) -> int:
         """Позиция текущего объекта среди наследников его родителя"""
@@ -176,7 +178,7 @@ class TreeModel(QAbstractItemModel):
                 return item
         return self.root_item
 
-    def rowCount(self, parent: QModelIndex) -> int:
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """Количество наследников родителя parent.
 
         :param parent: Индекс родительского узла
@@ -187,7 +189,7 @@ class TreeModel(QAbstractItemModel):
         parent_item = self.get_item(parent)
         return parent_item.childCount() if parent_item else 0
 
-    def columnCount(self, parent: QModelIndex) -> int:
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """Количество колонок данных родителя parent.
 
         :param parent: Индекс родительского узла
@@ -336,7 +338,7 @@ class TreeModel(QAbstractItemModel):
             return result
         return False
 
-    def appendRow(self, data: list, index: QModelIndex) -> bool:
+    def appendRow(self, data: list, index: QModelIndex = QModelIndex()) -> bool:
         """Добавление к модели строки данных data для родителя index.
 
         :param data: Данные объекта-узла
@@ -357,16 +359,17 @@ class TreeModel(QAbstractItemModel):
                 child_item.setData(i, field)
             else:
                 child_item.setData(i, str(field))
+        return True
 
     def insertColumns(self, position: int, columns: int,
-                      parent: QModelIndex) -> bool:
+                      parent: QModelIndex = QModelIndex()) -> bool:
         self.beginInsertColumns(parent, position, position + columns - 1)
         result = self.root_item.insertColumns(position, columns)
         self.endInsertColumns()
         return result
 
     def removeColumns(self, position: int, columns: int,
-                      parent: QModelIndex) -> bool:
+                      parent: QModelIndex = QModelIndex()) -> bool:
         self.beginRemoveColumns(parent, position, position + columns - 1)
         result = self.root_item.removeColumns(position, columns)
         self.endRemoveColumns()
@@ -409,7 +412,7 @@ class TableModel(QAbstractItemModel):
     def __init__(self, headers: list, parent: Optional[QObject] = None):
         super().__init__(parent)
         self.__headers = headers
-        self.__items_data = []
+        self.__items_data: List[List[Any]] = []
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         if not index.isValid():
@@ -462,6 +465,7 @@ class TableModel(QAbstractItemModel):
         if not self.insertRow(self.rowCount(QModelIndex()), index):
             return False
         self.__items_data[-1] = data
+        return True
 
     def insertRow(self, row: int, parent: QModelIndex) -> bool:
         self.beginInsertRows(parent, row, row)
@@ -487,7 +491,7 @@ class TableModel(QAbstractItemModel):
 class ListModel(QAbstractListModel):
     def __init__(self, parent: Optional[QObject]) -> None:
         super().__init__(parent)
-        self.items_data = []
+        self.items_data: List[Dict] = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self.items_data)
@@ -510,6 +514,7 @@ class ListModel(QAbstractListModel):
         if not self.insertRows(0, 1, index):
             return False
         self.items_data[0] = data
+        return True
 
     def deleteRow(self, row: int, index: QModelIndex = QModelIndex()) -> bool:
         if 0 > row > len(self.items_data):
@@ -614,6 +619,7 @@ class ResidualsModel(ListModel):
             return False
         self.items_data[-1] = data
         self.counter += 1
+        return True
 
     def setupModelData(self):
         for r in self.residuals:
@@ -813,7 +819,7 @@ class OrderInformationComplectsModel(TreeModel):
 
     def __init__(self, headers: list, parent: Optional[QObject] = None):
         super(OrderInformationComplectsModel, self).__init__(headers, parent=parent)
-        self.__order_id: int = None
+        self.__order_id: int = 0
 
     @property
     def order(self):
@@ -890,6 +896,8 @@ class OrderInformationComplectsModel(TreeModel):
     def setupModelData(self):
         if self.root_item.childCount():
             self.clear()
+        if not self.__order_id:
+            return
 
         complects = OrderDataService.complects(Field('order_id', self.__order_id))
         for article in complects:

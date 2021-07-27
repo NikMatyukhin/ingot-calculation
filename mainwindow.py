@@ -7,7 +7,7 @@ import pickle
 import logging
 import time
 import math
-from typing import Dict, Union
+from typing import Dict, Union, List, Tuple
 from itertools import chain
 from functools import partial
 from collections import Counter, deque, namedtuple
@@ -50,7 +50,7 @@ from sequential_mh.bpp_dsc.rectangle import (
     BinType, Direction, Material, Blank, Kit, Bin, Rectangle3d
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, Tree, solution_efficiency, is_defective_tree, is_cc_node,
+    BinNode, CuttingChartNode, Tree, solution_efficiency, is_defective_tree, is_cc_node,
     get_all_residuals, get_residuals
 )
 from sequential_mh.bpp_dsc.exception import BPPError
@@ -62,8 +62,8 @@ from sequential_mh.tsh.rect import RectangleType
 
 
 Number = Union[int, float]
-Sizes = tuple[Number, Number, Number]
-ListSizes = list[Sizes]
+Sizes = Tuple[Number, Number, Number]
+ListSizes = List[Sizes]
 
 
 class OCIMainWindow(QMainWindow):
@@ -205,7 +205,7 @@ class OCIMainWindow(QMainWindow):
         self.ui.fullScreen.clicked.connect(self.open_fullscreen_window)
         self.ui.recalculate.clicked.connect(self.create_all_tree)
 
-    def show_order_information(self, index: QModelIndex):
+    def show_order_information(self, index: QModelIndex) -> None:
         """Переключатель активных заказов и открытых секций.
 
         Отвечает за то, чтобы одновременно была раскрыта только одна секция
@@ -249,7 +249,7 @@ class OCIMainWindow(QMainWindow):
 
         self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
 
-    def show_ingot_information(self, current: QModelIndex):
+    def show_ingot_information(self, current: QModelIndex) -> None:
         ingot = current.data(Qt.DisplayRole)
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         if not ingot or not order:
@@ -264,7 +264,7 @@ class OCIMainWindow(QMainWindow):
         else:
             self.map_scene.clear()
 
-    def confirm_ingot_readiness(self, index: QModelIndex):
+    def confirm_ingot_readiness(self, index: QModelIndex) -> None:
         """Подтверждение готовности слитка.
 
         :param index: Индекс подтверждаемого слитка
@@ -281,7 +281,7 @@ class OCIMainWindow(QMainWindow):
             self.check_current_order()
             # ingot = self.unused_ingots_model.data(index, Qt.DisplayRole)
 
-    def confirm_ingot_removing(self, index: QModelIndex):
+    def confirm_ingot_removing(self, index: QModelIndex) -> None:
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
 
@@ -313,7 +313,7 @@ class OCIMainWindow(QMainWindow):
             self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'efficiency': order_efficiency}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order['id']), efficiency=order_efficiency)
 
-    def check_current_order(self):
+    def check_current_order(self) -> None:
         """Проверка текущего заказа с возможным изменением статуса"""
         for row in range(self.ingot_model.rowCount()):
             ingot_index = self.ingot_model.index(row, 0, QModelIndex())
@@ -327,15 +327,15 @@ class OCIMainWindow(QMainWindow):
             self.order_model.setData(order_index, {'status_id': 1}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order_index.data(Qt.DisplayRole)['id']), status_id=1)
 
-    def confirm_order_adding(self, data: dict):
+    def confirm_order_adding(self, data: Dict) -> None:
         self.order_model.appendRow(data)
 
-    def confirm_order_editing(self, data: dict):
+    def confirm_order_editing(self, data: Dict) -> None:
         index = self.ui.searchResult_1.currentIndex()
         self.order_model.setData(index, data, Qt.EditRole)
         self.show_order_information(index)
 
-    def confirm_order_removing(self, index: QModelIndex):
+    def confirm_order_removing(self, index: QModelIndex) -> None:
         order = index.data(Qt.DisplayRole)
 
         # FIXME: вариант в одну строку им не нравится, так как у кнопок текст
@@ -358,7 +358,8 @@ class OCIMainWindow(QMainWindow):
             self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
         self.ui.searchResult_1.clearSelection()
 
-    def update_complect_statuses(self, order_id: int, ingot_fusion: int):
+    def update_complect_statuses(self, order_id: int,
+                                 ingot_fusion: int) -> None:
         """Обновление статусов заготовок"""
         # Подсчитываем количество неразмещенных заготовок (название: количество)
         unplaced_counter = Counter(b.name for b in self.tree.kit)
@@ -435,7 +436,7 @@ class OCIMainWindow(QMainWindow):
                 model.setData(complect_counter[name]['total'], complect_counter[name]['amount'], Qt.EditRole)
         OrderDataService.update_statuses(updates)
 
-    def save_complects(self):
+    def save_complects(self) -> None:
         text = self.ui.saveComplect.text()
         if text.endswith('*'):
             order_id = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)['id']
@@ -459,12 +460,12 @@ class OCIMainWindow(QMainWindow):
             OrderDataService.update_complects(updates)
             self.ui.saveComplect.setText(text[:-1])
 
-    def safe_create_tree(self):
+    def safe_create_tree(self) -> None:
         """Сохранение дерева"""
         self.save_complects()
-        self.create_tree()
+        _, _ = self.create_tree()
 
-    def create_all_tree(self):
+    def create_all_tree(self) -> None:
         order_index = self.ui.searchResult_1.currentIndex()
         order = order_index.data(Qt.DisplayRole)
         model = self.ui.ingotsView.model()
@@ -503,7 +504,7 @@ class OCIMainWindow(QMainWindow):
             if kit.is_empty():
                 break
 
-            ef_res = self.create_tree(order, ingot, material, kit)
+            ef_res, _ = self.create_tree(order, ingot, material, kit)
             if ef_res:
                 efficiency, order_efficiency = ef_res
 
@@ -518,7 +519,8 @@ class OCIMainWindow(QMainWindow):
                 for leave in self.tree.cc_leaves:
                     placed_blanks[material.name] += Counter(b.name for b in leave.placed)
 
-    def create_tree(self, order, ingot, material, details):
+    def create_tree(self, order: Dict, ingot: Dict, material: Material,
+                    details: Kit) -> Tuple[float, float]:
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)
@@ -541,7 +543,7 @@ class OCIMainWindow(QMainWindow):
                     'blanks': details.qty(), 'heights': len(details.keys())
                 }, identifier=order_id
             )
-            _, efficiency, _ = self.create_cut(
+            efficiency = self.create_cut(
                 ingot_size, details, material, progress=progress
             )
             # self.save_residuals()
@@ -551,12 +553,12 @@ class OCIMainWindow(QMainWindow):
                 identifier=order_id
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
-            return
+            return .0, .0
         except Exception as exception:
             QMessageBox.critical(
                 self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
             )
-            return
+            return .0, .0
         else:
             progress.setLabelText('Завершение раскроя...')
 
@@ -583,13 +585,13 @@ class OCIMainWindow(QMainWindow):
         progress.close()
         return efficiency, order_efficiency
 
-    def redraw_map(self, ingot: Dict):
+    def redraw_map(self, ingot: Dict) -> None:
         self.map_scene.clear()
         self.map_painter.setTree(self.tree)
         self.map_painter.setEfficiency(round(ingot['efficiency'], 2))
         self.map_painter.drawTree()
 
-    def get_all_blanks(self):
+    def get_all_blanks(self) -> Dict:
         """Получение всех заготовок из заказа
 
         :return: Набор заготовок сгруппированных по сплаву в виде словаря
@@ -707,7 +709,7 @@ class OCIMainWindow(QMainWindow):
         return kit
 
     def create_cut(self, ingot_size: Sizes, kit: Kit, material: Material,
-                   progress: QProgressDialog = None):
+                   progress: QProgressDialog = None) -> float:
         """Метод запуска алоритма раскроя.
 
         :param ingot_size: Размер слитка в формате (длина, ширина, толщина)
@@ -743,13 +745,12 @@ class OCIMainWindow(QMainWindow):
         #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
 
         efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), tree.main_kit, is_total=True)
-
-        return tree, efficiency, .1
+        return efficiency
 
     @timeit
-    def stmh_idrd(self, tree, with_filter: bool = True,
+    def stmh_idrd(self, tree: Tree, with_filter: bool = True,
                   restrictions: dict = None, progress: QProgressDialog = None,
-                  level_subtree=0, with_priority=True):
+                  level_subtree: int = 0, with_priority: bool = True):
         is_main = True
         doubling = False
         start_step, steps = 0, 0
@@ -830,11 +831,11 @@ class OCIMainWindow(QMainWindow):
         return best
 
     # @staticmethod
-    def _stmh_idrd(self, tree, local: bool = False, with_filter: bool = True,
-                   restrictions: dict = None,
-                   progress: QProgressDialog = None, end_progress=True,
-                   direction=1, start_step=0, steps=0,
-                   level_subtree=0, with_priority=True):
+    def _stmh_idrd(self, tree: Tree, local: bool = False,
+                   with_filter: bool = True, restrictions: dict = None,
+                   progress: QProgressDialog = None, end_progress: bool = True,
+                   direction: int = 1, start_step: int = 0, steps: int = 0,
+                   lvl_sub: int = 0, with_priority: bool = True) -> List[Tree]:
         """Последовательная древовидная метаэвристика.
 
         Построение деревьев растроя.
@@ -900,10 +901,10 @@ class OCIMainWindow(QMainWindow):
                 # контролируем уровень построения поддеревьев
                 # FIXME: раскоментировать для учета остатков
                 # if tree._type == 0:
-                #     level_subtree = 0
-                # if level_subtree < 1:
-                #     level_subtree += 1
-                #     self.create_subtree(node, restrictions, level_subtree)
+                #     lvl_sub = 0
+                # if lvl_sub < 1:
+                #     lvl_sub += 1
+                #     self.create_subtree(node, restrictions, lvl_sub)
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -928,7 +929,8 @@ class OCIMainWindow(QMainWindow):
 
         return result
 
-    def create_subtree(self, node, restrictions, level_subtree):
+    def create_subtree(self, node: CuttingChartNode, restrictions: Dict,
+                       level_subtree: int) -> None:
         """Создание поддерева для остатка
 
         :param node: Узел, содержащий остатки
@@ -979,7 +981,9 @@ class OCIMainWindow(QMainWindow):
                     break
 
     @timeit
-    def optimal_ingot_size(self, main_tree, min_size, max_size, restrictions, progress=None):
+    def optimal_ingot_size(self, main_tree: Tree, min_size: Sizes,
+                           max_size: Sizes, restrictions: Dict,
+                           progress: QProgressDialog = None) -> Tree:
         """Определение размеров слитка
 
         :param main_tree: Основное дерево, содержащее слиток максимальных размеров
@@ -1074,9 +1078,8 @@ class OCIMainWindow(QMainWindow):
         #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
         return best
 
-    def save_residuals(self, ingot: dict, order: dict):
+    def save_residuals(self, ingot: Dict, order: Dict) -> List[Tuple]:
         """Сохранение остатков в БД"""
-        # гемор с партией, без ООП тяжко
         batch = ingot['batch']
         min_size = self.minimum_plate_height, self.minimum_plate_width
         
@@ -1091,10 +1094,6 @@ class OCIMainWindow(QMainWindow):
                 (adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
                 adj_node.bin.material, batch)
             )
-            # save_tailing(
-            #     adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
-            #     adj_node.bin.material, batch
-            # )
         for node in self.tree.cc_leaves:
             tailings = list(node.result.tailings)
             for subtree in node.subtree:
@@ -1102,31 +1101,21 @@ class OCIMainWindow(QMainWindow):
                     tailings.extend(subnode.result.tailings)
                 tailings.extend([adj_node.bin for adj_node in subtree.root.adj_leaves])
             tailings = filtration_residues(tailings, min_size=min_size)
-            # print('-'*50)
-            # print('Список сохраняемых остатков:')
-            # for tailing in tailings:
-            #     print(tailing)
-            # print('-'*50)
-            # print(f'Остатки для толщины {node.result.height}: {len(tailings)} шт')
             for tailing in tailings:
                 # получаем сплав
                 all_tailings.append(
                     (tailing.length, tailing.width, node.bin.height,
                      node.bin.material, batch)
                 )
-                # save_tailing(
-                #     tailing.length, tailing.width, node.bin.height,
-                #     node.bin.material, batch
-                # )
         return all_tailings
 
-    def steps(self):
+    def steps(self) -> List[float]:
         """Список толщин"""
         leaves = self.tree.cc_leaves
         depth_list = [leave.bin.height for leave in leaves]
         return depth_list
 
-    def chartPagePreparation(self):
+    def chartPagePreparation(self) -> None:
         """Подготовка страницы с планами раскроя"""
         # order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         self.clearLayout(self.ui.horizontalLayout_6, take=1)
@@ -1147,7 +1136,7 @@ class OCIMainWindow(QMainWindow):
         # depth = order['current_depth']
         # self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
 
-    def depthLineChanged(self):
+    def depthLineChanged(self) -> None:
         """Просмотр другой толщины и подгрузка нового списка деталей"""
         button = self.sender()
         self.plan_painter.clearCanvas()
@@ -1162,12 +1151,12 @@ class OCIMainWindow(QMainWindow):
             index = button.index
             self.stepPage(index)
 
-    def sourcePage(self):
+    def sourcePage(self) -> None:
         """Переход на страницу с исходным слитком"""
         self.loadDetailList(depth=0.0)
         self.graphicsView.setScene(self.map_scene)
 
-    def stepPage(self, index: int):
+    def stepPage(self, index: int) -> None:
         self.graphicsView.setScene(self.plan_scene)
         pack = self.tree.cc_leaves[index]
         depth = pack.bin.height
@@ -1189,7 +1178,7 @@ class OCIMainWindow(QMainWindow):
         self.plan_painter.drawPlan()
         self.loadDetailList(depth=float(depth))
 
-    def loadDetailList(self, depth: float):
+    def loadDetailList(self, depth: float) -> None:
         """Подгрузка списка заготовок"""
         # TODO: классика, переделать на model/view
         # order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
@@ -1226,7 +1215,8 @@ class OCIMainWindow(QMainWindow):
         layout.addWidget(table)
         return layout
 
-    def clearLayout(self, layout: QLayout, take: int = 0, hidden: bool = False, last: int = 1):
+    def clearLayout(self, layout: QLayout, take: int = 0, hidden: bool = False,
+                    last: int = 1) -> None:
         """Метод для очистки слоёв компоновки
 
         :param layout: Слой с которого удаляются виджеты по заданным правилам
@@ -1248,29 +1238,29 @@ class OCIMainWindow(QMainWindow):
             if hidden or isinstance(item.widget(), ExclusiveButton):
                 item.widget().hide()
 
-    def open_fullscreen_window(self):
+    def open_fullscreen_window(self) -> None:
         """Просмотр карты в полноэкранном режиме"""
         window = FullScreenWindow(self)
         window.set_scene(self.map_scene)
         window.showMaximized()
 
-    def open_catalog_window(self):
+    def open_catalog_window(self) -> None:
         """Работа со справочником изделий"""
         window = Catalog(self)
         window.show()
 
-    def open_storage_window(self):
+    def open_storage_window(self) -> None:
         """Работа с хранилищем (складом) слитков"""
         window = Storage(self)
         window.show()
 
-    def open_settings_dialog(self):
+    def open_settings_dialog(self) -> None:
         """Работа с окном настроек"""
         window = SettingsDialog(self, self.settings)
         if window.exec_() == QDialog.Accepted:
             self.read_settings()
 
-    def open_assign_dialog(self):
+    def open_assign_dialog(self) -> None:
         """Добавление слитка к заказу"""
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         window = IngotAssignmentDialog(order, self)
@@ -1304,13 +1294,13 @@ class OCIMainWindow(QMainWindow):
             StandardDataService.update_record('orders', Field('id', order['id']), efficiency=efficiency, status_id=status_id)
         self.show_order_information(self.ui.searchResult_1.currentIndex())
 
-    def open_order_dialog(self):
+    def open_order_dialog(self) -> None:
         """Добавление нового заказа"""
         window = OrderAddingDialog(self)
         window.recordSavedSuccess.connect(self.confirm_order_adding)
         window.exec_()
 
-    def open_complete_dialog(self):
+    def open_complete_dialog(self) -> None:
         """Заврешение выбранного заказа и добавление остатков"""
         residuals = []
         for row in range(self.ingot_model.rowCount()):
@@ -1325,14 +1315,14 @@ class OCIMainWindow(QMainWindow):
             self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'status_id': 3}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order['id']), status_id=3)
 
-    def open_edit_dialog(self):
+    def open_edit_dialog(self) -> None:
         """Изменение текущего заказа"""
         order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
         window = OrderEditingDialog(order, self.complect_model, self)
         window.orderEditedSuccess.connect(self.confirm_order_editing)
         window.show()
 
-    def read_settings(self):
+    def read_settings(self) -> None:
         """Чтение настроек из файл"""
         self.cut_allowance = self.settings.value(
             'cutting/cut_allowance', defaultValue=2, type=int)
@@ -1377,7 +1367,7 @@ class OCIMainWindow(QMainWindow):
         self.allowance = self.settings.value(
             'forging/allowance', defaultValue=1.5, type=float)
 
-    def write_settings(self):
+    def write_settings(self) -> None:
         """Запись настроек в файл"""
         self.settings.setValue(
             'cutting/end_face', self.end_face_loss)
@@ -1422,7 +1412,7 @@ class OCIMainWindow(QMainWindow):
         self.settings.setValue(
             'forging/allowance', self.allowance)
 
-    def save_tree(self, order: Dict, ingot: Dict, tree: Tree = None):
+    def save_tree(self, order: Dict, ingot: Dict, tree: Tree = None) -> None:
         """Сохранение корневого узла дерева"""
         file_name = self.get_file_name(order, ingot)
         path = 'schemes'
@@ -1440,7 +1430,7 @@ class OCIMainWindow(QMainWindow):
         abs_path = get_abs_path(file_name, path)
         return abs_path.exists()
 
-    def load_tree(self, order: Dict, ingot: Dict):
+    def load_tree(self, order: Dict, ingot: Dict) -> None:
         """Загрузка корневого узла дерева из файла"""
         file_name = self.get_file_name(order, ingot)
         path = 'schemes'
@@ -1454,7 +1444,7 @@ class OCIMainWindow(QMainWindow):
         return f"{order['id']}_{ingot['id']}_{order['date']}.{extension}"
 
 
-def get_abs_path(file_name, path=None) -> Path:
+def get_abs_path(file_name: str, path=None) -> Path:
     """Получение абсолютного пути"""
     dir_path = Path(__file__).parent.absolute()
     if path:
@@ -1488,7 +1478,7 @@ def number_of_steps(num_of_heights, doubling=True):
 
 
 def create_bins_residues(items, height: Number,
-                         rolldir: Direction, material=None) -> list[Bin]:
+                         rolldir: Direction, material=None) -> List[Bin]:
     """Создание контейнеров из остатков
 
     :param items: список прямоуголников-остатков
@@ -1506,12 +1496,12 @@ def create_bins_residues(items, height: Number,
     return [Bin(item.length, item.width, *args) for item in items]
 
 
-def incoming_rectangles(rect, height, kit):
+def incoming_rectangles(rect, height: float, kit: Kit):
     """Прямоугольники входящие в rect"""
     return [Rectangle3d(rect.length, rect.width, height).is_subrectangle(b, b.is_rotatable) for b in kit]
 
 
-def filtration_residues(items, min_size=None):
+def filtration_residues(items: List, min_size: Sizes = None):
     """Фильтрация остатков
 
     :param items: список прямоугольников
