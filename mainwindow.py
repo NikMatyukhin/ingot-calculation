@@ -898,10 +898,10 @@ class OCIMainWindow(QMainWindow):
                 # контролируем уровень построения поддеревьев
                 # FIXME: раскоментировать для учета остатков
                 # if tree._type == 0:
-                #     lvl_sub = 0
-                # if lvl_sub < 1:
-                #     lvl_sub += 1
-                #     self.create_subtree(node, restrictions, lvl_sub)
+                #     level_subtree = 0
+                # if level_subtree < 1:
+                #     level_subtree += 1
+                #     self.create_subtree(node, restrictions, level_subtree)
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:

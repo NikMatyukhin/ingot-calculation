@@ -1,5 +1,5 @@
 import math
-from typing import Union
+from typing import List, Union
 
 import application_rc
 
@@ -187,7 +187,7 @@ class CuttingMapPainter:
         self.efficiency = efficiency * 100
 
     def drawTree(self):
-        self.cutting_nodes = []
+        self.cutting_nodes: List[Operations] = []
         self.x = 0.0
         self.y = 0.0
         self.prev_item = None
@@ -244,6 +244,7 @@ class CuttingMapPainter:
     def createItem(self, node: Union[BinNode, OperationNode, CuttingChartNode]):
         item = None
         if is_bin_node(node):
+            node: BinNode
             h, w, d = node.bin.size
             size = f'{math.ceil(h)}x{math.ceil(w)}x{round(d, 1)}'
             type = node.bin.bin_type
@@ -281,6 +282,7 @@ class CuttingMapPainter:
                 )
                 self.changePos()
         elif is_op_node(node):
+            node: OperationNode
             item = OperationGraphicsItem(
                 self.x, self.y, node.operation
             )
@@ -288,6 +290,7 @@ class CuttingMapPainter:
                 self.cutting_nodes.append(item)
             self.changePos(operation=True)
         elif is_cc_node(node):
+            node: CuttingChartNode
             number = node.result.qty()
             efficiency = round(node.efficiency() * 100, 2)
             correct_case = ' заготовка\n' if number == 1 else ' заготовки\n'

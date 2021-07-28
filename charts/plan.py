@@ -1,4 +1,5 @@
 import random
+from typing import Any, Dict, List
 
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtWidgets import (
@@ -136,17 +137,17 @@ class CuttingPlanPainter:
     def __init__(self, scene: QGraphicsScene):
         self.scene = scene
         self.font = QFont('Century Gothic', 6)
-        self.bin_lenght = 0
-        self.bin_width = 0
-        self.bin_depth = 0
+        self.bin_lenght = float()
+        self.bin_width = float()
+        self.bin_depth = float()
         # self.x_coords = set([0])
         # self.y_coords = set([0])
         self.vl_point = QPointF(1200, 1200)
         self.vr_point = QPointF(0, 0)
         self.lv_point = QPointF(1200, 1200)
         self.lb_point = QPointF(0, 0)
-        self.blanks = []
-        self.blanks_colors = {}
+        self.blanks: List[List[float, float, float, float, str]] = []
+        self.blanks_colors: Dict[str, QColor] = {}
 
     def setBin(self, length: float, width: float, depth: float):
         self.bin_lenght = length
@@ -223,7 +224,7 @@ class CuttingPlanPainter:
         bottom_label.setPos(-30, (self.lv_point.y() + self.lb_point.y())/2)
         bottom_label.setRotation(-90)
 
-    def randomColor(self):
+    def randomColor(self) -> QColor:
         color = QColor()
         color.setNamedColor(
             "#"+''.join(
@@ -236,10 +237,10 @@ class CuttingPlanPainter:
 
     def clearCanvas(self):
         self.scene.clear()
-        self.bin_lenght = 0
-        self.bin_width = 0
-        self.bin_depth = 0
-        self.blanks = []
+        self.bin_lenght = float()
+        self.bin_width = float()
+        self.bin_depth = float()
+        self.blanks.clear()
         self.vl_point = QPointF(1200, 1200)
         self.vr_point = QPointF(0, 0)
         self.lv_point = QPointF(1200, 1200)
