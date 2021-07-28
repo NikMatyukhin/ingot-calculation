@@ -98,43 +98,43 @@ def db_connector(func):
 
 class AbstractDataService(ABC):
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def get_table(table: str, connection: Connection = connect(':memory:')) -> list:
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def get_by_id(table: str, record_id: Field, connection: Connection = connect(':memory:')) -> list:
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def get_by_field(table: str, srch_field: Field, connection: Connection = connect(':memory:')) -> list:
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def get_by_fields(table: str, connection: Connection = connect(':memory:'), **srch_fields: Sequence[Field]) -> list:
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def save_record(table: str, connection: Connection = connect(':memory:'), **saved_fields: Sequence[Field]) -> bool:
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def update_record(table: str, record_id: Field, connection: Connection = connect(':memory:'), **upd_fields: Sequence[Field]) -> bool:
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def delete_by_id(table: str, record_id: Field, connection: Connection = connect(':memory:')) -> bool:
         pass
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def delete_by_fields(table: str, connection: Connection = connect(':memory:'), **srch_fields: Sequence[Field]) -> bool:
         pass
 

@@ -35,7 +35,7 @@ from service import (
     CatalogDataService, IngotStatusDataService
 )
 from dialogs import (
-    IngotAddingDialog, IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
+    IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
     FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
 from storage import Storage
@@ -1084,7 +1084,7 @@ class OCIMainWindow(QMainWindow):
         """Сохранение остатков в БД"""
         batch = ingot['batch']
         min_size = self.minimum_plate_height, self.minimum_plate_width
-        
+
         if self.is_file_exist(order, ingot):
             self.load_tree(order, ingot)
         if self.tree is None:
@@ -1092,10 +1092,11 @@ class OCIMainWindow(QMainWindow):
 
         all_tailings = []
         for adj_node in self.tree.adj_leaves:
-            all_tailings.append(
-                (adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
-                adj_node.bin.material, batch)
-            )
+            if is_suitable_sizes(adj_node.bin, min_size=min_size):
+                all_tailings.append(
+                    (adj_node.bin.length, adj_node.bin.width, adj_node.bin.height,
+                    adj_node.bin.material, batch)
+                )
         for node in self.tree.cc_leaves:
             tailings = list(node.result.tailings)
             for subtree in node.subtree:
