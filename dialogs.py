@@ -2,6 +2,7 @@ import math
 import logging
 import typing
 from datetime import datetime
+from operator import attrgetter
 from typing import Dict, List, Tuple, Union, Optional
 from collections import Counter
 
@@ -30,7 +31,7 @@ from service import (
 )
 from models import (
    OrderComplectsFilterProxyModel, ComplectsModel, IngotModel, 
-   CatalogFilterProxyModel, OrderInformationComplectsModel, ResidualsModel
+   CatalogFilterProxyModel, OrderInformationComplectsModel, ResidualsModel, SortIngotModel
 )
 from widgets import (
     IngotSectionDelegate,
@@ -789,13 +790,23 @@ class IngotAssignmentDialog(QDialog):
 
         # Сплавы
         self.fusions = CatalogDataService.fusions_list()
-        fusions = list(self.parent().get_all_blanks().keys())
+        blanks = self.parent().get_all_blanks()
+        fusions = list(blanks.keys())
         fusions_id = [id_ for name, id_ in self.fusions.items() if name in fusions]
+
+        min_sizes = {}
+        for fusion, group in blanks.items():
+            min_length_blank = min(group, key=attrgetter('length'))
+            min_width_blank = min(group, key=attrgetter('width'))
+            min_sizes[self.fusions[fusion]] = min(min_length_blank.length, min_width_blank.width)
 
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel('unused', fusions_id=fusions_id)
+        self.proxy_model = SortIngotModel(self, min_size=min_sizes)
+        self.proxy_model.setSourceModel(self.ingot_model)
+        self.proxy_model.sort(0)
         self.ingot_delegate = IngotSectionDelegate(False, self.ui.ingots_view)
-        self.ui.ingots_view.setModel(self.ingot_model)
+        self.ui.ingots_view.setModel(self.proxy_model)
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
 
         # Назначение меню кнопке

@@ -1,3 +1,4 @@
+import math
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -607,6 +608,31 @@ class IngotModel(ListModel):
                     'efficiency': ingot[8],
                 }
                 self.appendRow(data_row)
+
+
+class SortIngotModel(QSortFilterProxyModel):
+    """Сортировка слитков по объему и фильтрация по вместимости"""
+    def __init__(self, parent: Optional[QObject], min_size=None) -> None:
+        super().__init__(parent=parent)
+        self.min_size = min_size
+
+    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
+        """Сравнение слитков по объему"""
+        left_ingot = left.data(Qt.DisplayRole)
+        right_ingot = right.data(Qt.DisplayRole)
+        left_volume = math.prod(left_ingot['size'])
+        right_volume = math.prod(right_ingot['size'])
+        return left_volume < right_volume
+
+    def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:
+        """Фильтрация слитков по минимальным размерам"""
+        index = self.sourceModel().index(source_row, 0, source_parent)
+        ingot_data = index.data(Qt.DisplayRole)
+        length, width = ingot_data['size'][:2]
+        if self.min_size and ingot_data['fusion_id'] in self.min_size:
+            min_side = self.min_size[ingot_data['fusion_id']]
+            return length >= min_side and width >= min_side
+        return True
 
 
 class ResidualsModel(ListModel):
