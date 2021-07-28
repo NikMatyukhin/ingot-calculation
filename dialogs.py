@@ -2,6 +2,7 @@ import math
 import logging
 import typing
 from datetime import datetime
+from operator import attrgetter
 from typing import Dict, List, Tuple, Union, Optional
 from collections import Counter
 
@@ -30,7 +31,7 @@ from service import (
 )
 from models import (
    OrderComplectsFilterProxyModel, ComplectsModel, IngotModel, 
-   CatalogFilterProxyModel, OrderInformationComplectsModel, ResidualsModel
+   CatalogFilterProxyModel, OrderInformationComplectsModel, ResidualsModel, SortIngotModel
 )
 from widgets import (
     IngotSectionDelegate,
@@ -777,7 +778,7 @@ class IngotAddingDialog(QDialog):
 
 class IngotAssignmentDialog(QDialog):
 
-    predictedIngotSaved = pyqtSignal(dict, dict, BinNode)
+    predictedIngotSaved = pyqtSignal(dict, dict, Tree)
 
     def __init__(self, order: dict, parent: typing.Optional[QWidget] = None) -> None:    
         super().__init__(parent)
@@ -789,13 +790,23 @@ class IngotAssignmentDialog(QDialog):
 
         # Сплавы
         self.fusions = CatalogDataService.fusions_list()
-        fusions = list(self.parent().get_all_blanks().keys())
+        blanks = self.parent().get_all_blanks()
+        fusions = list(blanks.keys())
         fusions_id = [id_ for name, id_ in self.fusions.items() if name in fusions]
+
+        min_sizes = {}
+        for fusion, group in blanks.items():
+            min_length_blank = min(group, key=attrgetter('length'))
+            min_width_blank = min(group, key=attrgetter('width'))
+            min_sizes[self.fusions[fusion]] = min(min_length_blank.length, min_width_blank.width)
 
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel('unused', fusions_id=fusions_id)
+        self.proxy_model = SortIngotModel(self, min_size=min_sizes)
+        self.proxy_model.setSourceModel(self.ingot_model)
+        self.proxy_model.sort(0)
         self.ingot_delegate = IngotSectionDelegate(False, self.ui.ingots_view)
-        self.ui.ingots_view.setModel(self.ingot_model)
+        self.ui.ingots_view.setModel(self.proxy_model)
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
 
         # Назначение меню кнопке
@@ -894,7 +905,7 @@ class IngotAssignmentDialog(QDialog):
                     'fusion_id': detail_fusion,
                 }
 
-        for fusion in self.predicted_ingots: 
+        for fusion in self.predicted_ingots:
             unplaced_counter = self.unplaced_list(fusion)
 
             # Сначала проходимся по счётчику неразмещённых заготовок
@@ -935,16 +946,16 @@ class IngotAssignmentDialog(QDialog):
 
     def steps(self, fusion: int):
         """Список толщин"""
-        leaves = self.predicted_ingots[fusion]['tree'].cc_leaves
+        leaves = self.predicted_ingots[fusion]['tree'].root.cc_leaves
         depth_list = [leave.bin.height for leave in leaves]
         return depth_list
 
     def unplaced_list(self, fusion: int):
         """Словарь неразмещенных заготовок {имя: количество}"""
         all_blanks = Counter(
-            b.name for b in self.predicted_ingots[fusion]['tree'].root.kit
+            b.name for b in self.predicted_ingots[fusion]['tree'].main_kit
         )
-        for leave in self.predicted_ingots[fusion]['tree'].cc_leaves:
+        for leave in self.predicted_ingots[fusion]['tree'].root.cc_leaves:
             all_blanks -= Counter(b.name for b in leave.placed)
         return all_blanks
 
@@ -1031,7 +1042,7 @@ class IngotAssignmentDialog(QDialog):
                 'size': sizes,
             })
             self.ui.ingots_view.selectionModel().select(self.ingot_model.index(0, 0, QModelIndex()), QItemSelectionModel.SelectionFlag.Select)
-            self.predicted_ingots[fusion_id] = {'tree': tree.root, 'efficiency': round(efficiency, 2)}
+            self.predicted_ingots[fusion_id] = {'tree': tree, 'efficiency': round(efficiency, 2)}
         progress.close()
 
     def predict_size(self, material: Material, kit: Kit, progress=None):

@@ -10,6 +10,7 @@ import math
 from typing import Any, Dict, Sequence, Union, List, Tuple
 from itertools import chain
 from functools import partial
+from contextlib import suppress
 from collections import Counter, deque, namedtuple
 from pathlib import Path
 
@@ -37,6 +38,7 @@ from dialogs import (
     IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
     FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
+from messagebox import message_bon_info
 from storage import Storage
 from charts.plan import CuttingPlanPainter, MyQGraphicsView
 from charts.map import CuttingMapPainter
@@ -125,7 +127,7 @@ class OCIMainWindow(QMainWindow):
             'Количество', 'Упаковано', 'Приоритет', 'Направление проката'
         ]
         self.complect_model = OrderInformationComplectsModel(self.complect_headers)
-        
+
         self.statuses_list = CatalogDataService.statuses_list()
         self.status_delegate = ListValuesDelegate(self.statuses_list)
         
@@ -143,7 +145,7 @@ class OCIMainWindow(QMainWindow):
             self.ui.complects_view.resizeColumnToContents(column)
         
         # Дерево раскроя текущего слитка
-        self.tree = None
+        self._tree = None
 
         # Работа с настройками приложения: подгрузка настроек
         self.settings = QSettings('configs', QSettings.IniFormat, self)
@@ -374,7 +376,7 @@ class OCIMainWindow(QMainWindow):
                                  ingot_fusion: int) -> None:
         """Обновление статусов заготовок"""
         # Подсчитываем количество неразмещенных заготовок (название: количество)
-        unplaced_counter = Counter(b.name for b in self.tree.kit)
+        unplaced_counter = Counter(b.name for b in self._tree.main_kit)
         for leave in self.tree.cc_leaves:
             unplaced_counter -= Counter(b.name for b in leave.placed)
 
@@ -496,12 +498,12 @@ class OCIMainWindow(QMainWindow):
                 for leave in self.tree.cc_leaves:
                     placed_blanks[material.name] += Counter(b.name for b in leave.placed)
             else:
-                ingots.append((ingot_data, material))
+                ingots.append((ingot_idx_model, ingot_data, material))
 
         # сортируем по объему в порядке неубывания
-        ingots.sort(key=lambda item: math.prod(item[0]['size']))
+        ingots.sort(key=lambda item: math.prod(item[1]['size']))
 
-        for ingot, material in ingots:
+        for index, ingot, material in ingots:
             if material.name not in placed_blanks:
                 placed_blanks[material.name] = Counter()
 
@@ -518,7 +520,7 @@ class OCIMainWindow(QMainWindow):
                 efficiency, order_efficiency = ef_res
 
                 self.ingot_model.setData(
-                    ingot_idx_model, {'efficiency': round(efficiency, 2)},
+                    index, {'efficiency': round(efficiency, 2)},
                     Qt.EditRole
                 )
                 self.order_model.setData(
@@ -571,8 +573,9 @@ class OCIMainWindow(QMainWindow):
         else:
             progress.setLabelText('Завершение раскроя...')
 
+            efficiency = round(efficiency, 2)
             StandardDataService.update_record(
-                'ingots', Field('id', ingot['id']), efficiency=round(efficiency, 2)
+                'ingots', Field('id', ingot['id']), efficiency=efficiency
             )
             self.update_complect_statuses(order['id'], ingot['fusion_id'])
 
@@ -580,6 +583,7 @@ class OCIMainWindow(QMainWindow):
             StandardDataService.update_record(
                 'orders', Field('id', order['id']), efficiency=order_efficiency
             )
+            ingot['efficiency'] = efficiency
 
             self.save_tree(order, ingot)
             self.redraw_map(ingot)
@@ -743,7 +747,7 @@ class OCIMainWindow(QMainWindow):
         ingot_bin = Bin(*ingot_size, material=material)
         tree = Tree(BinNode(ingot_bin, kit=kit))
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
-        self.tree = tree.root
+        self._tree = tree
 
         # NOTE: своя визуализация для отладки
         # for node in self.tree.cc_leaves:
@@ -1298,13 +1302,17 @@ class OCIMainWindow(QMainWindow):
     def open_complete_dialog(self) -> None:
         """Заврешение выбранного заказа и добавление остатков"""
         residuals = []
+        if self.ingot_model.rowCount() == 0:
+            message_bon_info('В заказе отсутствует металл!', self)
+            return
         for row in range(self.ingot_model.rowCount()):
             ingot = self.ingot_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
-            order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-            try:
+            if ingot['status_id'] == 3:
+                message_bon_info('Добавьте расчетный слиток на склад!', self)
+                return
+            order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+            with suppress(TypeError):
                 residuals.extend(self.save_residuals(ingot, order))
-            except TypeError as e:
-                pass
         window = OrderCompletingDialog(residuals, self)
         if window.exec() == QDialog.Accepted:
             self.order_model.setData(self.ui.orders_view.currentIndex(), {'status_id': 3}, Qt.EditRole)
@@ -1416,7 +1424,7 @@ class OCIMainWindow(QMainWindow):
             if tree:
                 pickle.dump(tree, file)
             else:
-                pickle.dump(self.tree, file)
+                pickle.dump(self._tree, file)
 
     def is_file_exist(self, order: Dict, ingot: Dict):
         """Проверка существования файла"""
@@ -1431,12 +1439,16 @@ class OCIMainWindow(QMainWindow):
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
         with abs_path.open(mode='rb') as f:
-            self.tree = pickle.load(f)
+            self._tree = pickle.load(f)
 
     def get_file_name(self, order: Dict, ingot: Dict) -> str:
         """Создание имени файла для сохранения дерева раскроя"""
         extension = 'oci'
         return f"{order['id']}_{ingot['id']}_{order['date']}.{extension}"
+
+    @property
+    def tree(self):
+        return self._tree.root
 
 
 def get_abs_path(file_name: str, path=None) -> Path:
