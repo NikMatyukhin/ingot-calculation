@@ -115,7 +115,7 @@ class OCIMainWindow(QMainWindow):
             'Количество', 'Упаковано', 'Приоритет', 'Направление проката'
         ]
         self.complect_model = OrderInformationComplectsModel(self.complect_headers)
-        
+
         self.statuses_list = CatalogDataService.statuses_list()
         self.directions_list = CatalogDataService.directions_list()
         self.fusions_list = CatalogDataService.fusions_list()
@@ -127,11 +127,11 @@ class OCIMainWindow(QMainWindow):
         self.ui.complectsView.setItemDelegateForColumn(10, self.direction_delegate)
         for column in range(self.complect_model.columnCount(QModelIndex())):
             self.ui.complectsView.resizeColumnToContents(column)
-        
+
         self.ui.complectsView.setModel(self.complect_model)
 
         # Дерево раскроя
-        self.tree = None
+        self._tree = None
 
         # Работа с настройками приложения: подгрузка настроек
         self.settings = QSettings('configs', QSettings.IniFormat, self)
@@ -362,7 +362,7 @@ class OCIMainWindow(QMainWindow):
                                  ingot_fusion: int) -> None:
         """Обновление статусов заготовок"""
         # Подсчитываем количество неразмещенных заготовок (название: количество)
-        unplaced_counter = Counter(b.name for b in self.tree.kit)
+        unplaced_counter = Counter(b.name for b in self._tree.main_kit)
         for leave in self.tree.cc_leaves:
             unplaced_counter -= Counter(b.name for b in leave.placed)
 
@@ -484,12 +484,12 @@ class OCIMainWindow(QMainWindow):
                 for leave in self.tree.cc_leaves:
                     placed_blanks[material.name] += Counter(b.name for b in leave.placed)
             else:
-                ingots.append((ingot_data, material))
+                ingots.append((ingot_idx_model, ingot_data, material))
 
         # сортируем по объему в порядке неубывания
-        ingots.sort(key=lambda item: math.prod(item[0]['size']))
+        ingots.sort(key=lambda item: math.prod(item[1]['size']))
 
-        for ingot, material in ingots:
+        for index, ingot, material in ingots:
             if material.name not in placed_blanks:
                 placed_blanks[material.name] = Counter()
 
@@ -506,7 +506,7 @@ class OCIMainWindow(QMainWindow):
                 efficiency, order_efficiency = ef_res
 
                 self.ingot_model.setData(
-                    ingot_idx_model, {'efficiency': round(efficiency, 2)},
+                    index, {'efficiency': round(efficiency, 2)},
                     Qt.EditRole
                 )
                 self.order_model.setData(
@@ -559,8 +559,9 @@ class OCIMainWindow(QMainWindow):
         else:
             progress.setLabelText('Завершение раскроя...')
 
+            efficiency = round(efficiency, 2)
             StandardDataService.update_record(
-                'ingots', Field('id', ingot['id']), efficiency=round(efficiency, 2)
+                'ingots', Field('id', ingot['id']), efficiency=efficiency
             )
             self.update_complect_statuses(order['id'], ingot['fusion_id'])
 
@@ -568,6 +569,7 @@ class OCIMainWindow(QMainWindow):
             StandardDataService.update_record(
                 'orders', Field('id', order['id']), efficiency=order_efficiency
             )
+            ingot['efficiency'] = efficiency
 
             self.save_tree(order, ingot)
             self.redraw_map(ingot)
@@ -731,7 +733,7 @@ class OCIMainWindow(QMainWindow):
         ingot_bin = Bin(*ingot_size, material=material)
         tree = Tree(BinNode(ingot_bin, kit=kit))
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
-        self.tree = tree.root
+        self._tree = tree
 
         # NOTE: своя визуализация для отладки
         # for node in self.tree.cc_leaves:
@@ -1419,7 +1421,7 @@ class OCIMainWindow(QMainWindow):
             if tree:
                 pickle.dump(tree, file)
             else:
-                pickle.dump(self.tree, file)
+                pickle.dump(self._tree, file)
 
     def is_file_exist(self, order: Dict, ingot: Dict):
         """Проверка существования файла"""
@@ -1434,12 +1436,16 @@ class OCIMainWindow(QMainWindow):
         path = 'schemes'
         abs_path = get_abs_path(file_name, path)
         with abs_path.open(mode='rb') as f:
-            self.tree = pickle.load(f)
+            self._tree = pickle.load(f)
 
     def get_file_name(self, order: Dict, ingot: Dict) -> str:
         """Создание имени файла для сохранения дерева раскроя"""
         extension = 'oci'
         return f"{order['id']}_{ingot['id']}_{order['date']}.{extension}"
+
+    @property
+    def tree(self):
+        return self._tree.root
 
 
 def get_abs_path(file_name: str, path=None) -> Path:
