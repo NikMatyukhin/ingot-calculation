@@ -97,7 +97,6 @@ class ListValuesDelegate(QStyledItemDelegate):
         return 'Ошибка'
             
 
-
 class Section(QWidget):
 
     clicked = pyqtSignal()
@@ -395,8 +394,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
         if self.show_close:
             self.closeIcon = QPixmap(':icons/cancel.png').scaled(15, 15, aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio, transformMode=Qt.TransformationMode.SmoothTransformation)
-            self.closeIconPos = QPoint(contentRect.right() - self.closeIcon.width() + self.margin, contentRect.top())
-            painter.drawPixmap(self.closeIconPos, self.closeIcon)
+            painter.drawPixmap(self.closeIconPos(opt), self.closeIcon)
 
         painter.setPen(palette.shadow().color())
         painter.drawLine(rect.right(), rect.top(), rect.right(), rect.bottom())
@@ -423,18 +421,20 @@ class IngotSectionDelegate(QStyledItemDelegate):
         painter.drawText(fusion_rect, Qt.TextSingleLine, fusion)
 
         # Иконка 
-        free_height = fusion_rect.top() - batch_rect.bottom() - self.margin * 2
-        free_height = min(contentRect.width(), free_height)
         if ingot['status_id'] != 2:
             self.forgeIcon = QPixmap(':icons/ingot.svg')
         else:
             self.forgeIcon = QPixmap(':icons/patch.png')
-        self.forgeIcon = self.forgeIcon.scaled(free_height, free_height, aspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio, transformMode = Qt.TransformationMode.SmoothTransformation)
-        icon_left_margin = contentRect.width() // 2 - free_height // 2
-        self.forgeIconPos = QPoint(contentRect.left() + icon_left_margin, contentRect.top() + self.margin + batch_rect.height())
-        painter.drawPixmap(self.forgeIconPos, self.forgeIcon)
+        self.forgeIcon = self.forgeIcon.scaled(120, 120, aspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio, transformMode = Qt.TransformationMode.SmoothTransformation)
+        painter.drawPixmap(self.forgeIconPos(opt), self.forgeIcon)
 
         painter.restore()
+
+    def closeIconPos(self, opt: QStyleOptionViewItem):
+        return QPoint(opt.rect.right() - self.closeIcon.width() - self.margin, opt.rect.top() + self.margin)
+
+    def forgeIconPos(self, opt: QStyleOptionViewItem):
+        return QPoint(opt.rect.left() + self.margin, opt.rect.top() + self.margin * 3)
 
     def textBox(self, font: QFont, data: str) -> QRect:
         return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 1, 1)
@@ -448,16 +448,18 @@ class IngotSectionDelegate(QStyledItemDelegate):
         return QSize(135, max(opt.rect.height(), 185))
 
     def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
-        if event.type() == QEvent.MouseButtonRelease:
+        if event.type() == QEvent.Type.MouseButtonRelease:
             ingot = index.data(Qt.DisplayRole)
             if self.show_close:
-                closeIconRect = self.closeIcon.rect().translated(self.closeIconPos)
+                closeIconRect = self.closeIcon.rect().translated(self.closeIconPos(option))
                 if closeIconRect.contains(event.pos()):
                     if ingot['order_id']:
                         self.deleteFromOrderClicked.emit(index)
+                        return super().editorEvent(event, model, option, index)
                     else:
                         self.deleteFromStorageClicked.emit(index)
-            forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos)
+                        return super().editorEvent(event, model, option, index)
+            forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos(option))
             if ingot['status_id'] == 3 and forgeIconRect.contains(event.pos()):
                 self.forgedIndexClicked.emit(index)
         return super().editorEvent(event, model, option, index)
