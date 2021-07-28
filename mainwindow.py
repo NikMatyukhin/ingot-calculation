@@ -80,7 +80,8 @@ class OCIMainWindow(QMainWindow):
         self.shadow_effect.setYOffset(-5)
         self.shadow_effect.setXOffset(0)
         self.shadow_effect.setBlurRadius(20)
-        self.ui.topBar.setGraphicsEffect(self.shadow_effect)
+        self.ui.top_area.setGraphicsEffect(self.shadow_effect)
+        
         self.shadow_effect_2 = QGraphicsDropShadowEffect()
         self.shadow_effect_2.setColor(QColor(0, 0, 0))
         self.shadow_effect_2.setYOffset(-5)
@@ -90,26 +91,29 @@ class OCIMainWindow(QMainWindow):
 
         # Модель и делегат заказов
         self.order_model = OrderModel(Field('status_id', 1), self)
-        self.order_delegate = OrderSectionDelegate(self.ui.searchResult_1)
-        self.ui.searchResult_1.setModel(self.order_model)
-        self.ui.searchResult_1.setItemDelegate(self.order_delegate)
+        
+        self.order_delegate = OrderSectionDelegate(self.ui.orders_view)
+        
+        self.ui.orders_view.setModel(self.order_model)
+        self.ui.orders_view.setItemDelegate(self.order_delegate)
+        
         self.order_delegate.deleteIndexClicked.connect(self.confirm_order_removing)
         self.order_delegate.editIndexClicked.connect(self.open_edit_dialog)
 
         # Модель слитков (обновляется при изменении текущего заказа)
-        # TODO: пока заказ не выбран пусть содержит свободные слитки,
-        #       чтобы потом показывать их на главном экране - пойдёт на склад
         self.ingot_model = IngotModel('unused')
-        self.ingot_delegate = IngotSectionDelegate(numerable = True, parent = self.ui.ingotsView)
-        self.ingot_delegate_unclosed = IngotSectionDelegate(show_close = False, numerable = True, parent = self.ui.ingotsView)
-        self.ui.ingotsView.setModel(self.ingot_model)
-        self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
-        self.ui.ingotsView.clicked.connect(self.show_ingot_information)
+        
+        self.ingot_delegate = IngotSectionDelegate(numerable = True, parent = self.ui.ingots_view)
+        self.ingot_delegate_unclosed = IngotSectionDelegate(show_close = False, numerable = True, parent = self.ui.ingots_view)
+        
+        self.ui.ingots_view.setModel(self.ingot_model)
+        self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
+        self.ui.ingots_view.clicked.connect(self.show_ingot_information)
+
         self.ingot_delegate.forgedIndexClicked.connect(self.confirm_ingot_readiness)
         self.ingot_delegate.deleteFromOrderClicked.connect(self.confirm_ingot_removing)
 
         # Модель комплектов (обновляется при изменении текущего заказа)
-        # Не содержит ничего, пока не установлен идентификатор заказа
         self.complect_headers = [
             'Название', 'ID', 'Статус', 'Сплав', 'Длина', 'Ширина', 'Толщина',
             'Количество', 'Упаковано', 'Приоритет', 'Направление проката'
@@ -117,26 +121,29 @@ class OCIMainWindow(QMainWindow):
         self.complect_model = OrderInformationComplectsModel(self.complect_headers)
         
         self.statuses_list = CatalogDataService.statuses_list()
-        self.directions_list = CatalogDataService.directions_list()
-        self.fusions_list = CatalogDataService.fusions_list()
         self.status_delegate = ListValuesDelegate(self.statuses_list)
-        self.direction_delegate = ListValuesDelegate(self.directions_list)
-        self.fusion_delegate = ListValuesDelegate(self.fusions_list)
-        self.ui.complectsView.setItemDelegateForColumn(2, self.status_delegate)
-        self.ui.complectsView.setItemDelegateForColumn(3, self.fusion_delegate)
-        self.ui.complectsView.setItemDelegateForColumn(10, self.direction_delegate)
-        for column in range(self.complect_model.columnCount(QModelIndex())):
-            self.ui.complectsView.resizeColumnToContents(column)
         
-        self.ui.complectsView.setModel(self.complect_model)
+        self.directions_list = CatalogDataService.directions_list()
+        self.direction_delegate = ListValuesDelegate(self.directions_list)
+        
+        self.fusions_list = CatalogDataService.fusions_list()
+        self.fusion_delegate = ListValuesDelegate(self.fusions_list)
 
-        # Дерево раскроя
+        self.ui.complects_view.setModel(self.complect_model)
+        self.ui.complects_view.setItemDelegateForColumn(2, self.status_delegate)
+        self.ui.complects_view.setItemDelegateForColumn(3, self.fusion_delegate)
+        self.ui.complects_view.setItemDelegateForColumn(10, self.direction_delegate)
+        for column in range(self.complect_model.columnCount()):
+            self.ui.complects_view.resizeColumnToContents(column)
+        
+        # Дерево раскроя текущего слитка
         self.tree = None
 
         # Работа с настройками приложения: подгрузка настроек
         self.settings = QSettings('configs', QSettings.IniFormat, self)
         self.is_saved = True
 
+        # TODO: Вынести работу с настройками в отдельный менеджер настроек
         self.cut_allowance = 0             # Припуск на разрез
         self.end_face_loss = 0             # Потери при обработке торцов (%)
         self.minimum_plate_width = 0       # Минимальная ширина пластины
@@ -157,20 +164,19 @@ class OCIMainWindow(QMainWindow):
         # Сцены для отрисовки
         self.plan_scene = QGraphicsScene()
         self.map_scene = QGraphicsScene()
-        self.graphicsView = MyQGraphicsView()
-        self.graphicsView.setScene(self.plan_scene)
-        self.graphicsView.setAlignment(Qt.AlignCenter)
-        self.graphicsView.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.ui.chartArea.layout().addWidget(self.graphicsView)
-        self.ui.graphicsView.setScene(self.map_scene)
+        
+        # Создание специального представления для планов раскроя (zoom-view)
+        self.plan_view = MyQGraphicsView()
+        self.plan_view.setScene(self.plan_scene)
+        self.plan_view.setAlignment(Qt.AlignCenter)
+        self.plan_view.setDragMode(QGraphicsView.ScrollHandDrag)
+        self.ui.chart_area.layout().addWidget(self.plan_view)
+        self.ui.map_view.setScene(self.map_scene)
         self.map_painter = CuttingMapPainter(self.map_scene)
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
 
-        # TODO: Пока без фактического режима эта кнопка не нужна.
-        self.ui.closeOrder.hide()
-
         # Соединяем сигналы окна со слотами класса
-        self.ui.newOrder.clicked.connect(self.open_order_dialog)
+        self.ui.new_order.clicked.connect(self.open_order_dialog)
         self.ui.catalog.clicked.connect(self.open_catalog_window)
         self.ui.settings.clicked.connect(self.open_settings_dialog)
         self.ui.storage.clicked.connect(self.open_storage_window)
@@ -186,7 +192,7 @@ class OCIMainWindow(QMainWindow):
                 self.plan_painter.clearCanvas()
             )
         )
-        self.ui.detailedPlan.clicked.connect(
+        self.ui.plan.clicked.connect(
             lambda: (
                 self.ui.mainArea.setCurrentIndex(1),
                 self.ui.chart.setHidden(False),
@@ -194,16 +200,15 @@ class OCIMainWindow(QMainWindow):
                 self.chartPagePreparation()
             )
         )
+        self.ui.full_screen.clicked.connect(self.open_fullscreen_window)
+        self.ui.recalculate.clicked.connect(self.create_all_tree)
 
         # Показ текущего заказа по выбору
-        self.ui.searchResult_1.clicked.connect(self.show_order_information)
+        self.ui.orders_view.clicked.connect(self.show_order_information)
 
         # Кнопку "Исходная пластина" привязываем отдельно от всех
-        self.ui.sourcePlate.clicked.connect(self.depthLineChanged)
-
-        # Кнопки страницы заказа
-        self.ui.fullScreen.clicked.connect(self.open_fullscreen_window)
-        self.ui.recalculate.clicked.connect(self.create_all_tree)
+        # TODO: передалать момент с кнопками плана раскроя
+        self.ui.source_button.clicked.connect(self.depthLineChanged)
 
     def show_order_information(self, index: QModelIndex) -> None:
         """Переключатель активных заказов и открытых секций.
@@ -217,32 +222,32 @@ class OCIMainWindow(QMainWindow):
 
         if order['status_id'] == 3:
             self.ui.recalculate.hide()
-            self.ui.ingotsView.setItemDelegate(self.ingot_delegate_unclosed)
+            self.ui.ingots_view.setItemDelegate(self.ingot_delegate_unclosed)
         else:
             self.ui.recalculate.show()
-            self.ui.ingotsView.setItemDelegate(self.ingot_delegate)
+            self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
 
         self.ingot_model.order = order['id']
-        self.ui.ingotsView.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
-        self.show_ingot_information(self.ui.ingotsView.currentIndex())
+        self.ui.ingots_view.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
+        self.show_ingot_information(self.ui.ingots_view.currentIndex())
         self.complect_model.order = order['id']
-        self.ui.complectsView.setColumnHidden(1, True)
-        self.ui.complectsView.setColumnWidth(0, 210)
-        self.ui.complectsView.setColumnWidth(2, 115)
-        self.ui.complectsView.setColumnWidth(3, 90)
-        self.ui.complectsView.setColumnWidth(4, 55)
-        self.ui.complectsView.setColumnWidth(5, 65)
-        self.ui.complectsView.setColumnWidth(6, 70)
-        self.ui.complectsView.setColumnWidth(7, 85)
-        self.ui.complectsView.setColumnWidth(8, 75)
-        self.ui.complectsView.setColumnWidth(9, 85)
-        self.ui.complectsView.expandAll()
+        self.ui.complects_view.setColumnHidden(1, True)
+        self.ui.complects_view.setColumnWidth(0, 210)
+        self.ui.complects_view.setColumnWidth(2, 115)
+        self.ui.complects_view.setColumnWidth(3, 90)
+        self.ui.complects_view.setColumnWidth(4, 55)
+        self.ui.complects_view.setColumnWidth(5, 65)
+        self.ui.complects_view.setColumnWidth(6, 70)
+        self.ui.complects_view.setColumnWidth(7, 85)
+        self.ui.complects_view.setColumnWidth(8, 75)
+        self.ui.complects_view.setColumnWidth(9, 85)
+        self.ui.complects_view.expandAll()
 
         self.ui.order_name.setText('Заказ ' + order['name'])
 
         self.map_scene.clear()
 
-        ingot = self.ui.ingotsView.currentIndex().data(Qt.DisplayRole)
+        ingot = self.ui.ingots_view.currentIndex().data(Qt.DisplayRole)
         if ingot and self.is_file_exist(order, ingot):
             self.load_tree(order, ingot)
             self.redraw_map(ingot)
@@ -251,7 +256,7 @@ class OCIMainWindow(QMainWindow):
 
     def show_ingot_information(self, current: QModelIndex) -> None:
         ingot = current.data(Qt.DisplayRole)
-        order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         if not ingot or not order:
             return
         if ingot['status_id'] == 3:
@@ -283,7 +288,7 @@ class OCIMainWindow(QMainWindow):
 
     def confirm_ingot_removing(self, index: QModelIndex) -> None:
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
-        order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
 
         message = QMessageBox(self)
         message.setWindowTitle('Подтверждение удаления')
@@ -304,13 +309,13 @@ class OCIMainWindow(QMainWindow):
                 return
             self.ingot_model.deleteRow(index.row())
             self.complect_model.discard_statuses(order['id'], ingot['fusion_id'])
-            self.ui.complectsView.expandAll()
+            self.ui.complects_view.expandAll()
             try:
                 order_efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
             except ZeroDivisionError:
                 order_efficiency = 0
                 self.map_scene.clear()
-            self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'efficiency': order_efficiency}, Qt.EditRole)
+            self.order_model.setData(self.ui.orders_view.currentIndex(), {'efficiency': order_efficiency}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order['id']), efficiency=order_efficiency)
 
     def check_current_order(self) -> None:
@@ -323,7 +328,7 @@ class OCIMainWindow(QMainWindow):
                 break
         # Если запланированных слитков не было и заказ готов к началу
         else:
-            order_index = self.ui.searchResult_1.currentIndex()
+            order_index = self.ui.orders_view.currentIndex()
             self.order_model.setData(order_index, {'status_id': 1}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order_index.data(Qt.DisplayRole)['id']), status_id=1)
 
@@ -331,7 +336,7 @@ class OCIMainWindow(QMainWindow):
         self.order_model.appendRow(data)
 
     def confirm_order_editing(self, data: Dict) -> None:
-        index = self.ui.searchResult_1.currentIndex()
+        index = self.ui.orders_view.currentIndex()
         self.order_model.setData(index, data, Qt.EditRole)
         self.show_order_information(index)
 
@@ -356,7 +361,7 @@ class OCIMainWindow(QMainWindow):
                 return
             self.order_model.deleteRow(index.row())
             self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
-        self.ui.searchResult_1.clearSelection()
+        self.ui.orders_view.clearSelection()
 
     def update_complect_statuses(self, order_id: int,
                                  ingot_fusion: int) -> None:
@@ -439,7 +444,7 @@ class OCIMainWindow(QMainWindow):
     def save_complects(self) -> None:
         text = self.ui.saveComplect.text()
         if text.endswith('*'):
-            order_id = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)['id']
+            order_id = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)['id']
             order = Field('order_id', order_id)
 
             updates = FieldCollection(['amount', 'priority', 'order_id', 'detail_id'])
@@ -461,9 +466,9 @@ class OCIMainWindow(QMainWindow):
             self.ui.saveComplect.setText(text[:-1])
 
     def create_all_tree(self) -> None:
-        order_index = self.ui.searchResult_1.currentIndex()
+        order_index = self.ui.orders_view.currentIndex()
         order = order_index.data(Qt.DisplayRole)
-        model = self.ui.ingotsView.model()
+        model = self.ui.ingots_view.model()
 
         all_blanks = self.get_all_blanks()
         placed_blanks: Dict[str, Counter] = {}
@@ -1114,7 +1119,7 @@ class OCIMainWindow(QMainWindow):
 
     def chartPagePreparation(self) -> None:
         """Подготовка страницы с планами раскроя"""
-        # order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        # order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         self.clearLayout(self.ui.horizontalLayout_6, take=1)
         depth_list = self.steps()
         for i, depth in enumerate(depth_list):
@@ -1125,7 +1130,7 @@ class OCIMainWindow(QMainWindow):
             button.clicked.connect(self.depthLineChanged)
             self.ui.horizontalLayout_6.addWidget(button)
         self.ui.horizontalLayout_6.addStretch()
-        self.ui.sourcePlate.setChecked(True)
+        self.ui.source_button.setChecked(True)
 
         self.sourcePage()
 
@@ -1137,11 +1142,11 @@ class OCIMainWindow(QMainWindow):
         """Просмотр другой толщины и подгрузка нового списка деталей"""
         button = self.sender()
         self.plan_painter.clearCanvas()
-        self.graphicsView.viewport().update()
-        self.graphicsView.verticalScrollBar().setValue(
-            self.graphicsView.verticalScrollBar().minimum()
+        self.plan_view.viewport().update()
+        self.plan_view.verticalScrollBar().setValue(
+            self.plan_view.verticalScrollBar().minimum()
         )
-        if button is self.ui.sourcePlate:
+        if button is self.ui.source_button:
             self.sourcePage()
         else:
             depth = button.depth
@@ -1151,10 +1156,10 @@ class OCIMainWindow(QMainWindow):
     def sourcePage(self) -> None:
         """Переход на страницу с исходным слитком"""
         self.loadDetailList(depth=0.0)
-        self.graphicsView.setScene(self.map_scene)
+        self.plan_view.setScene(self.map_scene)
 
     def stepPage(self, index: int) -> None:
-        self.graphicsView.setScene(self.plan_scene)
+        self.plan_view.setScene(self.plan_scene)
         pack = self.tree.cc_leaves[index]
         depth = pack.bin.height
         self.plan_painter.setBin(
@@ -1178,7 +1183,7 @@ class OCIMainWindow(QMainWindow):
     def loadDetailList(self, depth: float) -> None:
         """Подгрузка списка заготовок"""
         # TODO: классика, переделать на model/view
-        # order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        # order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         self.clearLayout(self.ui.verticalLayout_8, hidden=True)
         # cut_blanks = OrderDataService.cut_blanks({'order_id': order['order_id']}, depth)
         # for detail in cut_blanks:
@@ -1259,7 +1264,7 @@ class OCIMainWindow(QMainWindow):
 
     def open_assign_dialog(self) -> None:
         """Добавление слитка к заказу"""
-        order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         window = IngotAssignmentDialog(order, self)
         settings = {
             'max_size': (
@@ -1286,10 +1291,10 @@ class OCIMainWindow(QMainWindow):
             status_id = order['status_id']
             if window.predicted and status_id != 2:
                 status_id = 2
-                self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'status_id': status_id}, Qt.EditRole)
-            self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'efficiency': efficiency}, Qt.EditRole)
+                self.order_model.setData(self.ui.orders_view.currentIndex(), {'status_id': status_id}, Qt.EditRole)
+            self.order_model.setData(self.ui.orders_view.currentIndex(), {'efficiency': efficiency}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order['id']), efficiency=efficiency, status_id=status_id)
-        self.show_order_information(self.ui.searchResult_1.currentIndex())
+        self.show_order_information(self.ui.orders_view.currentIndex())
 
     def open_order_dialog(self) -> None:
         """Добавление нового заказа"""
@@ -1302,19 +1307,19 @@ class OCIMainWindow(QMainWindow):
         residuals = []
         for row in range(self.ingot_model.rowCount()):
             ingot = self.ingot_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
-            order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+            order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
             try:
                 residuals.extend(self.save_residuals(ingot, order))
             except TypeError as e:
                 pass
         window = OrderCompletingDialog(residuals, self)
         if window.exec() == QDialog.Accepted:
-            self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'status_id': 3}, Qt.EditRole)
+            self.order_model.setData(self.ui.orders_view.currentIndex(), {'status_id': 3}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order['id']), status_id=3)
 
     def open_edit_dialog(self) -> None:
         """Изменение текущего заказа"""
-        order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         window = OrderEditingDialog(order, self.complect_model, self)
         window.orderEditedSuccess.connect(self.confirm_order_editing)
         window.show()
