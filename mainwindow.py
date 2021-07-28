@@ -10,6 +10,7 @@ import math
 from typing import Any, Dict, Sequence, Union, List, Tuple
 from itertools import chain
 from functools import partial
+from contextlib import suppress
 from collections import Counter, deque, namedtuple
 from pathlib import Path
 
@@ -38,6 +39,7 @@ from dialogs import (
     IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
     FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
+from messagebox import message_bon_info
 from storage import Storage
 from charts.plan import CuttingPlanPainter, MyQGraphicsView
 from charts.map import CuttingMapPainter
@@ -1303,13 +1305,17 @@ class OCIMainWindow(QMainWindow):
     def open_complete_dialog(self) -> None:
         """Заврешение выбранного заказа и добавление остатков"""
         residuals = []
+        if self.ingot_model.rowCount() == 0:
+            message_bon_info('В заказе отсутствует металл!', self)
+            return
         for row in range(self.ingot_model.rowCount()):
             ingot = self.ingot_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
+            if ingot['status_id'] == 3:
+                message_bon_info('Добавьте расчетный слиток на склад!', self)
+                return
             order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
-            try:
+            with suppress(TypeError):
                 residuals.extend(self.save_residuals(ingot, order))
-            except TypeError as e:
-                pass
         window = OrderCompletingDialog(residuals, self)
         if window.exec() == QDialog.Accepted:
             self.order_model.setData(self.ui.searchResult_1.currentIndex(), {'status_id': 3}, Qt.EditRole)
