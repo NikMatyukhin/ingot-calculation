@@ -1,4 +1,7 @@
 from enum import Enum
+import pathlib
+import pickle
+from sequential_mh.bpp_dsc.tree import Tree
 from typing import Any, Dict, List, Optional
 
 from PyQt5.QtCore import (
@@ -521,6 +524,11 @@ class ListModel(QAbstractListModel):
             return False
         return self.removeRows(row, 1, index)
 
+    def clear(self):
+        self.beginResetModel()
+        self.items_data.clear()
+        self.endResetModel()
+
     def insertRows(self, position: int, rows: int, parent: QModelIndex) -> bool:
         self.beginInsertRows(parent, position, position + rows - 1)
         self.items_data.insert(position, {})
@@ -583,11 +591,6 @@ class IngotModel(ListModel):
     def order(self):
         self.__order_id = None
 
-    def clear(self):
-        self.beginResetModel()
-        self.items_data.clear()
-        self.endResetModel()
-
     def setupModelData(self):
         if self.items_data:
             self.clear()
@@ -634,6 +637,65 @@ class ResidualsModel(ListModel):
                 'batch': r[4],
             }
             self.appendRow(data_row)
+
+
+class IngotResidualsModel(TreeModel):
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
+        super().__init__(headers, parent)
+        self.__order_id: int = int()
+    
+    @property
+    def order(self):
+        return self.__order_id
+
+    @order.setter
+    def order(self, value):
+        self.__order_id = value
+        self.setupModelData()
+
+    @order.deleter
+    def order(self):
+        self.__order_id = None
+
+    def data(self, index: QModelIndex, role: int) -> Any:
+        if not index.isValid():
+            return None
+        
+        if role != Qt.DisplayRole:
+            return None
+        
+        if index.row() == 4:
+            return None
+        
+        item: TreeItem = index.internalPointer()
+
+        return item.data(index.column())
+
+    def load_tree(self, path: pathlib.Path):
+        """Загрузка корневого узла дерева из файла"""
+        with path.open(mode='rb') as f:
+            return pickle.load(f)
+
+    def setupModelData(self):
+        if not self.__order_id:
+            return
+        
+        ingots = OrderDataService.ingots(Field('order_id', self.__order_id))
+        for ingot_n, ingot in enumerate(ingots):
+            ingot_id, order_id, fusion_id, status_id, l, w, h, batch, efficiency = ingot
+            
+            # Цикл всегда на одну итерацию, либо на ноль если карты нет
+            p = pathlib.Path() / 'schemes'
+            for path in p.glob(f'{self.__order_id}_{ingot_id}*.oci'):
+                fusion = StandardDataService.get_by_id('fusions', Field('id', fusion_id))[1]
+                name = f'Слиток №{ingot_n}'
+                batch_ = f'(№{batch})' if batch else 'Не указана'
+                size = f'{l}x{w}x{h}'
+                tree: Tree = self.load_tree(path.absolute())
+                self.appendRow([name, batch_, fusion, size, tree], QModelIndex())
+                for node in tree.cc_leaves:
+                    for subtree in node.subtree:
+                        print(subtree.root.bin.size)
 
 
 class CatalogArticlesModel(TreeModel):

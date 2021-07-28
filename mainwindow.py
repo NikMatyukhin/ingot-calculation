@@ -17,18 +17,17 @@ from PyQt5.QtCore import (
     Qt, QSettings, QModelIndex
 )
 from PyQt5.QtWidgets import (
-    QApplication, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
+    QApplication, QGraphicsDropShadowEffect, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
     QMessageBox, QDialog, QVBoxLayout, QGraphicsScene, QLayout, QProgressDialog
 )
 
 from gui import ui_mainwindow
-from gui.ui_functions import *
 from widgets import (
     IngotSectionDelegate, ListValuesDelegate, ExclusiveButton,
     OrderSectionDelegate
 )
 from models import (
-    IngotModel, OrderInformationComplectsModel, OrderModel
+    IngotModel, IngotResidualsModel, OrderInformationComplectsModel, OrderModel
 )
 from service import (
     Field, OrderDataService, StandardDataService, FieldCollection,
@@ -74,16 +73,15 @@ class OCIMainWindow(QMainWindow):
         self.ui.setupUi(self)
 
         # Установка визуальных дополнений приложения
-        UIFunctions.setApplicationStyles(self)
         self.shadow_effect = QGraphicsDropShadowEffect()
-        self.shadow_effect.setColor(QColor(0, 0, 0))
+        self.shadow_effect.setColor(Qt.GlobalColor.black)
         self.shadow_effect.setYOffset(-5)
         self.shadow_effect.setXOffset(0)
         self.shadow_effect.setBlurRadius(20)
         self.ui.top_area.setGraphicsEffect(self.shadow_effect)
         
         self.shadow_effect_2 = QGraphicsDropShadowEffect()
-        self.shadow_effect_2.setColor(QColor(0, 0, 0))
+        self.shadow_effect_2.setColor(Qt.GlobalColor.black)
         self.shadow_effect_2.setYOffset(-5)
         self.shadow_effect_2.setXOffset(0)
         self.shadow_effect_2.setBlurRadius(20)
@@ -112,6 +110,14 @@ class OCIMainWindow(QMainWindow):
 
         self.ingot_delegate.forgedIndexClicked.connect(self.confirm_ingot_readiness)
         self.ingot_delegate.deleteFromOrderClicked.connect(self.confirm_ingot_removing)
+
+        # Модель со слитками и их остатками для карт раскроя
+        self.residual_headers = [
+            'Название', 'Партия', 'Сплав', 'Размеры', 'PATH'
+        ]
+        self.ingots_residuals_model = IngotResidualsModel(self.residual_headers)
+        self.ui.ingots_residuals_view.setModel(self.ingots_residuals_model)
+        self.ui.ingots_residuals_view.setColumnHidden(4, True)
 
         # Модель комплектов (обновляется при изменении текущего заказа)
         self.complect_headers = [
@@ -186,7 +192,7 @@ class OCIMainWindow(QMainWindow):
         # Сигнал возврата на исходную страницу с информацией о заказах
         self.ui.information.clicked.connect(
             lambda: (
-                self.ui.mainArea.setCurrentIndex(0),
+                self.ui.main_area.setCurrentIndex(0),
                 self.ui.chart.setHidden(True),
                 self.ui.information.setChecked(True),
                 self.plan_painter.clearCanvas()
@@ -194,7 +200,7 @@ class OCIMainWindow(QMainWindow):
         )
         self.ui.plan.clicked.connect(
             lambda: (
-                self.ui.mainArea.setCurrentIndex(1),
+                self.ui.main_area.setCurrentIndex(1),
                 self.ui.chart.setHidden(False),
                 self.ui.chart.setChecked(True),
                 self.chartPagePreparation()
@@ -230,6 +236,7 @@ class OCIMainWindow(QMainWindow):
         self.ingot_model.order = order['id']
         self.ui.ingots_view.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
         self.show_ingot_information(self.ui.ingots_view.currentIndex())
+        self.ingots_residuals_model.order = order['id']
         self.complect_model.order = order['id']
         self.ui.complects_view.setColumnHidden(1, True)
         self.ui.complects_view.setColumnWidth(0, 210)
@@ -252,7 +259,7 @@ class OCIMainWindow(QMainWindow):
             self.load_tree(order, ingot)
             self.redraw_map(ingot)
 
-        self.ui.orderInformationArea.setCurrentWidget(self.ui.informationPage)
+        self.ui.orders_information_area.setCurrentWidget(self.ui.information_page)
 
     def show_ingot_information(self, current: QModelIndex) -> None:
         ingot = current.data(Qt.DisplayRole)
@@ -1121,7 +1128,7 @@ class OCIMainWindow(QMainWindow):
     def chartPagePreparation(self) -> None:
         """Подготовка страницы с планами раскроя"""
         # order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-        self.clearLayout(self.ui.horizontalLayout_6, take=1)
+        self.clearLayout(self.ui.heigths_layout, take=1)
         depth_list = self.steps()
         for i, depth in enumerate(depth_list):
             name = f'{depth} мм'
@@ -1129,8 +1136,8 @@ class OCIMainWindow(QMainWindow):
                 name += f' ({depth_list[:i].count(depth) + 1})'
             button = ExclusiveButton(depth=depth, name=name, index=i)
             button.clicked.connect(self.depthLineChanged)
-            self.ui.horizontalLayout_6.addWidget(button)
-        self.ui.horizontalLayout_6.addStretch()
+            self.ui.heigths_layout.addWidget(button)
+        self.ui.heigths_layout.addStretch()
         self.ui.source_button.setChecked(True)
 
         self.sourcePage()
@@ -1156,7 +1163,6 @@ class OCIMainWindow(QMainWindow):
 
     def sourcePage(self) -> None:
         """Переход на страницу с исходным слитком"""
-        self.loadDetailList(depth=0.0)
         self.plan_view.setScene(self.map_scene)
 
     def stepPage(self, index: int) -> None:
@@ -1179,20 +1185,6 @@ class OCIMainWindow(QMainWindow):
                 rect.name
             )
         self.plan_painter.drawPlan()
-        self.loadDetailList(depth=float(depth))
-
-    def loadDetailList(self, depth: float) -> None:
-        """Подгрузка списка заготовок"""
-        # TODO: классика, переделать на model/view
-        # order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-        self.clearLayout(self.ui.verticalLayout_8, hidden=True)
-        # cut_blanks = OrderDataService.cut_blanks({'order_id': order['order_id']}, depth)
-        # for detail in cut_blanks:
-        #     detail_section = Section(detail[0], detail[1])
-        #     detail_section.setContentFields(
-        #         self.createDetailTable(*detail[2:])
-        #     )
-        #     self.ui.verticalLayout_8.insertWidget(0, detail_section)
 
     def createDetailTable(self, fusion: str, amount: int, height: int,
                           width: int, depth: float) -> QVBoxLayout:
