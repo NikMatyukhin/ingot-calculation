@@ -57,6 +57,7 @@ from sequential_mh.bpp_dsc.tree import (
 )
 from sequential_mh.bpp_dsc.exception import BPPError
 from sequential_mh.bpp_dsc.support import dfs
+from sequential_mh.bpp_dsc.choice import choose_tree
 from sequential_mh.bpp_dsc.stm import (
     _pack, _create_insert_template, predicate, is_empty_tree, is_empty_node
 )
@@ -738,6 +739,7 @@ class OCIMainWindow(QMainWindow):
         self._tree = tree
 
         # NOTE: своя визуализация для отладки
+        # debug_graph_tree(best)
         # for node in self.tree.cc_leaves:
         #     debug_visualize(node, 'Основной')
         #     if node.subtree:
@@ -798,34 +800,16 @@ class OCIMainWindow(QMainWindow):
             raise BPPError('Не удалось получить раскрой')
 
         print(f'Годных деревьев: {len(trees)}')
+        # for t in trees:
+        #     ef = solution_efficiency(
+        #         t.root, list(dfs(t.root)), t.main_kit, nd=True, is_p=True
+        #     )
+        #     print(f'Узлов проката: {foo(t.root)}; эффективность: {ef:.6f}')
         if progress:
             progress.setLabelText('Выбор оптимального решения...')
 
-        # отладочная визуализация
-        # import os
-        # os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
-        # from sequential_mh.bpp_dsc.graph import plot, create_edges
-        # for i, tree in enumerate(trees):
-        #     print(f'Дерево {i}:')
-        #     for node in tree.root.cc_leaves:
-        #         print(f'{node.bin.height}: {len(node.placed)}')
-        #     # graph1, all_nodes1 = plot(tree.root, f'pdf/graph{i}.gv')
-        #     # create_edges(graph1, all_nodes1)
-        #     # graph1.view()
-        #     ef_1 = solution_efficiency(
-        #         tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=False
-        #     )
-        #     print(f'Эффективность без приоритета {ef_1}')
-        #     ef_2 = solution_efficiency(
-        #         tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=True
-        #     )
-        #     print(f'Эффективность c приоритетом {ef_2}')
-        #     print('-' * 50)
-        best = max(
-            trees, key=lambda item: solution_efficiency(
-                item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
-            )
-        )
+        best, _ = choose_tree(trees)
+
         for node in best.root.cc_leaves:
             print(node.bin.height, node._id)
         get_all_residuals(best)
@@ -957,7 +941,6 @@ class OCIMainWindow(QMainWindow):
             # получить неупакованные элементы из соседней ветки
             # построить дерево для остатков
             for tailing in tailings:
-                node.result.tailings.remove(tailing)
                 new_root = BinNode(
                     Bin(
                         tailing.length, tailing.width, node.bin.height,
@@ -971,7 +954,9 @@ class OCIMainWindow(QMainWindow):
                     new_tree, restrictions=restrictions,
                     level_subtree=level_subtree, with_priority=False
                 )
-                node.subtree.append(new_tree)
+                if new_tree.root.children:
+                    node.result.tailings.remove(tailing)
+                    node.subtree.append(new_tree)
                 # как быть если есть приоритет? когда частичная упаковка текущей толщины
                 # получить упакованные элементы
                 # удалить упакованные элементы из соседней ветки
@@ -1062,15 +1047,17 @@ class OCIMainWindow(QMainWindow):
         ]
         if not trees:
             raise BPPError('Не удалось получить раскрой')
-        best = max(
-            trees,
-            key=lambda item: solution_efficiency(
-                item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
-            )
-        )
+        # best = max(
+        #     trees,
+        #     key=lambda item: solution_efficiency(
+        #         item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
+        #     )
+        # )
+        best, _ = choose_tree(trees)
         get_all_residuals(best)
 
         # NOTE: своя визуализация для отладки
+        # debug_graph_tree(best)
         # for node in best.root.cc_leaves:
         #     debug_visualize(node, 'Основной')
         #     if node.subtree:
@@ -1543,6 +1530,29 @@ def debug_visualize(node, name):
         xlim=node.bin.width + 50, ylim=node.bin.length + 50,
         prefix=name
     )
+
+
+def debug_graph_tree(tree):
+    # NOTE: своя визуализация дерева, удалить по завершении
+    import os
+    os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
+    from sequential_mh.bpp_dsc.graph import plot, create_edges
+    graph1, all_nodes1 = plot(tree.root, 'pdf/tree.gv')
+    create_edges(graph1, all_nodes1)
+    graph1.view()
+    k = 0
+    for node in tree.root.cc_leaves:
+        print(f'Количество заготовок в осн. узле: {len(node.placed)}')
+        for subtree in node.subtree:
+            placed = 0
+            for subnode in subtree.root.cc_leaves:
+                placed += len(subnode.placed)
+            print(f'\tКоличество заготовок в поддереве: {placed}')
+            graph1, all_nodes1 = plot(subtree.root, f'pdf/subtree{k}.gv')
+            create_edges(graph1, all_nodes1)
+            graph1.view()
+            k+=1
+    print(f'Количество поддеревьев: {k}')
 
 
 def is_residual(item) -> bool:
