@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1514, 764)
+        MainWindow.resize(1491, 854)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/icons/kras-logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         MainWindow.setWindowIcon(icon)
@@ -248,7 +248,14 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setSpacing(0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.orders_area = QtWidgets.QFrame(self.order_page)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.orders_area.sizePolicy().hasHeightForWidth())
+        self.orders_area.setSizePolicy(sizePolicy)
+        self.orders_area.setMinimumSize(QtCore.QSize(400, 0))
         self.orders_area.setMaximumSize(QtCore.QSize(400, 16777215))
+        self.orders_area.setStyleSheet("background-color: rgb(232, 232, 232);")
         self.orders_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.orders_area.setFrameShadow(QtWidgets.QFrame.Raised)
         self.orders_area.setObjectName("orders_area")
@@ -257,6 +264,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setSpacing(10)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.orders_view = QtWidgets.QListView(self.orders_area)
+        self.orders_view.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.orders_view.setObjectName("orders_view")
         self.verticalLayout_2.addWidget(self.orders_view)
         self.horizontalLayout.addWidget(self.orders_area)
@@ -283,10 +291,10 @@ class Ui_MainWindow(object):
 "    background-color: rgb(255, 255, 255);\n"
 "}")
         self.information_page.setObjectName("information_page")
-        self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.information_page)
-        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout_5.setSpacing(0)
-        self.verticalLayout_5.setObjectName("verticalLayout_5")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.information_page)
+        self.verticalLayout_4.setContentsMargins(0, 0, 0, 20)
+        self.verticalLayout_4.setSpacing(0)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.order_name = QtWidgets.QLabel(self.information_page)
         self.order_name.setMinimumSize(QtCore.QSize(0, 40))
         self.order_name.setMaximumSize(QtCore.QSize(16777215, 40))
@@ -298,99 +306,54 @@ class Ui_MainWindow(object):
 "    background-color: rgb(225, 225, 225);\n"
 "}")
         self.order_name.setObjectName("order_name")
-        self.verticalLayout_5.addWidget(self.order_name)
-        self.order_scroll_area = QtWidgets.QScrollArea(self.information_page)
-        self.order_scroll_area.setStyleSheet("QScrollArea {\n"
-"    padding-left: 20px;\n"
-"    padding-right: 7px;\n"
-"    background-color: rgb(255, 255, 255);\n"
-"}\n"
-"\n"
-"QScrollBar:vertical {\n"
-"    border: none;\n"
-"    margin-top: 5px;\n"
-"    margin-bottom: 5px;\n"
-"    background: rgb(255, 255, 255);\n"
-"    width: 7px;\n"
-"}\n"
-"\n"
-"QScrollBar::handle:vertical {\n"
-"    background-color: rgb(180, 180, 180);\n"
-"    min-height: 30px;\n"
-"    border-radius: 3px;\n"
-"}\n"
-"\n"
-"QScrollBar::handle:vertical:hover {\n"
-"    background-color: rgb(255, 145, 67);\n"
-"}\n"
-"\n"
-"QScrollBar::handle:vertical:pressed {\n"
-"    background-color: rgb(223, 124, 59);\n"
-"}\n"
-"\n"
-"QScrollBar::sub-line:vertical {\n"
-"    border: none;\n"
-"    background-color: rgb(255, 255, 255);\n"
-"    height: 7px;\n"
-"    subcontrol-position: top;\n"
-"    subcontrol-origin: margin;\n"
-"}\n"
-"\n"
-"QScrollBar::add-line:vertical {\n"
-"    border: none;\n"
-"    background-color: rgb(255, 255, 255);\n"
-"    height: 7px;\n"
-"    subcontrol-position: bottom;\n"
-"    subcontrol-origin: margin;\n"
-"}\n"
-"\n"
-"QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {\n"
-"    background: none;\n"
-"}\n"
-"\n"
-"QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {\n"
-"    background: none;\n"
+        self.verticalLayout_4.addWidget(self.order_name)
+        self.splitter = QtWidgets.QSplitter(self.information_page)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.splitter.sizePolicy().hasHeightForWidth())
+        self.splitter.setSizePolicy(sizePolicy)
+        self.splitter.setMinimumSize(QtCore.QSize(497, 0))
+        self.splitter.setStyleSheet("QSplitter {\n"
+"    padding: 0px 20px;\n"
 "}")
-        self.order_scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
-        self.order_scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.order_scroll_area.setWidgetResizable(True)
-        self.order_scroll_area.setObjectName("order_scroll_area")
-        self.order_content = QtWidgets.QWidget()
-        self.order_content.setGeometry(QtCore.QRect(0, 0, 859, 1382))
-        self.order_content.setStyleSheet("QWidget {\n"
-"    margin-right: 7px;\n"
-"}\n"
-"\n"
-"QScrollArea, QFrame, QLabel, QWidget#scrollAreaWidgetContents, QWidget#scrollAreaWidgetContents_2, QWidget#scrollAreaWidgetContents_3 {\n"
-"    background-color: rgb(255, 255, 255);\n"
-"}\n"
-"\n"
-"QLabel {\n"
-"    margin-top: 10px;\n"
-"}\n"
-"\n"
-"    ")
-        self.order_content.setObjectName("order_content")
-        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.order_content)
-        self.verticalLayout_4.setContentsMargins(0, 0, 0, 20)
-        self.verticalLayout_4.setSpacing(0)
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.complects_label = QtWidgets.QLabel(self.order_content)
+        self.splitter.setOrientation(QtCore.Qt.Vertical)
+        self.splitter.setOpaqueResize(False)
+        self.splitter.setChildrenCollapsible(True)
+        self.splitter.setObjectName("splitter")
+        self.complects_area = QtWidgets.QFrame(self.splitter)
+        self.complects_area.setMinimumSize(QtCore.QSize(497, 251))
+        self.complects_area.setMaximumSize(QtCore.QSize(16777215, 840))
+        self.complects_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.complects_area.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.complects_area.setObjectName("complects_area")
+        self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.complects_area)
+        self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_9.setSpacing(0)
+        self.verticalLayout_9.setObjectName("verticalLayout_9")
+        self.complects_label = QtWidgets.QLabel(self.complects_area)
         self.complects_label.setMinimumSize(QtCore.QSize(0, 40))
         self.complects_label.setMaximumSize(QtCore.QSize(16777215, 40))
         font = QtGui.QFont()
         font.setPointSize(14)
         self.complects_label.setFont(font)
         self.complects_label.setStyleSheet("QLabel {\n"
+"    margin-top: 10px;\n"
 "    background-color: rgb(234, 234, 234);\n"
 "    border: 1px solid gray;\n"
 "    border-bottom: none;\n"
 "}")
         self.complects_label.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.complects_label.setObjectName("complects_label")
-        self.verticalLayout_4.addWidget(self.complects_label)
-        self.complects_view = QtWidgets.QTreeView(self.order_content)
-        self.complects_view.setMinimumSize(QtCore.QSize(0, 500))
+        self.verticalLayout_9.addWidget(self.complects_label)
+        self.complects_view = QtWidgets.QTreeView(self.complects_area)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.complects_view.sizePolicy().hasHeightForWidth())
+        self.complects_view.setSizePolicy(sizePolicy)
+        self.complects_view.setMinimumSize(QtCore.QSize(0, 210))
+        self.complects_view.setMaximumSize(QtCore.QSize(16777215, 800))
         self.complects_view.viewport().setProperty("cursor", QtGui.QCursor(QtCore.Qt.ArrowCursor))
         self.complects_view.setStyleSheet("QTreeView {\n"
 "    border: 1px solid gray;\n"
@@ -437,7 +400,7 @@ class Ui_MainWindow(object):
 "        border-image: none;\n"
 "        image: url(:icons/branch-open.png);\n"
 "}")
-        self.complects_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.complects_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.complects_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.complects_view.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked|QtWidgets.QAbstractItemView.SelectedClicked)
         self.complects_view.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -445,14 +408,26 @@ class Ui_MainWindow(object):
         self.complects_view.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
         self.complects_view.setAnimated(True)
         self.complects_view.setObjectName("complects_view")
-        self.verticalLayout_4.addWidget(self.complects_view)
-        self.buttons = QtWidgets.QFrame(self.order_content)
+        self.verticalLayout_9.addWidget(self.complects_view)
+        self.ingots_area = QtWidgets.QFrame(self.splitter)
+        self.ingots_area.setMinimumSize(QtCore.QSize(497, 271))
+        self.ingots_area.setMaximumSize(QtCore.QSize(16777215, 271))
+        self.ingots_area.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.ingots_area.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.ingots_area.setObjectName("ingots_area")
+        self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.ingots_area)
+        self.verticalLayout_8.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_8.setSpacing(0)
+        self.verticalLayout_8.setObjectName("verticalLayout_8")
+        self.buttons = QtWidgets.QFrame(self.ingots_area)
+        self.buttons.setMinimumSize(QtCore.QSize(0, 35))
+        self.buttons.setMaximumSize(QtCore.QSize(16777215, 35))
         self.buttons.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.buttons.setFrameShadow(QtWidgets.QFrame.Raised)
         self.buttons.setObjectName("buttons")
         self.horizontalLayout_9 = QtWidgets.QHBoxLayout(self.buttons)
-        self.horizontalLayout_9.setContentsMargins(0, 10, 0, 0)
-        self.horizontalLayout_9.setSpacing(0)
+        self.horizontalLayout_9.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_9.setSpacing(5)
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
         self.assign_ingot = QtWidgets.QPushButton(self.buttons)
         self.assign_ingot.setMinimumSize(QtCore.QSize(120, 35))
@@ -464,26 +439,37 @@ class Ui_MainWindow(object):
         self.complete_order.setMaximumSize(QtCore.QSize(120, 16777215))
         self.complete_order.setObjectName("complete_order")
         self.horizontalLayout_9.addWidget(self.complete_order)
+        self.recalculate = QtWidgets.QPushButton(self.buttons)
+        self.recalculate.setMinimumSize(QtCore.QSize(120, 35))
+        self.recalculate.setMaximumSize(QtCore.QSize(120, 16777215))
+        self.recalculate.setObjectName("recalculate")
+        self.horizontalLayout_9.addWidget(self.recalculate)
+        self.plan = QtWidgets.QPushButton(self.buttons)
+        self.plan.setMinimumSize(QtCore.QSize(120, 35))
+        self.plan.setMaximumSize(QtCore.QSize(120, 16777215))
+        self.plan.setObjectName("plan")
+        self.horizontalLayout_9.addWidget(self.plan)
         spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_9.addItem(spacerItem2)
-        self.verticalLayout_4.addWidget(self.buttons)
-        self.ingots_label = QtWidgets.QLabel(self.order_content)
+        self.verticalLayout_8.addWidget(self.buttons)
+        self.ingots_label = QtWidgets.QLabel(self.ingots_area)
         self.ingots_label.setMinimumSize(QtCore.QSize(0, 40))
         self.ingots_label.setMaximumSize(QtCore.QSize(16777215, 40))
         font = QtGui.QFont()
         font.setPointSize(14)
         self.ingots_label.setFont(font)
         self.ingots_label.setStyleSheet("QLabel {\n"
+"    margin-top: 10px;\n"
 "    background-color: rgb(234, 234, 234);\n"
 "    border: 1px solid gray;\n"
 "    border-bottom: none;\n"
 "}")
         self.ingots_label.setObjectName("ingots_label")
-        self.verticalLayout_4.addWidget(self.ingots_label)
-        self.ingots_view = QtWidgets.QListView(self.order_content)
+        self.verticalLayout_8.addWidget(self.ingots_label)
+        self.ingots_view = QtWidgets.QListView(self.ingots_area)
         self.ingots_view.setMinimumSize(QtCore.QSize(0, 195))
         self.ingots_view.setMaximumSize(QtCore.QSize(16777215, 195))
-        self.ingots_view.setFrameShape(QtWidgets.QFrame.Box)
+        self.ingots_view.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.ingots_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.ingots_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.ingots_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
@@ -491,102 +477,8 @@ class Ui_MainWindow(object):
         self.ingots_view.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.ingots_view.setFlow(QtWidgets.QListView.LeftToRight)
         self.ingots_view.setObjectName("ingots_view")
-        self.verticalLayout_4.addWidget(self.ingots_view)
-        self.map_view_header = QtWidgets.QFrame(self.order_content)
-        self.map_view_header.setStyleSheet("* {\n"
-"    margin-right: 0px;\n"
-"}")
-        self.map_view_header.setFrameShape(QtWidgets.QFrame.NoFrame)
-        self.map_view_header.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.map_view_header.setObjectName("map_view_header")
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.map_view_header)
-        self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_5.setSpacing(0)
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.map_label = QtWidgets.QLabel(self.map_view_header)
-        self.map_label.setMinimumSize(QtCore.QSize(0, 40))
-        self.map_label.setMaximumSize(QtCore.QSize(16777215, 40))
-        font = QtGui.QFont()
-        font.setPointSize(14)
-        self.map_label.setFont(font)
-        self.map_label.setStyleSheet("QLabel {\n"
-"    background-color: rgb(234, 234, 234);\n"
-"    border: 1px solid gray;\n"
-"    border-bottom: none;\n"
-"}")
-        self.map_label.setObjectName("map_label")
-        self.horizontalLayout_5.addWidget(self.map_label)
-        self.recalculate = QtWidgets.QPushButton(self.map_view_header)
-        self.recalculate.setMinimumSize(QtCore.QSize(120, 40))
-        self.recalculate.setMaximumSize(QtCore.QSize(120, 40))
-        self.recalculate.setStyleSheet("QPushButton {\n"
-"    margin-top: 10px;\n"
-"    border: 1px solid gray;\n"
-"    border-bottom: none;\n"
-"    border-left: none;\n"
-"    background-color: rgb(234, 234, 234);\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: rgb(216, 216, 216);\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: rgb(200, 200, 200);\n"
-"}")
-        self.recalculate.setObjectName("recalculate")
-        self.horizontalLayout_5.addWidget(self.recalculate)
-        self.full_screen = QtWidgets.QPushButton(self.map_view_header)
-        self.full_screen.setMinimumSize(QtCore.QSize(120, 40))
-        self.full_screen.setMaximumSize(QtCore.QSize(120, 40))
-        self.full_screen.setStyleSheet("QPushButton {\n"
-"    margin-top: 10px;\n"
-"    border: 1px solid gray;\n"
-"    border-bottom: none;\n"
-"    border-left: none;\n"
-"    background-color: rgb(234, 234, 234);\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: rgb(216, 216, 216);\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: rgb(200, 200, 200);\n"
-"}")
-        self.full_screen.setObjectName("full_screen")
-        self.horizontalLayout_5.addWidget(self.full_screen)
-        self.plan = QtWidgets.QPushButton(self.map_view_header)
-        self.plan.setMinimumSize(QtCore.QSize(120, 40))
-        self.plan.setMaximumSize(QtCore.QSize(120, 40))
-        self.plan.setStyleSheet("QPushButton {\n"
-"    margin-top: 10px;\n"
-"    margin-right: 7px;\n"
-"    border: 1px solid gray;\n"
-"    border-bottom: none;\n"
-"    border-left: none;\n"
-"    background-color: rgb(234, 234, 234);\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: rgb(216, 216, 216);\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: rgb(200, 200, 200);\n"
-"}")
-        self.plan.setObjectName("plan")
-        self.horizontalLayout_5.addWidget(self.plan)
-        self.verticalLayout_4.addWidget(self.map_view_header)
-        self.map_view = QtWidgets.QGraphicsView(self.order_content)
-        self.map_view.setMinimumSize(QtCore.QSize(0, 500))
-        self.map_view.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
-        self.map_view.setObjectName("map_view")
-        self.verticalLayout_4.addWidget(self.map_view)
-        self.order_scroll_area.setWidget(self.order_content)
-        self.verticalLayout_5.addWidget(self.order_scroll_area)
-        self.order_scroll_area.raise_()
-        self.order_name.raise_()
+        self.verticalLayout_8.addWidget(self.ingots_view)
+        self.verticalLayout_4.addWidget(self.splitter)
         self.orders_information_area.addWidget(self.information_page)
         self.horizontalLayout.addWidget(self.orders_information_area)
         self.main_area.addWidget(self.order_page)
@@ -609,7 +501,11 @@ class Ui_MainWindow(object):
         self.ingots_residuals_view = QtWidgets.QTreeView(self.chart_information_area)
         self.ingots_residuals_view.setMinimumSize(QtCore.QSize(0, 300))
         self.ingots_residuals_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.ingots_residuals_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.ingots_residuals_view.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        self.ingots_residuals_view.setIndentation(20)
+        self.ingots_residuals_view.setAnimated(True)
+        self.ingots_residuals_view.setExpandsOnDoubleClick(False)
         self.ingots_residuals_view.setObjectName("ingots_residuals_view")
         self.verticalLayout_7.addWidget(self.ingots_residuals_view)
         spacerItem3 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -678,7 +574,7 @@ class Ui_MainWindow(object):
         self.heigths_scroll_area.setWidgetResizable(True)
         self.heigths_scroll_area.setObjectName("heigths_scroll_area")
         self.heigths_content = QtWidgets.QWidget()
-        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 1014, 42))
+        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 991, 40))
         self.heigths_content.setObjectName("heigths_content")
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.heigths_content)
         self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
@@ -688,51 +584,6 @@ class Ui_MainWindow(object):
         self.heigths_layout.setContentsMargins(0, 0, 0, 0)
         self.heigths_layout.setSpacing(0)
         self.heigths_layout.setObjectName("heigths_layout")
-        self.source_button = QtWidgets.QPushButton(self.heigths_content)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.source_button.sizePolicy().hasHeightForWidth())
-        self.source_button.setSizePolicy(sizePolicy)
-        self.source_button.setMinimumSize(QtCore.QSize(80, 40))
-        self.source_button.setMaximumSize(QtCore.QSize(80, 40))
-        font = QtGui.QFont()
-        font.setPointSize(8)
-        self.source_button.setFont(font)
-        self.source_button.setStyleSheet("QPushButton {\n"
-"    border: none;\n"
-"    background-color: rgb(225, 225, 225);\n"
-"    width: 80px;\n"
-"    height: 40px;\n"
-"    padding: 0px;\n"
-"    color: black;\n"
-"}\n"
-"\n"
-"QPushButton:hover {\n"
-"    background-color: rgb(235, 235, 235);\n"
-"    border-bottom: 3px solid gray;\n"
-"    font-weight: 800;\n"
-"    padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:pressed {\n"
-"    background-color: rgb(245, 245, 245);\n"
-"    border-bottom: 3px solid gray;\n"
-"    font-weight: 800;\n"
-"    padding-top: 3px;\n"
-"}\n"
-"\n"
-"QPushButton:checked {\n"
-"    background-color: rgb(225, 225, 225);\n"
-"    border-bottom: 3px solid black;\n"
-"    padding-top: 3px;\n"
-"    font-weight: 800;\n"
-"}")
-        self.source_button.setCheckable(True)
-        self.source_button.setChecked(True)
-        self.source_button.setAutoExclusive(True)
-        self.source_button.setObjectName("source_button")
-        self.heigths_layout.addWidget(self.source_button)
         self.horizontalLayout_7.addLayout(self.heigths_layout)
         self.heigths_scroll_area.setWidget(self.heigths_content)
         self.verticalLayout_6.addWidget(self.heigths_scroll_area)
@@ -769,11 +620,7 @@ class Ui_MainWindow(object):
 "слиток"))
         self.complete_order.setText(_translate("MainWindow", "Завершить\n"
 "заказ"))
-        self.ingots_label.setText(_translate("MainWindow", "Слитки"))
-        self.map_label.setText(_translate("MainWindow", "Карта раскроя"))
         self.recalculate.setText(_translate("MainWindow", "Пересчитать"))
-        self.full_screen.setText(_translate("MainWindow", "На весь экран"))
-        self.plan.setText(_translate("MainWindow", "Перейти к плану"))
-        self.source_button.setText(_translate("MainWindow", "Карта\n"
-"раскроя"))
+        self.plan.setText(_translate("MainWindow", "Карта раскроя"))
+        self.ingots_label.setText(_translate("MainWindow", "Слитки"))
 import application_rc
