@@ -807,6 +807,7 @@ class IngotAssignmentDialog(QDialog):
         self.proxy_model.sort(0)
         self.ingot_delegate = IngotSectionDelegate(False, self.ui.ingots_view)
         self.ui.ingots_view.setModel(self.proxy_model)
+        print(self.ui.ingots_view.model())
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
 
         # Назначение меню кнопке
@@ -836,9 +837,8 @@ class IngotAssignmentDialog(QDialog):
 
         used_fusions = []
         # Проходим по всем выбранным слиткам
+        print(self.ui.ingots_view.selectedIndexes())
         for index in self.ui.ingots_view.selectedIndexes():
-            model = index.model()
-            index = model.mapToSource(index)
             ingot = self.ingot_model.data(index, Qt.DisplayRole)
             # Если текущий слиток <эфемерный>, то добавляем в базу
             if ingot['status_id'] == 4:
