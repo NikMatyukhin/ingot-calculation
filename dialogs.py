@@ -839,6 +839,7 @@ class IngotAssignmentDialog(QDialog):
         # Проходим по всем выбранным слиткам
         print(self.ui.ingots_view.selectedIndexes())
         for index in self.ui.ingots_view.selectedIndexes():
+            index = index.model().mapToSource(index)
             ingot = self.ingot_model.data(index, Qt.DisplayRole)
             # Если текущий слиток <эфемерный>, то добавляем в базу
             if ingot['status_id'] == 4:
@@ -1017,7 +1018,7 @@ class IngotAssignmentDialog(QDialog):
             for row in range(self.proxy_model.rowCount()):
                 ingot_index = self.proxy_model.index(row, 0, QModelIndex())
                 ingot_index = self.proxy_model.mapToSource(ingot_index)
-                if ingot_index.data(Qt.DisplayRole)['status_id'] == 1:
+                if ingot_index.data(Qt.DisplayRole)['status_id'] in [1, 2]:
                     continue
                 if fusion_id == ingot_index.data(Qt.DisplayRole)['fusion_id']:
                     self.ingot_model.deleteRow(row, QModelIndex())
