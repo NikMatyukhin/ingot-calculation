@@ -2266,14 +2266,14 @@ def get_residuals(node):
         )
         tailing.rtype = RectangleType.RESIDUAL
         residuals.append(tailing)
-        node.result.tailings.append(tailing)
+        node.result.update([], tailings=[tailing])
     elif bin_length == node.result.length and bin_width > node.result.width:
         tailing = Rectangle.create_by_size(
             (node.result.width, 0), bin_length, bin_width - node.result.width
         )
         tailing.rtype = RectangleType.RESIDUAL
         residuals.append(tailing)
-        node.result.tailings.append(tailing)
+        node.result.update([], tailings=[tailing])
     elif node.result.length > bin_length and bin_width > node.result.width:
         area_horizontal = bin_width * (bin_length - node.result.length)
         area_vertical = bin_length * (bin_width - node.result.width)
@@ -2289,7 +2289,7 @@ def get_residuals(node):
             )
             tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
-            node.result.tailings.append(tailing)
+            node.result.update([], tailings=[tailing])
         else:
             tailing = Rectangle.create_by_size(
                 (0, node.result.length), bin_length - node.result.length, bin_width
@@ -2302,5 +2302,5 @@ def get_residuals(node):
             )
             tailing.rtype = RectangleType.RESIDUAL
             residuals.append(tailing)
-            node.result.tailings.append(tailing)
+            node.result.update([], tailings=[tailing])
     return residuals

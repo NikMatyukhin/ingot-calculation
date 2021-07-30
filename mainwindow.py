@@ -941,7 +941,7 @@ class OCIMainWindow(QMainWindow):
                     level_subtree=level_subtree, with_priority=False
                 )
                 if new_tree.root.children:
-                    node.result.tailings.remove(tailing)
+                    tailing.rtype = RectangleType.USED_RESIDUAL
                     node.subtree.append(new_tree)
                 # как быть если есть приоритет? когда частичная упаковка текущей толщины
                 # получить упакованные элементы
