@@ -307,7 +307,7 @@ class OrderDataService(StandardDataService):
     @staticmethod
     @db_connector
     def ingots(order: Field, connection: Connection = connect(':memory:')) -> list:
-        sql = str(f'SELECT * FROM ingots WHERE {order.name}={order.value}')
+        sql = str(f'SELECT * FROM ingots WHERE {order.name}={order.value} ORDER BY id DESC')
         cursor = connection.cursor()
         cursor.execute(sql)
 

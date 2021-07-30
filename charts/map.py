@@ -12,7 +12,7 @@ from PyQt5.QtGui import (
     QPolygonF, QIcon
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, CuttingChartNode, OperationNode, Operations, is_op_node, is_bin_node, is_cc_node
+    BinNode, CuttingChartNode, OperationNode, Operations, Tree, is_op_node, is_bin_node, is_cc_node, solution_efficiency
 )
 from sequential_mh.bpp_dsc.rectangle import (
     BinType
@@ -180,11 +180,8 @@ class CuttingMapPainter:
         self.scene = scene
         self.font = QFont('Segoe UI', 9)
 
-    def setTree(self, tree: BinNode):
-        self.tree = tree
-
-    def setEfficiency(self, efficiency: float):
-        self.efficiency = efficiency * 100
+    def setTree(self, tree: Tree):
+        self.tree: Tree = tree
 
     def drawTree(self):
         self.cutting_nodes: List[Operations] = []
@@ -196,7 +193,7 @@ class CuttingMapPainter:
         self.in_width = True
         self.skip = False
         self.skip_counter = 0
-        tree_path = list(dfs(self.tree))
+        tree_path = list(dfs(self.tree.root))
         for index, node in enumerate(tree_path):
             if is_op_node(node):
                if node.operation == Operations.rolling:
@@ -218,8 +215,9 @@ class CuttingMapPainter:
             self.scene.addItem(cur_item)
             if is_bin_node(node):
                 if node.bin.bin_type == BinType.ingot:
+                    efficiency = solution_efficiency(self.tree.root, tree_path, self.tree.main_kit, nd=True, is_p=True)
                     efficiency = self.scene.addText(
-                        'Выход годного:\n' + str(round(self.efficiency, 2)) + '%'
+                        'Выход годного:\n' + str(round(efficiency * 100, 2)) + '%'
                     )
                     efficiency.setX(self.x - 140)
                     efficiency.setY(self.y - 60)

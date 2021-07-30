@@ -69,6 +69,7 @@ ListSizes = List[Sizes]
 
 class OCIMainWindow(QMainWindow):
     """Главное окно"""
+    
     def __init__(self):
         super().__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
@@ -115,11 +116,13 @@ class OCIMainWindow(QMainWindow):
 
         # Модель со слитками и их остатками для карт раскроя
         self.residual_headers = [
-            'Название', 'Партия', 'Сплав', 'Размеры', 'PATH'
+            'Название', 'Партия', 'Сплав', 'Размеры', 'Эффективность', 'PATH'
         ]
         self.ingots_residuals_model = IngotResidualsModel(self.residual_headers)
         self.ui.ingots_residuals_view.setModel(self.ingots_residuals_model)
-        self.ui.ingots_residuals_view.setColumnHidden(4, True)
+        for column, width in enumerate([120, 70, 80, 70, 10, 100]):
+            self.ui.ingots_residuals_view.setColumnWidth(column, width)
+        self.ui.ingots_residuals_view.setColumnHidden(5, True)
 
         # Модель комплектов (обновляется при изменении текущего заказа)
         self.complect_headers = [
@@ -145,7 +148,8 @@ class OCIMainWindow(QMainWindow):
             self.ui.complects_view.resizeColumnToContents(column)
         
         # Дерево раскроя текущего слитка
-        self._tree = None
+        self._tree: Tree = None
+        self.map_tree: Tree = None
 
         # Работа с настройками приложения: подгрузка настроек
         self.settings = QSettings('configs', QSettings.IniFormat, self)
@@ -170,18 +174,19 @@ class OCIMainWindow(QMainWindow):
         self.read_settings()
 
         # Сцены для отрисовки
-        self.plan_scene = QGraphicsScene()
         self.map_scene = QGraphicsScene()
-        
+        self.plan_scene = QGraphicsScene()
+
         # Создание специального представления для планов раскроя (zoom-view)
         self.plan_view = MyQGraphicsView()
-        self.plan_view.setScene(self.plan_scene)
         self.plan_view.setAlignment(Qt.AlignCenter)
         self.plan_view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.ui.chart_area.layout().addWidget(self.plan_view)
-        self.ui.map_view.setScene(self.map_scene)
-        self.map_painter = CuttingMapPainter(self.map_scene)
+
+        # Создание двух отрисовщиков для карт и планов иерархического дерева
+        # слитков и подслитков
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
+        self.map_painter = CuttingMapPainter(self.map_scene)
 
         # Соединяем сигналы окна со слотами класса
         self.ui.new_order.clicked.connect(self.open_order_dialog)
@@ -197,7 +202,6 @@ class OCIMainWindow(QMainWindow):
                 self.ui.main_area.setCurrentIndex(0),
                 self.ui.chart.setHidden(True),
                 self.ui.information.setChecked(True),
-                self.plan_painter.clearCanvas()
             )
         )
         self.ui.plan.clicked.connect(
@@ -205,18 +209,18 @@ class OCIMainWindow(QMainWindow):
                 self.ui.main_area.setCurrentIndex(1),
                 self.ui.chart.setHidden(False),
                 self.ui.chart.setChecked(True),
-                self.chartPagePreparation()
             )
         )
-        self.ui.full_screen.clicked.connect(self.open_fullscreen_window)
+        # self.ui.full_screen.clicked.connect(self.open_fullscreen_window)
         self.ui.recalculate.clicked.connect(self.create_all_tree)
 
         # Показ текущего заказа по выбору
         self.ui.orders_view.clicked.connect(self.show_order_information)
+        self.ui.ingots_residuals_view.clicked.connect(self.change_plan_tree)
 
-        # Кнопку "Исходная пластина" привязываем отдельно от всех
-        # TODO: передалать момент с кнопками плана раскроя
-        self.ui.source_button.clicked.connect(self.depthLineChanged)
+    @property
+    def tree(self):
+        return self._tree.root
 
     def show_order_information(self, index: QModelIndex) -> None:
         """Переключатель активных заказов и открытых секций.
@@ -237,46 +241,21 @@ class OCIMainWindow(QMainWindow):
 
         self.ingot_model.order = order['id']
         self.ui.ingots_view.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
-        self.show_ingot_information(self.ui.ingots_view.currentIndex())
         self.ingots_residuals_model.order = order['id']
         self.complect_model.order = order['id']
         self.ui.complects_view.setColumnHidden(1, True)
-        self.ui.complects_view.setColumnWidth(0, 210)
-        self.ui.complects_view.setColumnWidth(2, 115)
-        self.ui.complects_view.setColumnWidth(3, 90)
-        self.ui.complects_view.setColumnWidth(4, 55)
-        self.ui.complects_view.setColumnWidth(5, 65)
-        self.ui.complects_view.setColumnWidth(6, 70)
-        self.ui.complects_view.setColumnWidth(7, 85)
-        self.ui.complects_view.setColumnWidth(8, 75)
-        self.ui.complects_view.setColumnWidth(9, 85)
+        for column, width in enumerate([240, 1, 115, 90, 55, 65, 70, 85, 75]):
+            self.ui.complects_view.setColumnWidth(column, width)
         self.ui.complects_view.expandAll()
 
         self.ui.order_name.setText('Заказ ' + order['name'])
-
-        self.map_scene.clear()
-
-        ingot = self.ui.ingots_view.currentIndex().data(Qt.DisplayRole)
-        if ingot and self.is_file_exist(order, ingot):
-            self.load_tree(order, ingot)
-            self.redraw_map(ingot)
-
         self.ui.orders_information_area.setCurrentWidget(self.ui.information_page)
 
     def show_ingot_information(self, current: QModelIndex) -> None:
         ingot = current.data(Qt.DisplayRole)
-        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-        if not ingot or not order:
+        if not ingot:
             return
-        if ingot['status_id'] == 3:
-            self.ui.recalculate.setEnabled(False)
-        else:
-            self.ui.recalculate.setEnabled(True)
-        if self.is_file_exist(order, ingot):
-            self.load_tree(order, ingot)
-            self.redraw_map(ingot)
-        else:
-            self.map_scene.clear()
+        self.ui.recalculate.setEnabled(ingot['status_id'] != 3)
 
     def confirm_ingot_readiness(self, index: QModelIndex) -> None:
         """Подтверждение готовности слитка.
@@ -329,6 +308,10 @@ class OCIMainWindow(QMainWindow):
 
     def check_current_order(self) -> None:
         """Проверка текущего заказа с возможным изменением статуса"""
+        order_index = self.ui.orders_view.currentIndex()
+        # При обновлении статусов слитков нужно обновлять и модель 
+        # слитков-поддеревьев на планах раскроя
+        self.ingots_residuals_model.order = order_index.data(Qt.DisplayRole)['id']
         for row in range(self.ingot_model.rowCount()):
             ingot_index = self.ingot_model.index(row, 0, QModelIndex())
             ingot = self.ingot_model.data(ingot_index, Qt.DisplayRole)
@@ -337,7 +320,6 @@ class OCIMainWindow(QMainWindow):
                 break
         # Если запланированных слитков не было и заказ готов к началу
         else:
-            order_index = self.ui.orders_view.currentIndex()
             self.order_model.setData(order_index, {'status_id': 1}, Qt.EditRole)
             StandardDataService.update_record('orders', Field('id', order_index.data(Qt.DisplayRole)['id']), status_id=1)
 
@@ -369,7 +351,7 @@ class OCIMainWindow(QMainWindow):
                 QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить заказ.', QMessageBox.Ok)
                 return
             self.order_model.deleteRow(index.row())
-            self.ui.orderInformationArea.setCurrentWidget(self.ui.defaultPage)
+            self.ui.orders_information_area.setCurrentWidget(self.ui.default_page)
         self.ui.orders_view.clearSelection()
 
     def update_complect_statuses(self, order_id: int,
@@ -586,7 +568,7 @@ class OCIMainWindow(QMainWindow):
             ingot['efficiency'] = efficiency
 
             self.save_tree(order, ingot)
-            self.redraw_map(ingot)
+            self.draw_map(ingot)
 
             log_operation_info(
                 'end_cut',
@@ -597,12 +579,6 @@ class OCIMainWindow(QMainWindow):
             )
         progress.close()
         return efficiency, order_efficiency
-
-    def redraw_map(self, ingot: Dict) -> None:
-        self.map_scene.clear()
-        self.map_painter.setTree(self.tree)
-        self.map_painter.setEfficiency(round(ingot['efficiency'], 2))
-        self.map_painter.drawTree()
 
     def get_all_blanks(self) -> Dict:
         """Получение всех заготовок из заказа
@@ -913,11 +889,11 @@ class OCIMainWindow(QMainWindow):
                 _pack(node, level, restrictions, with_priority=with_priority)
                 # контролируем уровень построения поддеревьев
                 # FIXME: раскоментировать для учета остатков
-                # if tree._type == 0:
-                #     level_subtree = 0
-                # if level_subtree < 1:
-                #     level_subtree += 1
-                #     self.create_subtree(node, restrictions, level_subtree)
+                if tree._type == 0:
+                    level_subtree = 0
+                if level_subtree < 1:
+                    level_subtree += 1
+                    self.create_subtree(node, restrictions, level_subtree)
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -1123,62 +1099,65 @@ class OCIMainWindow(QMainWindow):
                 )
         return all_tailings
 
-    def steps(self) -> List[float]:
+    def steps(self, tree: Tree) -> List[float]:
         """Список толщин"""
-        leaves = self.tree.cc_leaves
-        depth_list = [leave.bin.height for leave in leaves]
-        return depth_list
+        leaves = tree.root.cc_leaves
+        height_list = [leave.bin.height for leave in leaves]
+        return height_list
 
-    def chartPagePreparation(self) -> None:
+    def create_heights_line(self, steps: List[float]) -> List[ExclusiveButton]:
+        heights_line = [ExclusiveButton(name='Карта\nраскроя')]
+        for i, height in enumerate(steps):
+            name = f'{height} мм'
+            if steps.count(height) > 1:
+                name += f' ({steps[:i].count(height) + 1})'
+            heights_line.append(ExclusiveButton(name=name, index=i))
+        return heights_line
+
+    def update_height_line(self, tree: Tree) -> None:
         """Подготовка страницы с планами раскроя"""
-        # order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-        self.clearLayout(self.ui.heigths_layout, take=1)
-        depth_list = self.steps()
-        for i, depth in enumerate(depth_list):
-            name = f'{depth} мм'
-            if depth_list.count(depth) > 1:
-                name += f' ({depth_list[:i].count(depth) + 1})'
-            button = ExclusiveButton(depth=depth, name=name, index=i)
-            button.clicked.connect(self.depthLineChanged)
+        self.clear_layout(self.ui.heigths_layout)
+        heights_line = self.create_heights_line(self.steps(tree))
+
+        for button in heights_line:
+            button.clicked.connect(self.height_changed)
             self.ui.heigths_layout.addWidget(button)
+        
         self.ui.heigths_layout.addStretch()
-        self.ui.source_button.setChecked(True)
+        heights_line[0].setChecked(True)
 
-        self.sourcePage()
-
-        # Кнопку завершения заказа меняем на кнопку перехода на след.шаг
-        # depth = order['current_depth']
-        # self.ui.closeOrder.setText('Завершить ' + str(depth) + ' мм')
-
-    def depthLineChanged(self) -> None:
-        """Просмотр другой толщины и подгрузка нового списка деталей"""
+    def height_changed(self) -> None:
+        """Просмотр другой толщины"""
         button = self.sender()
-        self.plan_painter.clearCanvas()
+        
+        # Сброс рисовальщика и обновление представления плана раскроя
+        self.plan_painter.setup()
         self.plan_view.viewport().update()
         self.plan_view.verticalScrollBar().setValue(
             self.plan_view.verticalScrollBar().minimum()
         )
-        if button is self.ui.source_button:
-            self.sourcePage()
+        # Если кнопка без значения index, то это кнопка карты раскроя
+        if button.index is None:
+            self.go_to_map_page()
         else:
-            depth = button.depth
-            index = button.index
-            self.stepPage(index)
+            self.go_to_plan_page(button.index)
 
-    def sourcePage(self) -> None:
+    def go_to_map_page(self) -> None:
         """Переход на страницу с исходным слитком"""
         self.plan_view.setScene(self.map_scene)
 
-    def stepPage(self, index: int) -> None:
+    def go_to_plan_page(self, index: int) -> None:
+        """Переход на страницу с планом толщины"""
+        self.plan_scene.clear()
         self.plan_view.setScene(self.plan_scene)
-        pack = self.tree.cc_leaves[index]
-        depth = pack.bin.height
+
+        node: CuttingChartNode = self.map_tree.root.cc_leaves[index]
         self.plan_painter.setBin(
-            math.ceil(pack.bin.length),
-            math.ceil(pack.bin.width),
-            round(pack.bin.height, 1)
+            math.ceil(node.bin.length),
+            math.ceil(node.bin.width),
+            round(node.bin.height, 1)
         )
-        for blank in pack.result:
+        for blank in node.result:
             rect = blank.rectangle
             self.plan_painter.addBlank(
                 math.ceil(rect.length),
@@ -1190,52 +1169,36 @@ class OCIMainWindow(QMainWindow):
             )
         self.plan_painter.drawPlan()
 
-    def createDetailTable(self, fusion: str, amount: int, height: int,
-                          width: int, depth: float) -> QVBoxLayout:
-        """Создание информационной таблички заготовки"""
-        # TODO: когда будет model/view - удалю за ненужностью
-        data = {
-            'Сплав': fusion,
-            'Количество': str(amount) + ' шт.',
-            'Размеры': f'{height}x{width}x{depth}'
-        }
-        table = QTableWidget(3, 2)
-        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        table.horizontalHeader().hide()
-        table.verticalHeader().hide()
-        table.horizontalHeader().setStretchLastSection(True)
-        for row, values in enumerate(data.items()):
-            table.setItem(row, 0, QTableWidgetItem(values[0]))
-            table.setItem(row, 1, QTableWidgetItem(values[1]))
-        table.resizeColumnToContents(0)
-        layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(table)
-        return layout
+    def change_plan_tree(self, index: QModelIndex):
+        parent = self.ingots_residuals_model.parent(index)
+        tree_index = self.ingots_residuals_model.index(index.row(), 5, parent)
+        
+        # Здесь получается дерево, по которому будет отображен раскрой планов
+        # и карты одновременно
+        self.map_tree = self.ingots_residuals_model.data(tree_index, Qt.DisplayRole)
+        self.update_height_line(self.map_tree)
+        self.draw_map(self.map_tree)
+        self.go_to_map_page()
 
-    def clearLayout(self, layout: QLayout, take: int = 0, hidden: bool = False,
-                    last: int = 1) -> None:
+    def draw_map(self, tree: Tree) -> None:
+        self.map_scene.clear()
+        self.plan_view.viewport().update()
+        self.plan_view.verticalScrollBar().setValue(
+            self.plan_view.verticalScrollBar().minimum()
+        )
+        self.map_painter.setTree(tree)
+        self.map_painter.drawTree()
+
+    def clear_layout(self, layout: QLayout) -> None:
         """Метод для очистки слоёв компоновки
 
         :param layout: Слой с которого удаляются виджеты по заданным правилам
         :type layout: QLayout
-        :param take: Индекс элементов, которые будут удаляться
-        :type take: int
-        :param hidden: Флаг для сокрытия виджетов, которым мало удаления
-        :type hidden: bool
         """
-
-        # TODO: удалить к херам и сделать по-человечески, а то по-дебильному
-        # Линейно:
-        # https://ru.stackoverflow.com/questions/607834/Удаление-виджетов-размещенных-в-qlayout
-        # Рекурсивно:
-        # https://stackoverflow.com/questions/4857188/clearing-a-layout-in-qt
-        length = layout.count()
-        for _ in range(length-last):
-            item = layout.takeAt(take)
-            if hidden or isinstance(item.widget(), ExclusiveButton):
-                item.widget().hide()
+        while item := layout.takeAt(0):
+            if item.widget():
+                item.widget().deleteLater()
+            del item
 
     def open_fullscreen_window(self) -> None:
         """Просмотр карты в полноэкранном режиме"""
@@ -1310,7 +1273,7 @@ class OCIMainWindow(QMainWindow):
             if ingot['status_id'] == 3:
                 message_bon_info('Добавьте расчетный слиток на склад!', self)
                 return
-            order = self.ui.searchResult_1.currentIndex().data(Qt.DisplayRole)
+            order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
             with suppress(TypeError):
                 residuals.extend(self.save_residuals(ingot, order))
         window = OrderCompletingDialog(residuals, self)
@@ -1326,7 +1289,7 @@ class OCIMainWindow(QMainWindow):
         window.show()
 
     def read_settings(self) -> None:
-        """Чтение настроек из файл"""
+        """Чтение настроек из файла"""
         self.cut_allowance = self.settings.value(
             'cutting/cut_allowance', defaultValue=2, type=int)
         self.end_face_loss = self.settings.value(
@@ -1445,10 +1408,6 @@ class OCIMainWindow(QMainWindow):
         """Создание имени файла для сохранения дерева раскроя"""
         extension = 'oci'
         return f"{order['id']}_{ingot['id']}_{order['date']}.{extension}"
-
-    @property
-    def tree(self):
-        return self._tree.root
 
 
 def get_abs_path(file_name: str, path=None) -> Path:

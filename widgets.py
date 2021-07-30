@@ -23,15 +23,10 @@ from models import IngotModel
 
 
 class ExclusiveButton(QPushButton):
-    def __init__(self, parent: typing.Optional[QObject] = None,
-                 depth: float = 0, name='', index=0):
-        super().__init__(parent)
-        self.depth = depth
+    def __init__(self, name: str, index: int = None, parent: typing.Optional[QObject] = None):
+        super(ExclusiveButton, self).__init__(parent)
         self.index = index
-        if name:
-            self.setText(name)
-        else:
-            self.setText(str(depth) + ' мм')
+        self.setText(name)
         self.setCheckable(True)
         self.setAutoExclusive(True)
         self.setStyleSheet('''
@@ -326,7 +321,7 @@ class OrderSectionDelegate(QStyledItemDelegate):
         painter.restore()
 
     def textBox(self, font: QFont, data: str) -> QRect:
-        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 1, 1)
+        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 15, 0)
 
     def informationFontPointSize(self, f: QFont) -> float:
         return 0.85 * f.pointSize()
@@ -425,7 +420,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
             self.forgeIcon = QPixmap(':icons/ingot.svg')
         else:
             self.forgeIcon = QPixmap(':icons/patch.png')
-        self.forgeIcon = self.forgeIcon.scaled(120, 120, aspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio, transformMode = Qt.TransformationMode.SmoothTransformation)
+        self.forgeIcon = self.forgeIcon.scaled(110, 110, aspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio, transformMode = Qt.TransformationMode.SmoothTransformation)
         painter.drawPixmap(self.forgeIconPos(opt), self.forgeIcon)
 
         painter.restore()
@@ -434,7 +429,7 @@ class IngotSectionDelegate(QStyledItemDelegate):
         return QPoint(opt.rect.right() - self.closeIcon.width() - self.margin, opt.rect.top() + self.margin)
 
     def forgeIconPos(self, opt: QStyleOptionViewItem):
-        return QPoint(opt.rect.left() + self.margin, opt.rect.top() + self.margin * 3)
+        return QPoint(opt.rect.left() + self.margin * 2.5, opt.rect.top() + self.margin * 5)
 
     def textBox(self, font: QFont, data: str) -> QRect:
         return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 1, 1)

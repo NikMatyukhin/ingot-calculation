@@ -2,7 +2,8 @@ import math
 from enum import Enum
 import pathlib
 import pickle
-from sequential_mh.bpp_dsc.tree import Tree
+from sequential_mh.bpp_dsc.support import dfs
+from sequential_mh.bpp_dsc.tree import Tree, solution_efficiency
 from typing import Any, Dict, List, Optional
 
 from PyQt5.QtCore import (
@@ -23,6 +24,9 @@ class TreeItem:
         self._item_data = data
         self._parent_item = parent
         self._child_items: List[TreeItem] = []
+
+    def __repr__(self):
+        return f'TreeItem({self._item_data})'
 
     def child(self, number: int):
         """Получение наследника по индексу
@@ -352,14 +356,15 @@ class TreeModel(QAbstractItemModel):
         :return: Результат операции добавления
         :rtype: bool
         """
-        if not self.insertRows(0, 1, index):
+        # if not self.insertRows(0, 1, index):
+        if not self.insertRow(self.rowCount(index), index):
             return False
 
         parent_item = self.get_item(index)
-        child_item = parent_item.child(0)
+        child_item = parent_item.child(parent_item.childCount() - 1)
 
         for i, field in enumerate(data):
-            if isinstance(field, bool) or field is None:
+            if isinstance(field, bool) or isinstance(field, Tree) or field is None:
                 child_item.setData(i, field)
             else:
                 child_item.setData(i, str(field))
@@ -379,6 +384,16 @@ class TreeModel(QAbstractItemModel):
         self.endRemoveColumns()
         if self.root_item.columnCount() == 0:
             self.removeRows(0, self.root_item.childCount(), parent)
+        return result
+
+    def insertRow(self, row: int, parent: QModelIndex) -> bool:
+        item = self.get_item(parent)
+        if not item:
+            return False
+
+        self.beginInsertRows(parent, row, row + 1)
+        result = item.insertChildren(row, 1, len(self.root_data))
+        self.endInsertRows()
         return result
 
     def insertRows(self, position: int, rows: int,
@@ -599,7 +614,7 @@ class IngotModel(ListModel):
             result = OrderDataService.ingots(Field('order_id', self.__order_id))
         else:
             result = OrderDataService.ware_ingots(self.__category)
-        for ingot in result:
+        for ingot in reversed(result):
             if self._fusions_id is None or ingot[2] in self._fusions_id:
                 data_row = {
                     'id': ingot[0],
@@ -623,6 +638,8 @@ class SortIngotModel(QSortFilterProxyModel):
         """Сравнение слитков по объему"""
         left_ingot = left.data(Qt.DisplayRole)
         right_ingot = right.data(Qt.DisplayRole)
+        if not left_ingot or not right_ingot:
+            return True
         left_volume = math.prod(left_ingot['size'])
         right_volume = math.prod(right_ingot['size'])
         return left_volume < right_volume
@@ -631,6 +648,8 @@ class SortIngotModel(QSortFilterProxyModel):
         """Фильтрация слитков по минимальным размерам"""
         index = self.sourceModel().index(source_row, 0, source_parent)
         ingot_data = index.data(Qt.DisplayRole)
+        if not ingot_data:
+            return True
         length, width = ingot_data['size'][:2]
         if self.min_size and ingot_data['fusion_id'] in self.min_size:
             min_side = self.min_size[ingot_data['fusion_id']]
@@ -690,8 +709,8 @@ class IngotResidualsModel(TreeModel):
         if role != Qt.DisplayRole:
             return None
         
-        if index.row() == 4:
-            return None
+        # if index.row() == 5:
+        #     return None
         
         item: TreeItem = index.internalPointer()
 
@@ -706,6 +725,9 @@ class IngotResidualsModel(TreeModel):
         if not self.__order_id:
             return
         
+        if self.rowCount(QModelIndex()):
+            self.clear()
+        
         ingots = OrderDataService.ingots(Field('order_id', self.__order_id))
         for ingot_n, ingot in enumerate(ingots):
             ingot_id, order_id, fusion_id, status_id, l, w, h, batch, efficiency = ingot
@@ -714,15 +736,23 @@ class IngotResidualsModel(TreeModel):
             p = pathlib.Path() / 'schemes'
             for path in p.glob(f'{self.__order_id}_{ingot_id}*.oci'):
                 fusion = StandardDataService.get_by_id('fusions', Field('id', fusion_id))[1]
-                name = f'Слиток №{ingot_n}'
+                name = f'Слиток №{ingot_n + 1}'
                 batch_ = f'(№{batch})' if batch else 'Не указана'
                 size = f'{l}x{w}x{h}'
                 tree: Tree = self.load_tree(path.absolute())
-                self.appendRow([name, batch_, fusion, size, tree], QModelIndex())
-                for node in tree.cc_leaves:
-                    for subtree in node.subtree:
-                        print(subtree.root.bin.size)
+                t_efficiency: float = solution_efficiency(tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=True)
+                self.appendRow([name, batch_, fusion, size, f'{round(t_efficiency * 100, 2)}%', tree], QModelIndex())
 
+                counter = 1
+                for node in tree.root.cc_leaves:
+                    for subtree in node.subtree:
+                        name = f'Остаток №{counter}'
+                        l_, w_, h_ = subtree.root.bin.size
+                        l_, w_, h_ = str(int(l_)), str(int(w_)), str(round(h_, 1))
+                        size = 'x'.join([l_, w_, h_])
+                        st_efficiency = solution_efficiency(subtree.root, list(dfs(subtree.root)), subtree.main_kit, nd=True, is_p=True)
+                        self.appendRow([name, batch_, fusion, size, f'{round(st_efficiency * 100, 2)}%', subtree], self.index(self.rowCount() - 1, 0, QModelIndex()))
+                        counter += 1
 
 class CatalogArticlesModel(TreeModel):
     def __init__(self, headers: list, parent: Optional[QObject] = None):
@@ -776,7 +806,7 @@ class CatalogArticlesModel(TreeModel):
         for line in sorted(StandardDataService.get_table('articles')):
             self.appendRow(line, QModelIndex())
             for sub_line in StandardDataService.get_by_field('details', Field('article_id', line[0])):
-                self.appendRow([None, sub_line[4]], self.index(0, 0, QModelIndex()))
+                self.appendRow([None, sub_line[4]], self.index(self.rowCount() - 1, 0, QModelIndex()))
 
 
 class CatalogDetailsModel(TableModel):
@@ -874,13 +904,12 @@ class ComplectsModel(TreeModel):
             self.appendRow([article_id, name, None, None, None, None, None, None, None, None, False], QModelIndex())
 
             # Получение индекса только что добавленной записи изделия
-            parent = self.index(0, 0, QModelIndex())
             detail = StandardDataService.get_by_field('details', Field('article_id', article_id))
 
             # Для удаления из списка изеделий без заготовок
             if not detail:
-                self.removeRows(0, 1, QModelIndex())
-
+                continue
+            parent = self.index(self.rowCount() - 1, 0, QModelIndex())
             # Выполнение для всех деталей, связанных с заданной ведомостью
             for sub_line in detail:
                 detail_id, _, fusion_id, direction_id, name, l, w, d, amount, priority = sub_line
@@ -995,7 +1024,7 @@ class OrderInformationComplectsModel(TreeModel):
             self.appendRow([name, article_id, None, None, None, None, None, None, None, None, None], QModelIndex())
 
             # Получение индекса только что добавленной записи изделия
-            parent = self.index(0, 0, QModelIndex())
+            parent = self.index(self.rowCount() - 1, 0, QModelIndex())
             detail = complects[article]            
 
             # Выполнение для всех деталей, связанных с заданной ведомостью

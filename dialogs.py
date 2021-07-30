@@ -859,17 +859,6 @@ class IngotAssignmentDialog(QDialog):
         self.update_statuses(used_fusions)
         self.accept()
 
-    def repeatable_fusions(self):
-        fusions = []
-        for ingot in StandardDataService.get_by_field('ingots', Field('order_id', self.order['id'])):
-            fusions.append(ingot[2])
-        for index in self.ui.ingots_view.selectedIndexes():
-            ingot = index.data(Qt.DisplayRole)
-            if ingot['fusion_id'] in fusions:
-                return True
-            fusions.append(ingot['fusion_id'])
-        return False
-
     def update_statuses(self, fusions: list):
         if not self.predicted_ingots:
             return
@@ -971,12 +960,9 @@ class IngotAssignmentDialog(QDialog):
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowTitle('Рассчет слитка под ПЗ')
         progress.forceShow()
-        # FIXME: получить имя заказа
-        # FIXME: а имени может и не быть, расчёт слитков происходит при добавлении заказа
         order_name = 'НОВЫЙ ЗАКАЗ'
         progress.setLabelText('Процесс расчета слитка под ПЗ...')
 
-        # details = self.parent().get_details_kit(material)
         details = self.parent().get_all_blanks()
         if material.name not in details:
             QMessageBox.information(
@@ -1028,7 +1014,7 @@ class IngotAssignmentDialog(QDialog):
         else:
             for row in range(self.ingot_model.rowCount()):
                 ingot_index = self.ingot_model.index(row, 0, QModelIndex())
-                if ingot_index.data(Qt.DisplayRole)['status_id'] == 1:
+                if ingot_index.data(Qt.DisplayRole)['status_id'] in [1, 2]:
                     continue
                 if fusion_id == ingot_index.data(Qt.DisplayRole)['fusion_id']:
                     self.ingot_model.deleteRow(row, QModelIndex())

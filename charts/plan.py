@@ -115,14 +115,15 @@ class DetailGraphicsItem(QGraphicsItem):
                          self.width, self.height - 5,
                          Qt.AlignLeft | Qt.AlignBottom,
                          f'{self.width}x{self.height}')
-        if self.metr.horizontalAdvance(self.visible_text) > self.width:
-            self.setToolTip(self.visible_text + f' {self.width}x{self.height}')
+        detail_name = self.visible_text.split('_')[-1]
+        if self.metr.horizontalAdvance(detail_name) > self.width:
+            self.setToolTip(detail_name + f' {self.width}x{self.height}')
             return
         painter.setFont(self.font)
         painter.drawText(self.x_pos, self.y_pos,
                          self.width, self.height,
                          Qt.AlignCenter,
-                         self.visible_text)
+                         detail_name)
 
     def hoverEnterEvent(self, event: QGraphicsSceneHoverEvent):
         self.draw_color = self.color.darker(110)
@@ -137,17 +138,7 @@ class CuttingPlanPainter:
     def __init__(self, scene: QGraphicsScene):
         self.scene = scene
         self.font = QFont('Century Gothic', 6)
-        self.bin_lenght = float()
-        self.bin_width = float()
-        self.bin_depth = float()
-        # self.x_coords = set([0])
-        # self.y_coords = set([0])
-        self.vl_point = QPointF(1200, 1200)
-        self.vr_point = QPointF(0, 0)
-        self.lv_point = QPointF(1200, 1200)
-        self.lb_point = QPointF(0, 0)
-        self.blanks: List[List[float, float, float, float, str]] = []
-        self.blanks_colors: Dict[str, QColor] = {}
+        self.setup()
 
     def setBin(self, length: float, width: float, depth: float):
         self.bin_lenght = length
@@ -171,10 +162,6 @@ class CuttingPlanPainter:
         if y+h > self.lb_point.y():
             self.lb_point.setX(x)
             self.lb_point.setY(y+h)
-        # self.x_coords.add(x)
-        # self.x_coords.add(x + w)
-        # self.y_coords.add(y)
-        # self.y_coords.add(y + h)
 
     def drawPlan(self):
         self.drawBin()
@@ -235,15 +222,13 @@ class CuttingPlanPainter:
         )
         return color
 
-    def clearCanvas(self):
-        self.scene.clear()
+    def setup(self):
         self.bin_lenght = float()
         self.bin_width = float()
         self.bin_depth = float()
-        self.blanks.clear()
         self.vl_point = QPointF(1200, 1200)
         self.vr_point = QPointF(0, 0)
         self.lv_point = QPointF(1200, 1200)
         self.lb_point = QPointF(0, 0)
-        # self.x_coords = set([0])
-        # self.y_coords = set([0])
+        self.blanks: List[List[float, float, float, float, str]] = []
+        self.blanks_colors: Dict[str, QColor] = {}
