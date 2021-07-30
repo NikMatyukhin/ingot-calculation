@@ -29,6 +29,8 @@ class RectangleType(Enum):
     END = 'End'
     # остаток
     RESIDUAL = 'Residual'
+    # используемый остаток
+    USED_RESIDUAL = 'Used residual'
     # не определен
     NOT_DETERMINED = 'NotDetermined'
 
