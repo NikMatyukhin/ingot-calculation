@@ -566,6 +566,7 @@ class OCIMainWindow(QMainWindow):
                 'orders', Field('id', order['id']), efficiency=order_efficiency
             )
             ingot['efficiency'] = efficiency
+            self.ingots_residuals_model.order = order['id']
 
             self.save_tree(order, ingot)
 
@@ -1157,21 +1158,24 @@ class OCIMainWindow(QMainWindow):
     def change_plan_tree(self, index: QModelIndex):
         parent = self.ingots_residuals_model.parent(index)
         tree_index = self.ingots_residuals_model.index(index.row(), 5, parent)
+        eff_index = self.ingots_residuals_model.index(index.row(), 4, parent)
         
         # Здесь получается дерево, по которому будет отображен раскрой планов
         # и карты одновременно
         self.map_tree = self.ingots_residuals_model.data(tree_index, Qt.DisplayRole)
+        efficiency = self.ingots_residuals_model.data(eff_index, Qt.DisplayRole)
         self.update_height_line(self.map_tree)
-        self.draw_map(self.map_tree)
+        self.draw_map(self.map_tree, efficiency)
         self.go_to_map_page()
 
-    def draw_map(self, tree: Tree) -> None:
+    def draw_map(self, tree: Tree, efficiency: float) -> None:
         self.map_scene.clear()
         self.plan_view.viewport().update()
         self.plan_view.verticalScrollBar().setValue(
             self.plan_view.verticalScrollBar().minimum()
         )
         self.map_painter.setTree(tree)
+        self.map_painter.setEfficiency(efficiency)
         self.map_painter.drawTree()
 
     def clear_layout(self, layout: QLayout) -> None:

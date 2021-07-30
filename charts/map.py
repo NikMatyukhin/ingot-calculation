@@ -1,5 +1,5 @@
 import math
-from typing import List, Union
+from typing import Any, List, Union
 
 import application_rc
 
@@ -182,6 +182,11 @@ class CuttingMapPainter:
 
     def setTree(self, tree: Tree):
         self.tree: Tree = tree
+    
+    def setEfficiency(self, efficiency: Any):
+        if isinstance(efficiency, str) and efficiency.endswith('%'):
+            efficiency = float(efficiency[:-1])
+        self.efficiency: float = efficiency
 
     def drawTree(self):
         self.cutting_nodes: List[Operations] = []
@@ -215,9 +220,8 @@ class CuttingMapPainter:
             self.scene.addItem(cur_item)
             if is_bin_node(node):
                 if node.bin.bin_type == BinType.ingot:
-                    efficiency = solution_efficiency(self.tree.root, tree_path, self.tree.main_kit, nd=True, is_p=True)
                     efficiency = self.scene.addText(
-                        'Выход годного:\n' + str(round(efficiency * 100, 2)) + '%'
+                        'Выход годного:\n' + str(round(self.efficiency, 2)) + '%'
                     )
                     efficiency.setX(self.x - 140)
                     efficiency.setY(self.y - 60)

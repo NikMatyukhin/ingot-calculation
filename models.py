@@ -740,7 +740,7 @@ class IngotResidualsModel(TreeModel):
                 batch_ = f'(№{batch})' if batch else 'Не указана'
                 size = f'{l}x{w}x{h}'
                 tree: Tree = self.load_tree(path.absolute())
-                t_efficiency: float = solution_efficiency(tree.root, list(dfs(tree.root)), tree.main_kit, nd=True, is_p=True)
+                t_efficiency: float = solution_efficiency(tree.root, list(dfs(tree.root)), tree.main_kit, is_total=True)
                 self.appendRow([name, batch_, fusion, size, f'{round(t_efficiency * 100, 2)}%', tree], QModelIndex())
 
                 counter = 1
@@ -750,7 +750,7 @@ class IngotResidualsModel(TreeModel):
                         l_, w_, h_ = subtree.root.bin.size
                         l_, w_, h_ = str(int(l_)), str(int(w_)), str(round(h_, 1))
                         size = 'x'.join([l_, w_, h_])
-                        st_efficiency = solution_efficiency(subtree.root, list(dfs(subtree.root)), subtree.main_kit, nd=True, is_p=True)
+                        st_efficiency = solution_efficiency(subtree.root, list(dfs(subtree.root)), subtree.main_kit, is_total=True)
                         self.appendRow([name, batch_, fusion, size, f'{round(st_efficiency * 100, 2)}%', subtree], self.index(self.rowCount() - 1, 0, QModelIndex()))
                         counter += 1
 
