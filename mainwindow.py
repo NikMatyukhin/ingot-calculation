@@ -242,6 +242,7 @@ class OCIMainWindow(QMainWindow):
 
         self.ingot_model.order = order['id']
         self.ui.ingots_view.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
+        self.show_ingot_information(self.ui.ingots_view.currentIndex())
         self.ingots_residuals_model.order = order['id']
         self.complect_model.order = order['id']
         self.ui.complects_view.setColumnHidden(1, True)
@@ -539,7 +540,6 @@ class OCIMainWindow(QMainWindow):
             efficiency = self.create_cut(
                 ingot_size, details, material, progress=progress
             )
-            # self.save_residuals()
         except ForcedTermination:
             log_operation_info(
                 'user_inter_cut', {'name': order_name, 'alloy': material.name},
