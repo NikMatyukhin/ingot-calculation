@@ -1,6 +1,10 @@
 call venv\Scripts\activate.bat
+echo RUN PYINSTALLER
 pyinstaller mainwindow.spec
+echo CREATE SCHEMES DIRECTORY
 mkdir dist\mainwindow\schemes
+echo CREATE INFO.LOG FILE
 break > dist\mainwindow\log\info.log
-copy config dist\mainwindow
+echo COPY CONFIGS
+copy configs dist\mainwindow
 call venv\Scripts\deactivate
