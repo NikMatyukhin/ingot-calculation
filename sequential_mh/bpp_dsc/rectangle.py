@@ -833,6 +833,9 @@ class Kit(ABCKit):
                 for item in subgroup:
                     yield item
 
+    def __copy__(self):
+        return self.__class__(deepcopy(self.blanks))
+
     def __repr__(self):
         return f'{self.__class__.__name__}({list(self)})'
 
