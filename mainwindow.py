@@ -7,7 +7,7 @@ import pickle
 import logging
 import time
 import math
-from typing import Any, Dict, Sequence, Union, List, Tuple
+from typing import Any, Dict, Optional, Sequence, Union, List, Tuple
 from itertools import chain
 from functools import partial
 from contextlib import suppress
@@ -496,7 +496,7 @@ class OCIMainWindow(QMainWindow):
             if kit.is_empty():
                 break
 
-            ef_res: Tuple[float, float] = self.create_tree(
+            ef_res = self.create_tree(
                 order, ingot, material, kit
             )
             if ef_res:
@@ -509,12 +509,11 @@ class OCIMainWindow(QMainWindow):
                 self.order_model.setData(
                     order_index, {'efficiency': order_efficiency}, Qt.EditRole
                 )
-
-                for leave in self.tree.cc_leaves:
+                for leave in self._tree.root.cc_leaves:
                     placed_blanks[material.name] += Counter(b.name for b in leave.placed)
 
     def create_tree(self, order: Dict, ingot: Dict, material: Material,
-                    details: Kit) -> Tuple[float, float]:
+                    details: Kit) -> Optional[Tuple[float, float]]:
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)
@@ -547,12 +546,12 @@ class OCIMainWindow(QMainWindow):
                 identifier=order_id
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
-            return .0, .0
+            return
         except Exception as exception:
             QMessageBox.critical(
                 self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
             )
-            return .0, .0
+            return
         else:
             progress.setLabelText('Завершение раскроя...')
 
@@ -569,7 +568,6 @@ class OCIMainWindow(QMainWindow):
             ingot['efficiency'] = efficiency
 
             self.save_tree(order, ingot)
-            self.draw_map(ingot)
 
             log_operation_info(
                 'end_cut',
