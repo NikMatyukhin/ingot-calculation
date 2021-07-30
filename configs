@@ -5,7 +5,7 @@ min_width=50
 min_height=100
 guillotine=1200
 max_height=1300
-cutting_thickness=3.3
+cutting_thickness=4.2
 
 [rolling]
 clean_depth=3
