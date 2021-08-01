@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
 from gui import ui_mainwindow
 from widgets import (
     IngotSectionDelegate, ListValuesDelegate, ExclusiveButton,
-    OrderSectionDelegate
+    OrderDelegate
 )
 from models import (
     IngotModel, IngotResidualsModel, OrderInformationComplectsModel, OrderModel
@@ -94,7 +94,7 @@ class OCIMainWindow(QMainWindow):
         # Модель и делегат заказов
         self.order_model = OrderModel(Field('status_id', 1), self)
         
-        self.order_delegate = OrderSectionDelegate(self.ui.orders_view)
+        self.order_delegate = OrderDelegate(self.ui.orders_view)
         
         self.ui.orders_view.setModel(self.order_model)
         self.ui.orders_view.setItemDelegate(self.order_delegate)
