@@ -1286,11 +1286,11 @@ class OCIMainWindow(QMainWindow):
         self.minimum_plate_width = self.settings.value(
             'cutting/min_width', defaultValue=50, type=int)
         self.guillotine_width = self.settings.value(
-            'cutting/guillotine', defaultValue=1200, type=int)
+            'cutting/guillotine', defaultValue=1250, type=int)
         self.minimum_plate_height = self.settings.value(
             'cutting/min_height', defaultValue=100, type=int)
         self.maximum_plate_height = self.settings.value(
-            'cutting/max_height', defaultValue=1200, type=int)
+            'cutting/max_height', defaultValue=1300, type=int)
         self.cutting_thickness = self.settings.value(
             'cutting/cutting_thickness', defaultValue=4.2, type=float)
         self.clean_roll_depth = self.settings.value(
@@ -1304,7 +1304,7 @@ class OCIMainWindow(QMainWindow):
         self.rough_roll_plate_width = self.settings.value(
             'rolling/max_rough_width', defaultValue=450, type=int)
         self.clean_roll_plate_width = self.settings.value(
-            'rolling/max_clean_width', defaultValue=400, type=int)
+            'rolling/max_clean_width', defaultValue=280, type=int)
         self.ingot_min_height = self.settings.value(
             'forging/min_height', defaultValue=70, type=int)
         self.ingot_min_width = self.settings.value(

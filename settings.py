@@ -45,11 +45,11 @@ class SettingsDialog(QDialog):
         self.ui.spinBox_6.setValue(self.settings.value(
             'cutting/min_width', defaultValue=50, type=int))
         self.ui.spinBox_8.setValue(self.settings.value(
-            'cutting/guillotine', defaultValue=1200, type=int))
+            'cutting/guillotine', defaultValue=1250, type=int))
         self.ui.spinBox_7.setValue(self.settings.value(
             'cutting/min_height', defaultValue=100, type=int))
         self.ui.spinBox_5.setValue(self.settings.value(
-            'cutting/max_height', defaultValue=1200, type=int))
+            'cutting/max_height', defaultValue=1300, type=int))
         self.ui.doubleSpinBox_3.setValue(self.settings.value(
             'cutting/cutting_thickness', defaultValue=4.2, type=float))
 
@@ -64,7 +64,7 @@ class SettingsDialog(QDialog):
         self.ui.spinBox_2.setValue(self.settings.value(
             'rolling/max_rough_width', defaultValue=450, type=int))
         self.ui.spinBox_3.setValue(self.settings.value(
-            'rolling/max_clean_width', defaultValue=400, type=int))
+            'rolling/max_clean_width', defaultValue=280, type=int))
 
         self.ui.spinBox_13.setValue(self.settings.value(
             'forging/min_height', defaultValue=70, type=int))
