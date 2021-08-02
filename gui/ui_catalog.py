@@ -124,6 +124,10 @@ class Ui_Form(object):
         self.horizontalLayout_3.setSpacing(0)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.splitter = QtWidgets.QSplitter(self.main_area)
+        self.splitter.setStyleSheet("QSplitter::handle {\n"
+"    background-image: url(:/icons/top_part.png);\n"
+"    background-repeat: no-repeat;\n"
+"}")
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setHandleWidth(10)
         self.splitter.setObjectName("splitter")
