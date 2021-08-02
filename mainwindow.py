@@ -121,7 +121,7 @@ class OCIMainWindow(QMainWindow):
         ]
         self.ingots_residuals_model = IngotResidualsModel(self.residual_headers)
         self.ui.ingots_residuals_view.setModel(self.ingots_residuals_model)
-        for column, width in enumerate([120, 70, 80, 70, 10, 100]):
+        for column, width in enumerate([115, 70, 80, 75, 10, 100]):
             self.ui.ingots_residuals_view.setColumnWidth(column, width)
         self.ui.ingots_residuals_view.setColumnHidden(5, True)
 
@@ -244,6 +244,7 @@ class OCIMainWindow(QMainWindow):
         self.ui.ingots_view.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
         self.show_ingot_information(self.ui.ingots_view.currentIndex())
         self.ingots_residuals_model.order = order['id']
+        self.ui.ingots_residuals_view.expandAll()
         self.complect_model.order = order['id']
         self.ui.complects_view.setColumnHidden(1, True)
         for column, width in enumerate([240, 1, 115, 90, 55, 65, 70, 85, 75]):
@@ -708,13 +709,14 @@ class OCIMainWindow(QMainWindow):
         :param material: Материал
         :type material: Material
         """
+        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         settings = {
             'max_size': (
                 (self.maximum_plate_height, self.clean_roll_plate_width),
                 (self.maximum_plate_height, self.rough_roll_plate_width)
             ),
             'cutting_length': self.guillotine_width,
-            'cutting_thickness': round(self.cutting_thickness, 4),
+            'cutting_thickness': round(order['thickness'], 4),
             'hem_until_3': self.rough_roll_edge_loss,
             'hem_after_3': self.clean_roll_edge_loss,
             'allowance': self.cut_allowance,
@@ -1221,7 +1223,7 @@ class OCIMainWindow(QMainWindow):
                 (self.maximum_plate_height, self.rough_roll_plate_width)
             ),
             'cutting_length': self.guillotine_width,
-            'cutting_thickness': round(self.cutting_thickness, 4),
+            'cutting_thickness': round(order['thickness'], 4),
             'hem_until_3': self.rough_roll_edge_loss,
             'hem_after_3': self.clean_roll_edge_loss,
             'allowance': self.cut_allowance,
@@ -1247,7 +1249,7 @@ class OCIMainWindow(QMainWindow):
 
     def open_order_dialog(self) -> None:
         """Добавление нового заказа"""
-        window = OrderAddingDialog(self)
+        window = OrderAddingDialog(self.cutting_thickness, self)
         window.recordSavedSuccess.connect(self.confirm_order_adding)
         window.exec_()
 

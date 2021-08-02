@@ -183,7 +183,7 @@ class OrderAddingDialog(QDialog):
 
     recordSavedSuccess = pyqtSignal(dict)
 
-    def __init__(self, parent):
+    def __init__(self, height: float, parent):
         super().__init__(parent)
         self.ui = ui_add_order_dialog.Ui_Dialog()
         self.ui.setupUi(self)
@@ -191,6 +191,7 @@ class OrderAddingDialog(QDialog):
         self.setWindowState(Qt.WindowMaximized)
 
         self.ui.name.setText(datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
+        self.ui.heigth.setValue(height)
 
         # Иерархическая модель изделие->заготовки для формирования заказа
         # ID (int) - идентификатор конкретного изделия или заготовки
@@ -372,6 +373,7 @@ class OrderAddingDialog(QDialog):
         """
         # Имя и статус складирования заказа - основа записи в базе данных
         order_name = self.ui.name.text()
+        order_thickness = self.ui.heigth.value()
 
         # Если заполнено имя и выбраны изделия
         if not order_name or not self.choice_proxy.rowCount(QModelIndex()):
@@ -383,7 +385,7 @@ class OrderAddingDialog(QDialog):
             return
 
         creation_date = datetime.today().strftime("%d_%m_%Y")
-        order_id = StandardDataService.save_record('orders', status_id=0, name=order_name, date=creation_date)
+        order_id = StandardDataService.save_record('orders', status_id=0, name=order_name, date=creation_date, cutting_thickness=order_thickness)
 
         if not order_id:
             QMessageBox.critical(self, 'Ошибка добавления', f'Заказ {order_name} не был добавлен в базу!', QMessageBox.Ok)
@@ -410,6 +412,7 @@ class OrderAddingDialog(QDialog):
             'date': creation_date,
             'articles': marked_rows['articles_count'],
             'details': marked_rows['details_count'],
+            'thickness': order_thickness
         })
         logging.info('Заказ %(name)s добавлен в базу.', {'name': order_name})
         self.accept()
@@ -803,11 +806,11 @@ class IngotAssignmentDialog(QDialog):
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel('unused', fusions_id=fusions_id)
         self.proxy_model = SortIngotModel(self, min_size=min_sizes)
+        self.proxy_model.setDynamicSortFilter(True)
         self.proxy_model.setSourceModel(self.ingot_model)
         self.proxy_model.sort(0)
         self.ingot_delegate = IngotSectionDelegate(False, self.ui.ingots_view)
         self.ui.ingots_view.setModel(self.proxy_model)
-        print(self.ui.ingots_view.model())
         self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
 
         # Назначение меню кнопке
@@ -837,7 +840,6 @@ class IngotAssignmentDialog(QDialog):
 
         used_fusions = []
         # Проходим по всем выбранным слиткам
-        print(self.ui.ingots_view.selectedIndexes())
         for index in self.ui.ingots_view.selectedIndexes():
             index = index.model().mapToSource(index)
             ingot = self.ingot_model.data(index, Qt.DisplayRole)
@@ -1031,7 +1033,7 @@ class IngotAssignmentDialog(QDialog):
                 'batch': None,
                 'size': sizes,
             })
-            self.ui.ingots_view.selectionModel().select(self.ingot_model.index(0, 0, QModelIndex()), QItemSelectionModel.SelectionFlag.Select)
+            self.ui.ingots_view.selectionModel().select(self.proxy_model.index(0, 0, QModelIndex()), QItemSelectionModel.SelectionFlag.SelectCurrent)
             self.predicted_ingots[fusion_id] = {'tree': tree, 'efficiency': round(efficiency, 2)}
         progress.close()
 

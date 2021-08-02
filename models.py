@@ -581,6 +581,7 @@ class OrderModel(ListModel):
                 'efficiency': order[5],
                 'articles': order[6],
                 'details': order[7],
+                'thickness': order[8],
             }
             self.appendRow(data_row)
 
@@ -633,6 +634,7 @@ class SortIngotModel(QSortFilterProxyModel):
     def __init__(self, parent: Optional[QObject], min_size=None) -> None:
         super().__init__(parent=parent)
         self.min_size = min_size
+        self.invalidateFilter()
 
     def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
         """Сравнение слитков по объему"""
@@ -753,6 +755,7 @@ class IngotResidualsModel(TreeModel):
                         st_efficiency = solution_efficiency(subtree.root, list(dfs(subtree.root)), subtree.main_kit, is_total=True)
                         self.appendRow([name, batch_, fusion, size, f'{round(st_efficiency * 100, 2)}%', subtree], self.index(self.rowCount() - 1, 0, QModelIndex()))
                         counter += 1
+
 
 class CatalogArticlesModel(TreeModel):
     def __init__(self, headers: list, parent: Optional[QObject] = None):

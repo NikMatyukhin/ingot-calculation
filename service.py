@@ -295,7 +295,8 @@ class OrderDataService(StandardDataService):
     def get_table(status: Field = None, connection: Connection = connect(':memory:')) -> list:
         condition = f'WHERE o.{status.name}={status.value} ' if status else ''
         sql = str('SELECT o.id, o.status_id, o.name, o.date, o.step, '
-                  'o.efficiency, COUNT(DISTINCT c.article_id), SUM(c.amount) '
+                  'o.efficiency, COUNT(DISTINCT c.article_id), SUM(c.amount), '
+                  'o.cutting_thickness '
                   'FROM orders AS o '
                   'LEFT JOIN complects AS c ON o.id = c.order_id ' + \
                   condition + 'GROUP BY o.id ORDER BY o.id')
