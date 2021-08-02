@@ -435,30 +435,6 @@ class OCIMainWindow(QMainWindow):
                 model.setData(complect_counter[name]['total'], complect_counter[name]['amount'], Qt.EditRole)
         OrderDataService.update_statuses(updates)
 
-    def save_complects(self) -> None:
-        text = self.ui.saveComplect.text()
-        if text.endswith('*'):
-            order_id = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)['id']
-            order = Field('order_id', order_id)
-
-            updates = FieldCollection(['amount', 'priority', 'order_id', 'detail_id'])
-            model = self.complect_model
-
-            for row in range(model.rowCount(QModelIndex())):
-                article_index = model.index(row, 0, QModelIndex())
-
-                for sub_row in range(model.rowCount(article_index)):
-                    detail_index = model.index(sub_row, 1, article_index)
-                    amount_index = model.index(sub_row, 7, article_index)
-                    priority_index = model.index(sub_row, 8, article_index)
-
-                    detail = Field('detail_id', model.data(detail_index, Qt.DisplayRole))
-                    amount = Field('amount', model.data(amount_index, Qt.DisplayRole))
-                    priority = Field('priority', model.data(priority_index, Qt.DisplayRole))
-                    updates.append(amount, priority, order, detail)
-            OrderDataService.update_complects(updates)
-            self.ui.saveComplect.setText(text[:-1])
-
     def create_all_tree(self) -> None:
         order_index = self.ui.orders_view.currentIndex()
         order = order_index.data(Qt.DisplayRole)
@@ -516,9 +492,6 @@ class OCIMainWindow(QMainWindow):
 
     def create_tree(self, order: Dict, ingot: Dict, material: Material,
                     details: Kit) -> Optional[Tuple[float, float]]:
-        # Сохранение заказа
-        self.save_complects()
-
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)

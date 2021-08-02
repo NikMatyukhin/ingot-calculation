@@ -114,39 +114,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setContentsMargins(10, 10, 10, 5)
         self.horizontalLayout_2.setSpacing(5)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.new_order = QtWidgets.QToolButton(self.top_area)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Maximum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.new_order.sizePolicy().hasHeightForWidth())
-        self.new_order.setSizePolicy(sizePolicy)
-        self.new_order.setMinimumSize(QtCore.QSize(50, 60))
-        self.new_order.setMaximumSize(QtCore.QSize(16777215, 80))
-        self.new_order.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.new_order.setStyleSheet("QToolButton {\n"
-"    background-color: rgb(225, 225, 225);\n"
-"    border-radius: 3px;\n"
-"    padding-top: 2px;\n"
-"    color: black;\n"
-"    border: none;\n"
-"}\n"
-"\n"
-"QToolButton:hover {\n"
-"    background-color: rgb(210, 210, 210);\n"
-"}\n"
-"\n"
-"QToolButton:pressed {\n"
-"    background-color: rgb(189, 189, 189);\n"
-"    padding-left: 0px;\n"
-"    padding-top: 2px;\n"
-"}")
-        icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap(":/icons/clipboard.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.new_order.setIcon(icon1)
-        self.new_order.setIconSize(QtCore.QSize(30, 30))
-        self.new_order.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
-        self.new_order.setObjectName("new_order")
-        self.horizontalLayout_2.addWidget(self.new_order)
         self.storage = QtWidgets.QToolButton(self.top_area)
         self.storage.setMinimumSize(QtCore.QSize(50, 60))
         self.storage.setMaximumSize(QtCore.QSize(16777215, 80))
@@ -167,9 +134,9 @@ class Ui_MainWindow(object):
 "    padding-left: 0px;\n"
 "    padding-top: 2px;\n"
 "}")
-        icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(":/icons/gold-ingot.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.storage.setIcon(icon2)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(":/icons/gold-ingot.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.storage.setIcon(icon1)
         self.storage.setIconSize(QtCore.QSize(40, 40))
         self.storage.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.storage.setObjectName("storage")
@@ -200,9 +167,9 @@ class Ui_MainWindow(object):
 "    padding-left: 0px;\n"
 "    padding-top: 2px;\n"
 "}")
-        icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(":/icons/book.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.catalog.setIcon(icon3)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap(":/icons/book.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.catalog.setIcon(icon2)
         self.catalog.setIconSize(QtCore.QSize(40, 30))
         self.catalog.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.catalog.setObjectName("catalog")
@@ -226,9 +193,9 @@ class Ui_MainWindow(object):
 "    padding-left: 0px;\n"
 "    padding-top: 2px;\n"
 "}")
-        icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(":/icons/settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.settings.setIcon(icon4)
+        icon3 = QtGui.QIcon()
+        icon3.addPixmap(QtGui.QPixmap(":/icons/settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.settings.setIcon(icon3)
         self.settings.setIconSize(QtCore.QSize(40, 30))
         self.settings.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
         self.settings.setObjectName("settings")
@@ -255,7 +222,9 @@ class Ui_MainWindow(object):
         self.orders_area.setSizePolicy(sizePolicy)
         self.orders_area.setMinimumSize(QtCore.QSize(400, 0))
         self.orders_area.setMaximumSize(QtCore.QSize(400, 16777215))
-        self.orders_area.setStyleSheet("background-color: rgb(232, 232, 232);")
+        self.orders_area.setStyleSheet("QFrame {\n"
+"    background-color: rgb(232, 232, 232);\n"
+"}")
         self.orders_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.orders_area.setFrameShadow(QtWidgets.QFrame.Raised)
         self.orders_area.setObjectName("orders_area")
@@ -263,9 +232,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setContentsMargins(20, 20, 20, 20)
         self.verticalLayout_2.setSpacing(0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.pushButton = QtWidgets.QPushButton(self.orders_area)
-        self.pushButton.setMinimumSize(QtCore.QSize(0, 50))
-        self.pushButton.setStyleSheet("QPushButton {\n"
+        self.new_order = QtWidgets.QPushButton(self.orders_area)
+        self.new_order.setMinimumSize(QtCore.QSize(0, 50))
+        self.new_order.setStyleSheet("QPushButton {\n"
 "    background-color: rgb(232, 232, 232);\n"
 "    border: 1px solid gray;\n"
 "}\n"
@@ -277,43 +246,26 @@ class Ui_MainWindow(object):
 "QPushButton:pressed {\n"
 "    background-color: rgb(209, 209, 209);\n"
 "}")
-        self.pushButton.setFlat(True)
-        self.pushButton.setObjectName("pushButton")
-        self.verticalLayout_2.addWidget(self.pushButton)
-        self.orders_view = QtWidgets.QListView(self.orders_area)
+        self.new_order.setFlat(True)
+        self.new_order.setObjectName("new_order")
+        self.verticalLayout_2.addWidget(self.new_order)
+        self.frame = QtWidgets.QFrame(self.orders_area)
+        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame.setObjectName("frame")
+        self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.frame)
+        self.verticalLayout_5.setContentsMargins(0, 20, 0, 0)
+        self.verticalLayout_5.setSpacing(0)
+        self.verticalLayout_5.setObjectName("verticalLayout_5")
+        self.orders_view = QtWidgets.QListView(self.frame)
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
         font.setPointSize(8)
         self.orders_view.setFont(font)
-        self.orders_view.setStyleSheet("QListView {\n"
-"    border: 1px solid gray;\n"
-"    border-top: none;\n"
-"}")
-        self.orders_view.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.orders_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.orders_view.setObjectName("orders_view")
-        self.verticalLayout_2.addWidget(self.orders_view)
-        self.listView_2 = QtWidgets.QListView(self.orders_area)
-        font = QtGui.QFont()
-        font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(8)
-        self.listView_2.setFont(font)
-        self.listView_2.setStyleSheet("QListView {\n"
-"    border: 1px solid gray;\n"
-"    border-top: none;\n"
-"}")
-        self.listView_2.setObjectName("listView_2")
-        self.verticalLayout_2.addWidget(self.listView_2)
-        self.listView = QtWidgets.QListView(self.orders_area)
-        font = QtGui.QFont()
-        font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(8)
-        self.listView.setFont(font)
-        self.listView.setStyleSheet("QListView {\n"
-"    border: 1px solid gray;\n"
-"    border-top: none;\n"
-"}")
-        self.listView.setObjectName("listView")
-        self.verticalLayout_2.addWidget(self.listView)
+        self.verticalLayout_5.addWidget(self.orders_view)
+        self.verticalLayout_2.addWidget(self.frame)
         self.horizontalLayout.addWidget(self.orders_area)
         self.orders_information_area = QtWidgets.QStackedWidget(self.order_page)
         self.orders_information_area.setObjectName("orders_information_area")
@@ -625,7 +577,7 @@ class Ui_MainWindow(object):
         self.heigths_scroll_area.setWidgetResizable(True)
         self.heigths_scroll_area.setObjectName("heigths_scroll_area")
         self.heigths_content = QtWidgets.QWidget()
-        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 100, 23))
+        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 50, 23))
         self.heigths_content.setObjectName("heigths_content")
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.heigths_content)
         self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
@@ -656,14 +608,12 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Раскрой слитка"))
         self.information.setText(_translate("MainWindow", "Заказы"))
         self.chart.setText(_translate("MainWindow", "Карта раскроя"))
-        self.new_order.setText(_translate("MainWindow", "Новый\n"
-"заказ"))
         self.storage.setText(_translate("MainWindow", "Склад\n"
 "слитков"))
         self.catalog.setText(_translate("MainWindow", "Cправочник\n"
 "заготовок"))
         self.settings.setText(_translate("MainWindow", "Настройки"))
-        self.pushButton.setText(_translate("MainWindow", "Добавить заказ"))
+        self.new_order.setText(_translate("MainWindow", "Добавить заказ"))
         self.default_label.setText(_translate("MainWindow", "Заказ не выбран"))
         self.order_name.setText(_translate("MainWindow", "Номер заказа"))
         self.complects_label.setText(_translate("MainWindow", "Заготовки"))

@@ -356,7 +356,6 @@ class TreeModel(QAbstractItemModel):
         :return: Результат операции добавления
         :rtype: bool
         """
-        # if not self.insertRows(0, 1, index):
         if not self.insertRow(self.rowCount(index), index):
             return False
 
@@ -780,7 +779,7 @@ class CatalogArticlesModel(TreeModel):
            role != Qt.DecorationRole and role != Qt.ToolTipRole:
             return None
 
-        item = index.internalPointer()
+        item: TreeItem = index.internalPointer()
 
         # HACK: для отображения иконки у изделия не должно быть заготовок,
         #       а сама иконка появляется всегда в первой колонке
@@ -1048,7 +1047,8 @@ class CatalogFilterProxyModel(QSortFilterProxyModel):
                 self.sourceModel().index(sourceRow, 1, QModelIndex()),
                 Qt.DisplayRole
             )
-            return self.name_filter in name.lower()
+            if name:
+                return self.name_filter in name.lower()
         return True
 
     @pyqtSlot(str)
