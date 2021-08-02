@@ -801,7 +801,10 @@ class IngotAssignmentDialog(QDialog):
         for fusion, group in blanks.items():
             min_length_blank = min(group, key=attrgetter('length'))
             min_width_blank = min(group, key=attrgetter('width'))
-            min_sizes[self.fusions[fusion]] = min(min_length_blank.length, min_width_blank.width)
+            min_sizes[self.fusions[fusion]] = (
+                min(min_length_blank.length, min_width_blank.width),
+                min(group, key=attrgetter('height')).height
+            )
 
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel('unused', fusions_id=fusions_id)

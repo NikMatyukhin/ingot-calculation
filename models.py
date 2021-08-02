@@ -2,7 +2,7 @@ import math
 from enum import Enum
 import pathlib
 import pickle
-from sequential_mh.bpp_dsc.support import dfs
+from sequential_mh.bpp_dsc.support import dfs, eq_with_deformation_double_side, eq_with_deformation_one_side
 from sequential_mh.bpp_dsc.tree import Tree, solution_efficiency
 from typing import Any, Dict, List, Optional
 
@@ -651,10 +651,13 @@ class SortIngotModel(QSortFilterProxyModel):
         ingot_data = index.data(Qt.DisplayRole)
         if not ingot_data:
             return True
-        length, width = ingot_data['size'][:2]
         if self.min_size and ingot_data['fusion_id'] in self.min_size:
             min_side = self.min_size[ingot_data['fusion_id']]
-            return length >= min_side and width >= min_side
+            if ingot_data['size'][-1] >= min_side[1]:
+                eq_with_one_side_def = eq_with_deformation_one_side((min_side[0], *min_side), ingot_data['size'])
+                eq_with_two_side_def = eq_with_deformation_double_side((min_side[0], *min_side), ingot_data['size'])
+                return eq_with_one_side_def or eq_with_two_side_def
+            return False
         return True
 
 
