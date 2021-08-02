@@ -70,3 +70,45 @@ def dfs(root):
         node = stack.popleft()
         yield node
         stack.extendleft(reversed(node.list_of_children()))
+
+
+def eq_with_deformation_one_side(blank_size, ingot_size) -> bool:
+    """Сравнение прямоугольников с деформацией по одной стороне
+
+    :param blank_size: размеры вписываемого прямоугольника
+    :type blank_size: tuple[Number, Number, Number]
+    :param ingot_size: размеры основного прямоугольника
+    :type ingot_size: tuple[Number, Number, Number]
+    :return: True если вписываемый прямоугольник входит в основной,
+             False в противном случае
+    :rtype: bool
+    """
+    length_blank, width_blank, height_blank = blank_size
+    length, width, height = ingot_size
+
+    deformed_length = length * height / height_blank
+    deformed_width = width * height / height_blank
+    without_rotate = deformed_length >= length_blank and deformed_width >= width_blank
+    with_rotate = deformed_width >= length_blank and deformed_width >= width_blank
+
+    return without_rotate or with_rotate
+
+
+def eq_with_deformation_double_side(blank_size, ingot_size) -> bool:
+    """Сравнение прямоугольников с деформацией по двум сторонам
+
+    :param blank_size: размеры вписываемого прямоугольника
+    :type blank_size: tuple[Number, Number, Number]
+    :param ingot_size: размеры основного прямоугольника
+    :type ingot_size: tuple[Number, Number, Number]
+    :return: True если вписываемый прямоугольник входит в основной,
+             False в противном случае
+    :rtype: bool
+    """
+    length_blank, width_blank, height_blank = blank_size
+    length, width, height = ingot_size
+
+    intermediate_height = length * height / length_blank
+    target_height = width * intermediate_height / width_blank
+
+    return target_height >= height_blank
