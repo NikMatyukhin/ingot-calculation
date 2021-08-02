@@ -516,6 +516,9 @@ class OCIMainWindow(QMainWindow):
 
     def create_tree(self, order: Dict, ingot: Dict, material: Material,
                     details: Kit) -> Optional[Tuple[float, float]]:
+        # Сохранение заказа
+        self.save_complects()
+
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)

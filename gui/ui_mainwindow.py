@@ -261,16 +261,59 @@ class Ui_MainWindow(object):
         self.orders_area.setObjectName("orders_area")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.orders_area)
         self.verticalLayout_2.setContentsMargins(20, 20, 20, 20)
-        self.verticalLayout_2.setSpacing(10)
+        self.verticalLayout_2.setSpacing(0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.pushButton = QtWidgets.QPushButton(self.orders_area)
+        self.pushButton.setMinimumSize(QtCore.QSize(0, 50))
+        self.pushButton.setStyleSheet("QPushButton {\n"
+"    background-color: rgb(232, 232, 232);\n"
+"    border: 1px solid gray;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
+"    background-color: rgb(225, 225, 225);\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: rgb(209, 209, 209);\n"
+"}")
+        self.pushButton.setFlat(True)
+        self.pushButton.setObjectName("pushButton")
+        self.verticalLayout_2.addWidget(self.pushButton)
         self.orders_view = QtWidgets.QListView(self.orders_area)
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
         font.setPointSize(8)
         self.orders_view.setFont(font)
+        self.orders_view.setStyleSheet("QListView {\n"
+"    border: 1px solid gray;\n"
+"    border-top: none;\n"
+"}")
         self.orders_view.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.orders_view.setObjectName("orders_view")
         self.verticalLayout_2.addWidget(self.orders_view)
+        self.listView_2 = QtWidgets.QListView(self.orders_area)
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(8)
+        self.listView_2.setFont(font)
+        self.listView_2.setStyleSheet("QListView {\n"
+"    border: 1px solid gray;\n"
+"    border-top: none;\n"
+"}")
+        self.listView_2.setObjectName("listView_2")
+        self.verticalLayout_2.addWidget(self.listView_2)
+        self.listView = QtWidgets.QListView(self.orders_area)
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(8)
+        self.listView.setFont(font)
+        self.listView.setStyleSheet("QListView {\n"
+"    border: 1px solid gray;\n"
+"    border-top: none;\n"
+"}")
+        self.listView.setObjectName("listView")
+        self.verticalLayout_2.addWidget(self.listView)
         self.horizontalLayout.addWidget(self.orders_area)
         self.orders_information_area = QtWidgets.QStackedWidget(self.order_page)
         self.orders_information_area.setObjectName("orders_information_area")
@@ -619,8 +662,8 @@ class Ui_MainWindow(object):
 "слитков"))
         self.catalog.setText(_translate("MainWindow", "Cправочник\n"
 "заготовок"))
-        self.settings.setText(_translate("MainWindow", "Настройки\n"
-"приложения"))
+        self.settings.setText(_translate("MainWindow", "Настройки"))
+        self.pushButton.setText(_translate("MainWindow", "Добавить заказ"))
         self.default_label.setText(_translate("MainWindow", "Заказ не выбран"))
         self.order_name.setText(_translate("MainWindow", "Номер заказа"))
         self.complects_label.setText(_translate("MainWindow", "Заготовки"))
@@ -630,5 +673,5 @@ class Ui_MainWindow(object):
 "заказ"))
         self.recalculate.setText(_translate("MainWindow", "Пересчитать"))
         self.plan.setText(_translate("MainWindow", "Карта раскроя"))
-        self.ingots_label.setText(_translate("MainWindow", "Слитки"))
+        self.ingots_label.setText(_translate("MainWindow", "Выбранный металл"))
 import application_rc
