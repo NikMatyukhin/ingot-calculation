@@ -38,7 +38,7 @@ from dialogs import (
     IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
     FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
-from messagebox import message_box_info
+from messagebox import message_box_error, message_box_info
 from storage import Storage
 from charts.plan import CuttingPlanPainter
 from charts.map import CuttingMapPainter
@@ -608,11 +608,14 @@ class OCIMainWindow(QMainWindow):
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
             return
-        # except Exception as exception:
-        #     QMessageBox.critical(
-        #         self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
-        #     )
-        #     return
+        except BPPError as ex:
+            message_box_error(str(ex), parent=self)
+            return
+        except Exception as exception:
+            QMessageBox.critical(
+                self, 'Раскрой завершился с неизвестной ошибкой', f'{exception}', QMessageBox.Ok
+            )
+            return
         else:
             progress.setLabelText('Завершение раскроя...')
 
@@ -843,7 +846,9 @@ class OCIMainWindow(QMainWindow):
             ]
 
         if not trees:
-            raise BPPError('Не удалось получить раскрой')
+            raise BPPError(
+                'Не удалось получить раскрой. Измените приоритеты или ограничения'
+            )
 
         print(f'Годных деревьев: {len(trees)}')
         # for t in trees:

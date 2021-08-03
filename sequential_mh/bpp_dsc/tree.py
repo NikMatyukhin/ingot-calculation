@@ -498,15 +498,15 @@ class BinNode(Node):
                 if item.is_rotatable:
                     number += is_subrectangle(item.size, dst, with_rotate=True)
                 else:
-                    if self.last_rolldir:
-                        if self.last_rolldir != item.direction:
-                            item.rotate()
-                        number += is_subrectangle(
-                            item.size, dst, with_rotate=False
-                        )
-                    else:
-                        msg = f'Узел {self} ({self._id}) не имеет направления проката'
-                        raise DirectionError(msg)
+                    # if self.last_rolldir:
+                    if self.last_rolldir != item.direction:
+                        item.rotate()
+                    number += is_subrectangle(
+                        item.size, dst, with_rotate=False
+                    )
+                    # else:
+                    #     msg = f'Узел {self} ({self._id}) не имеет направления проката'
+                    #     raise DirectionError(msg)
             else:
                 if double_sided:
                     if item.volume <= dst[LENGTH] * dst[WIDTH] * dst[HEIGHT]:
