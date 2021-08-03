@@ -524,11 +524,11 @@ class OCIMainWindow(QMainWindow):
             )
             QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
             return
-        except Exception as exception:
-            QMessageBox.critical(
-                self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
-            )
-            return
+        # except Exception as exception:
+        #     QMessageBox.critical(
+        #         self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
+        #     )
+        #     return
         else:
             progress.setLabelText('Завершение раскроя...')
 
@@ -915,19 +915,23 @@ class OCIMainWindow(QMainWindow):
                 )
                 new_tree = Tree(new_root)
                 new_tree._type = 1
-                new_tree = self.stmh_idrd(
-                    new_tree, restrictions=restrictions,
-                    level_subtree=level_subtree, with_priority=False
-                )
-                if new_tree.root.children:
-                    tailing.rtype = RectangleType.USED_RESIDUAL
-                    node.subtree.append(new_tree)
-                # как быть если есть приоритет? когда частичная упаковка текущей толщины
-                # получить упакованные элементы
-                # удалить упакованные элементы из соседней ветки
-                for subnode in new_tree.root.cc_leaves:
-                    blanks = [r.rectangle for r in chain.from_iterable(subnode.result.blanks.values())]
-                    adj_node.kit.delete_items(list(blanks), subnode.bin.height)
+                try:
+                    new_tree = self.stmh_idrd(
+                        new_tree, restrictions=restrictions,
+                        level_subtree=level_subtree, with_priority=False
+                    )
+                except BPPError:
+                    print(f'\tОстаток {tailing.length, tailing.width, node.bin.height} из {node.bin}: {adj_node.kit.keys()}')
+                else:
+                    if new_tree.root.children:
+                        tailing.rtype = RectangleType.USED_RESIDUAL
+                        node.subtree.append(new_tree)
+                    # как быть если есть приоритет? когда частичная упаковка текущей толщины
+                    # получить упакованные элементы
+                    # удалить упакованные элементы из соседней ветки
+                    for subnode in new_tree.root.cc_leaves:
+                        blanks = [r.rectangle for r in chain.from_iterable(subnode.result.blanks.values())]
+                        adj_node.kit.delete_items(list(blanks), subnode.bin.height)
                 if adj_node.kit.is_empty():
                     break
 
