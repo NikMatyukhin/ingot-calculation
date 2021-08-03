@@ -587,8 +587,9 @@ class OrderModel(ListModel):
 
 class IngotModel(ListModel):
     def __init__(self, category: OrderDataService.Category, 
-                 fusions_id=None, parent: Optional[QObject] = None) -> None:
-        super().__init__(parent)
+                 fusions_id: List = None,
+                 parent: Optional[QObject] = None) -> None:
+        super(IngotModel, self).__init__(parent)
         self.__category = category
         self.__order_id = None
         self._fusions_id = fusions_id
@@ -712,9 +713,6 @@ class IngotResidualsModel(TreeModel):
         
         if role != Qt.DisplayRole:
             return None
-        
-        # if index.row() == 5:
-        #     return None
         
         item: TreeItem = index.internalPointer()
 
@@ -1015,7 +1013,6 @@ class OrderInformationComplectsModel(TreeModel):
                     continue
                 updates.append(status, order, Field('detail_id', detail.data(1)))
         OrderDataService.discard_statuses(updates)
-        self.setupModelData()
 
     def setupModelData(self):
         if self.root_item.childCount():
