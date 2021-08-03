@@ -269,6 +269,7 @@ class OCIMainWindow(QMainWindow):
             self.ui.ingots_view.setCurrentIndex(
                 self.ingot_model.index(0, 0, QModelIndex()))
             self.ingot_changed(self.ui.ingots_view.currentIndex())
+            self.ui.plan.setEnabled(self.scheme_count(order) != 0)
             self.ui.complete_order.setEnabled(self.scheme_count(order) != 0)
         else:
             self.ui.plan.setEnabled(False)
@@ -280,9 +281,7 @@ class OCIMainWindow(QMainWindow):
             return
         
         ingot = current.data(Qt.DisplayRole)
-        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         self.ui.recalculate.setEnabled(ingot['status_id'] != 3)
-        self.ui.plan.setEnabled(self.is_file_exist(order, ingot))
 
     def refresh_residuals_view(self, order: Dict):
         self.ingots_residuals_model.order = order['id']
@@ -352,6 +351,7 @@ class OCIMainWindow(QMainWindow):
             self.change_status(order_index, 0)
 
     def change_status(self, index: QModelIndex(), status: int) -> None:
+        """Метод для обновления статуса заказа"""
         order = index.data(Qt.DisplayRole)
         self.order_model.setData(index, {'status_id': status}, Qt.EditRole)
         StandardDataService.update_record(
@@ -359,6 +359,7 @@ class OCIMainWindow(QMainWindow):
     
     def change_efficiency(self, index: QModelIndex(),
                           efficiency: float = None) -> None:
+        """Метод для обновления эффективности заказа"""
         order = index.data(Qt.DisplayRole)
         if not efficiency:
             efficiency = OrderDataService.efficiency(
@@ -386,7 +387,6 @@ class OCIMainWindow(QMainWindow):
         message.exec()
 
         if answer == message.clickedButton():
-            success = False
             if ingot['status_id'] == 3:
                 # Если слиток только в планах, то просто удаляем его
                 success = StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
@@ -398,17 +398,21 @@ class OCIMainWindow(QMainWindow):
                 return
             # Сначала нужно удалить карту раскроя от удаляемого слитка в
             # выбранном заказе и удалить его из модели слитков заказа...
-            self.delete_tree(order, ingot=ingot)
+            not_cutted_ingot = self.is_file_exist(order, ingot)
+            if not_cutted_ingot:
+                self.delete_tree(order, ingot=ingot)
             self.ingot_model.deleteRow(index.row())
-            # Необходимо сбросить статусы комплектов от этого слитка
-            # TODO: ЕСЛИ БУДЕТ 2+ СЛИТКОВ ОДНОГО СПЛАВА ТО ВСЁ СЛОМАЕТСЯ
-            self.complect_model.discard_statuses(order['id'], ingot['fusion_id'])
-            # Обновляем эффективность заказа
-            self.change_efficiency(order_index)
-            # Проверяем возможность изменения статуса заказа
-            self.possible_change_status()
-            # Обновляем итоговый вид заказа
-            self.refresh_orders_view(order_index)
+            if not_cutted_ingot:
+                # Необходимо сбросить статусы комплектов от этого слитка
+                # TODO: ЕСЛИ БУДЕТ 2+ СЛИТКОВ ОДНОГО СПЛАВА ТО ВСЁ СЛОМАЕТСЯ
+                self.complect_model.discard_statuses(
+                    order['id'], ingot['fusion_id'])
+                # Обновляем эффективность заказа
+                self.change_efficiency(order_index)
+                # Проверяем возможность изменения статуса заказа
+                self.possible_change_status()
+                # Обновляем итоговый вид заказа
+                self.refresh_orders_view(order_index)
 
     def order_edited(self, data: Dict) -> None:
         index = self.ui.orders_view.currentIndex()
@@ -432,6 +436,15 @@ class OCIMainWindow(QMainWindow):
         message.exec()
 
         if answer == message.clickedButton():
+            for row in range(self.ingot_model.rowCount()):
+                ingot_index = self.ingot_model.index(row, 0, QModelIndex())
+                ingot = ingot_index.data(Qt.DisplayRole)
+                if ingot['status_id'] == 3:
+                    # Если слиток только в планах, то просто удаляем его
+                    StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
+                elif ingot['status_id'] in [1, 2]:
+                    # Если слиток складской, то просто отвязываем от заказа
+                    StandardDataService.update_record('ingots', Field('id', ingot['id']), order_id=None)
             success = StandardDataService.delete_by_id('orders', Field('id', order['id']))
             if not success:
                 QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить заказ.', QMessageBox.Ok)
@@ -564,29 +577,38 @@ class OCIMainWindow(QMainWindow):
                 order, ingot, material, kit
             )
             if ef_res:
-                efficiency, order_efficiency = ef_res
-
-                self.ingot_model.setData(
-                    index, {'efficiency': round(efficiency, 2)},
-                    Qt.EditRole
-                )
-                self.change_efficiency(order_index, efficiency=order_efficiency)
                 for leave in self._tree.root.cc_leaves:
-                    placed_blanks[material.name] += Counter(b.name for b in leave.placed)
+                    placed_blanks[material.name] += Counter(
+                        b.name for b in leave.placed)
+
+                # Если раскрой дерева для слитка успешен, то обовляем его
+                self.ingot_model.setData(
+                    index, {'efficiency': ef_res}, Qt.EditRole
+                )
+                StandardDataService.update_record(
+                    'ingots', Field('id', ingot['id']), efficiency=ef_res
+                )
+                # Также необходимо сохранить дерево этого слитка и обновить
+                # модель с комплектами и их статусами
+                self.update_complect_statuses(order['id'], ingot['fusion_id'])
+                self.save_tree(order, ingot)
+        self.change_efficiency(order_index)
+        self.possible_change_status()
+        self.refresh_orders_view(order_index)
 
     def create_tree(self, order: Dict, ingot: Dict, material: Material,
-                    details: Kit) -> Optional[Tuple[float, float]]:
+                    kit: Kit) -> Optional[Tuple[float, float]]:
         # Отображение прогресса раскроя
         progress = QProgressDialog('OCI', 'Закрыть', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)
         progress.setWindowTitle('Раскрой')
         progress.forceShow()
         order_name = order['name']
-        ingot_size = ingot['size']
-        order_id = int(order['id'])
+        size = ingot['size']
+        _id = int(order['id'])
         log_operation_info(
             'create_cut', {'name': order_name, 'alloy': material.name},
-            identifier=order_id
+            identifier=_id
         )
         progress.setLabelText('Процесс раскроя...')
         try:
@@ -594,52 +616,22 @@ class OCIMainWindow(QMainWindow):
                 'cut_info',
                 {
                     'name': order_name, 'alloy': material.name,
-                    'size': 'x'.join(map(str, ingot_size)),
-                    'blanks': details.qty(), 'heights': len(details.keys())
-                }, identifier=order_id
+                    'size': 'x'.join(map(str, size)),
+                    'blanks': kit.qty(), 'heights': len(kit.keys())
+                }, identifier=_id
             )
-            efficiency = self.create_cut(
-                ingot_size, details, material, progress=progress
-            )
+            efficiency = self.create_cut(size, kit, material, progress=progress)
         except ForcedTermination:
             log_operation_info(
                 'user_inter_cut', {'name': order_name, 'alloy': material.name},
-                identifier=order_id
+                identifier=_id
             )
-            QMessageBox.information(self, 'Внимание', 'Процесс раскроя был прерван!', QMessageBox.Ok)
+            message_box_info('Процесс раскроя был прерван!', self)
             return
-        # except Exception as exception:
-        #     QMessageBox.critical(
-        #         self, 'Раскрой завершился с ошибкой', f'{exception}', QMessageBox.Ok
-        #     )
-        #     return
         else:
             progress.setLabelText('Завершение раскроя...')
-
-            efficiency = round(efficiency, 2)
-            StandardDataService.update_record(
-                'ingots', Field('id', ingot['id']), efficiency=efficiency
-            )
-            self.update_complect_statuses(order['id'], ingot['fusion_id'])
-
-            order_efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
-            StandardDataService.update_record(
-                'orders', Field('id', order['id']), efficiency=order_efficiency
-            )
-            ingot['efficiency'] = efficiency
-            self.ingots_residuals_model.order = order['id']
-
-            self.save_tree(order, ingot)
-
-            log_operation_info(
-                'end_cut',
-                {
-                    'name': order_name, 'alloy': material.name,
-                    'efficiency': efficiency, 'total_efficiency': order_efficiency
-                }, identifier=order_id
-            )
-        progress.close()
-        return efficiency, order_efficiency
+            progress.close()
+            return round(efficiency, 2)
 
     def get_all_blanks(self) -> Dict:
         """Получение всех заготовок из заказа
@@ -1298,6 +1290,10 @@ class OCIMainWindow(QMainWindow):
     def open_edit_dialog(self) -> None:
         """Изменение текущего заказа"""
         order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
+        if self.scheme_count(order):
+            message_box_info('Удалите рассчитанные под заказ слитки,\n'
+                             'чтобы отредактировать его состав!', self)
+            return
         window = OrderEditingDialog(order, self.complect_model, self)
         window.orderEditedSuccess.connect(self.order_edited)
         window.show()
@@ -1449,19 +1445,14 @@ class OCIMainWindow(QMainWindow):
             self._tree = pickle.load(f)
 
     def delete_tree(self, order: Dict, ingot: Dict = None) -> None:
-        if ingot:
+        if ingot and self.is_file_exist(order, ingot):
             file_name = self.get_file_name(order, ingot)
-            path = 'schemes'
-            p = get_abs_path(file_name, path)
-            print(p.absolute())
-            p.unlink()
+            abs_path = get_abs_path(file_name, 'schemes')
+            abs_path.unlink()
         else:
-            files_name = Path(__file__).parent.absolute()
-            path = 'schemes'
-            abs_path = files_name / path
-            for p in abs_path.glob(f'{order["id"]}_*.oci'):
-                print(p.absolute())
-                p.unlink()
+            abs_path = Path(__file__).parent / 'schemes'
+            for path in abs_path.glob(f'{order["id"]}_*.oci'):
+                path.unlink()
 
     def get_file_name(self, order: Dict, ingot: Dict) -> str:
         """Создание имени файла для сохранения дерева раскроя"""

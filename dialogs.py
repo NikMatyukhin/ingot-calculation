@@ -969,7 +969,7 @@ class IngotAssignmentDialog(QDialog):
 
         progress = QProgressDialog('OCI', 'Отмена', 0, 100, self)
         progress.setWindowModality(Qt.WindowModal)
-        progress.setWindowTitle('Рассчет слитка под ПЗ')
+        progress.setWindowTitle('Рассчет')
         progress.forceShow()
         order_name = 'НОВЫЙ ЗАКАЗ'
         progress.setLabelText('Процесс расчета слитка под ПЗ...')
