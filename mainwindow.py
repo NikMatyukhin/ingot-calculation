@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
 from gui import ui_mainwindow
 from widgets import (
     IngotSectionDelegate, ListValuesDelegate, ExclusiveButton,
-    OrderDelegate
+    OrderDelegate, ZoomGraphicsView
 )
 from models import (
     IngotModel, IngotResidualsModel, OrderInformationComplectsModel, OrderModel
@@ -38,9 +38,9 @@ from dialogs import (
     IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
     FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
-from messagebox import message_bon_info
+from messagebox import message_box_info
 from storage import Storage
-from charts.plan import CuttingPlanPainter, MyQGraphicsView
+from charts.plan import CuttingPlanPainter
 from charts.map import CuttingMapPainter
 from catalog import Catalog
 from settings import SettingsDialog
@@ -72,9 +72,43 @@ class OCIMainWindow(QMainWindow):
     """Главное окно"""
     
     def __init__(self):
-        super().__init__()
+        super(OCIMainWindow, self).__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # Дерево раскроя текущего слитка
+        self._tree: Tree = None
+        # Подменяемое дерево раскроя из модели слитков-поддеревьев
+        self._map_tree: Tree = None
+        self.fusions_list = CatalogDataService.fusions_list()
+        self.statuses_list = CatalogDataService.statuses_list()
+        self.directions_list = CatalogDataService.directions_list()
+
+        # Работа с настройками приложения: подгрузка настроек
+        self.settings = QSettings('configs', QSettings.Format.IniFormat, self)
+
+        self.cut_allowance = 2             # Припуск на разрез
+        self.end_face_loss = 1             # Потери при обработке торцов (%)
+        self.minimum_plate_width = 50      # Минимальная ширина пластины
+        self.minimum_plate_length = 100    # Минимальная длина пластины
+        self.rough_roll_edge_loss = 4      # Потери при обработке кромки до 3мм
+        self.clean_roll_edge_loss = 2      # Потери при обработке кромки на 3мм
+        self.guillotine_width = 1200       # Ширина ножа гильотины
+        self.maximum_plate_length = 1250   # Максимальная длина пластины
+        self.rough_roll_plate_width = 280  # Ширина пластины проката до 3мм
+        self.clean_roll_plate_width = 450  # Ширина пластины проката на 3мм
+        self.clean_roll_height = 3          # Толщина чистового проката
+        self.admissible_deformation = 70   # Допустимая деформация проката (%)
+        self.cutting_thickness = 4.2       # Толщина начала разрезов
+        self.size_error = 2.0              # Погрешность ковки слитка
+        self.allowance = 1.5               # Припуск на фрезировку слитка
+        self.ingot_min_length = 70
+        self.ingot_min_width = 70
+        self.ingot_min_height = 20.0
+        self.ingot_max_length = 180
+        self.ingot_max_width = 180
+        self.ingot_max_height = 30.0
+        self.read_settings()
 
         # Установка визуальных дополнений приложения
         self.shadow_effect = QGraphicsDropShadowEffect()
@@ -93,33 +127,27 @@ class OCIMainWindow(QMainWindow):
 
         # Модель и делегат заказов
         self.order_model = OrderModel(Field('status_id', 1), self)
-        
         self.order_delegate = OrderDelegate(self.ui.orders_view)
-        
         self.ui.orders_view.setModel(self.order_model)
         self.ui.orders_view.setItemDelegate(self.order_delegate)
-        
-        self.order_delegate.deleteIndexClicked.connect(self.confirm_order_removing)
-        self.order_delegate.editIndexClicked.connect(self.open_edit_dialog)
 
         # Модель слитков (обновляется при изменении текущего заказа)
         self.ingot_model = IngotModel('unused')
-        
-        self.ingot_delegate = IngotSectionDelegate(numerable = True, parent = self.ui.ingots_view)
-        self.ingot_delegate_unclosed = IngotSectionDelegate(show_close = False, numerable = True, parent = self.ui.ingots_view)
-        
+        # Делегат с закрываемыми и нумеруемыми слитками - для обычных заказов
+        self.closed_ingot_dgt = IngotSectionDelegate(
+            show_close = True, numerable = True, parent = self.ui.ingots_view)
+        # Делегат с незакрываемыми слитками - для завершённых заказов
+        self.unclosed_ingot_dgt = IngotSectionDelegate(
+            show_close = False, numerable = True, parent = self.ui.ingots_view)
         self.ui.ingots_view.setModel(self.ingot_model)
-        self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
-        self.ui.ingots_view.clicked.connect(self.show_ingot_information)
+        self.ui.ingots_view.setItemDelegate(self.closed_ingot_dgt)
 
-        self.ingot_delegate.forgedIndexClicked.connect(self.confirm_ingot_readiness)
-        self.ingot_delegate.deleteFromOrderClicked.connect(self.confirm_ingot_removing)
-
-        # Модель со слитками и их остатками для карт раскроя
+        # Модель со слитками и их поддеревьями для карт раскроя
         self.residual_headers = [
             'Название', 'Партия', 'Сплав', 'Размеры', 'Эффективность', 'PATH'
         ]
-        self.ingots_residuals_model = IngotResidualsModel(self.residual_headers)
+        self.ingots_residuals_model = IngotResidualsModel(
+            self.residual_headers, self)
         self.ui.ingots_residuals_view.setModel(self.ingots_residuals_model)
         for column, width in enumerate([115, 70, 80, 75, 10, 100]):
             self.ui.ingots_residuals_view.setColumnWidth(column, width)
@@ -130,56 +158,25 @@ class OCIMainWindow(QMainWindow):
             'Название', 'ID', 'Статус', 'Сплав', 'Длина', 'Ширина', 'Толщина',
             'Количество', 'Упаковано', 'Приоритет', 'Направление проката'
         ]
-        self.complect_model = OrderInformationComplectsModel(self.complect_headers)
-
-        self.statuses_list = CatalogDataService.statuses_list()
-        self.status_delegate = ListValuesDelegate(self.statuses_list)
-        
-        self.directions_list = CatalogDataService.directions_list()
-        self.direction_delegate = ListValuesDelegate(self.directions_list)
-        
-        self.fusions_list = CatalogDataService.fusions_list()
-        self.fusion_delegate = ListValuesDelegate(self.fusions_list)
-
+        self.complect_model = OrderInformationComplectsModel(
+            self.complect_headers, self)
+        # Делегаты для значений по ID в словарных таблицах
+        self.status_dgt = ListValuesDelegate(self.statuses_list)
+        self.fusion_dgt = ListValuesDelegate(self.fusions_list)
+        self.direction_dgt = ListValuesDelegate(self.directions_list)
         self.ui.complects_view.setModel(self.complect_model)
-        self.ui.complects_view.setItemDelegateForColumn(2, self.status_delegate)
-        self.ui.complects_view.setItemDelegateForColumn(3, self.fusion_delegate)
-        self.ui.complects_view.setItemDelegateForColumn(10, self.direction_delegate)
+        self.ui.complects_view.setItemDelegateForColumn(2, self.status_dgt)
+        self.ui.complects_view.setItemDelegateForColumn(3, self.fusion_dgt)
+        self.ui.complects_view.setItemDelegateForColumn(10, self.direction_dgt)
         for column in range(self.complect_model.columnCount()):
             self.ui.complects_view.resizeColumnToContents(column)
-        
-        # Дерево раскроя текущего слитка
-        self._tree: Tree = None
-        self.map_tree: Tree = None
-
-        # Работа с настройками приложения: подгрузка настроек
-        self.settings = QSettings('configs', QSettings.IniFormat, self)
-        self.is_saved = True
-
-        # TODO: Вынести работу с настройками в отдельный менеджер настроек
-        self.cut_allowance = 0             # Припуск на разрез
-        self.end_face_loss = 0             # Потери при обработке торцов (%)
-        self.minimum_plate_width = 0       # Минимальная ширина пластины
-        self.minimum_plate_height = 0      # Минимальная длина пластины
-        self.rough_roll_edge_loss = 0      # Потери при обработке кромки до 3мм
-        self.clean_roll_edge_loss = 0      # Потери при обработке кромки на 3мм
-
-        self.guillotine_width = 1200       # Ширина ножа гильотины
-        self.maximum_plate_height = 1200   # Максимальная длина пластины
-        self.rough_roll_plate_width = 400  # Ширина пластины проката до 3мм
-        self.clean_roll_plate_width = 450  # Ширина пластины проката на 3мм
-        self.clean_roll_depth = 3          # Толщина чистового проката
-        self.admissible_deformation = 70   # Допустимая деформация проката (%)
-        self.cutting_thickness = 4.2       # Толщина начала разрезов
-
-        self.read_settings()
 
         # Сцены для отрисовки
         self.map_scene = QGraphicsScene()
         self.plan_scene = QGraphicsScene()
 
         # Создание специального представления для планов раскроя (zoom-view)
-        self.plan_view = MyQGraphicsView()
+        self.plan_view = ZoomGraphicsView()
         self.plan_view.setAlignment(Qt.AlignCenter)
         self.plan_view.setDragMode(QGraphicsView.ScrollHandDrag)
         self.ui.chart_area.layout().addWidget(self.plan_view)
@@ -188,14 +185,6 @@ class OCIMainWindow(QMainWindow):
         # слитков и подслитков
         self.plan_painter = CuttingPlanPainter(self.plan_scene)
         self.map_painter = CuttingMapPainter(self.map_scene)
-
-        # Соединяем сигналы окна со слотами класса
-        self.ui.new_order.clicked.connect(self.open_order_dialog)
-        self.ui.catalog.clicked.connect(self.open_catalog_window)
-        self.ui.settings.clicked.connect(self.open_settings_dialog)
-        self.ui.storage.clicked.connect(self.open_storage_window)
-        self.ui.assign_ingot.clicked.connect(self.open_assign_dialog)
-        self.ui.complete_order.clicked.connect(self.open_complete_dialog)
 
         # Сигнал возврата на исходную страницу с информацией о заказах
         self.ui.information.clicked.connect(
@@ -212,18 +201,39 @@ class OCIMainWindow(QMainWindow):
                 self.ui.chart.setChecked(True),
             )
         )
-        # self.ui.full_screen.clicked.connect(self.open_fullscreen_window)
+        # Перерасчёт выбранного слитка
         self.ui.recalculate.clicked.connect(self.create_all_tree)
 
         # Показ текущего заказа по выбору
-        self.ui.orders_view.clicked.connect(self.show_order_information)
-        self.ui.ingots_residuals_view.clicked.connect(self.change_plan_tree)
+        self.ui.orders_view.clicked.connect(self.refresh_orders_view)
+        
+        # Смена дерева раскроя при выборе другого слитка или поддерева
+        self.ui.ingots_residuals_view.clicked.connect(self.residual_changed)
+
+        # Делегат заказа - события удаления или изменения заказа
+        self.order_delegate.deleteIndexClicked.connect(self.order_removed)
+        self.order_delegate.editIndexClicked.connect(self.open_edit_dialog)
+
+        # Смена статуса кнопки расчёта в зависимости от статуса слитка
+        self.ui.ingots_view.clicked.connect(self.ingot_changed)
+        
+        # Делегат слитка - события закрытия и готовности слитка
+        self.closed_ingot_dgt.forgedIndexClicked.connect(self.ingot_delivered)
+        self.closed_ingot_dgt.deleteFromOrderClicked.connect(self.ingot_removed)
+        
+        # Сигналы кнопок на главном окне - другие секции или кнопки заказа
+        self.ui.new_order.clicked.connect(self.open_order_dialog)
+        self.ui.catalog.clicked.connect(self.open_catalog_window)
+        self.ui.settings.clicked.connect(self.open_settings_dialog)
+        self.ui.storage.clicked.connect(self.open_storage_window)
+        self.ui.assign_ingot.clicked.connect(self.open_assign_dialog)
+        self.ui.complete_order.clicked.connect(self.open_complete_dialog)
 
     @property
     def tree(self):
         return self._tree.root
 
-    def show_order_information(self, index: QModelIndex) -> None:
+    def refresh_orders_view(self, index: QModelIndex) -> None:
         """Переключатель активных заказов и открытых секций.
 
         Отвечает за то, чтобы одновременно была раскрыта только одна секция
@@ -231,56 +241,142 @@ class OCIMainWindow(QMainWindow):
         """
         if not index.isValid():
             return
+        
         order = index.data(Qt.DisplayRole)
-
         if order['status_id'] == 3:
-            self.ui.recalculate.hide()
-            self.ui.ingots_view.setItemDelegate(self.ingot_delegate_unclosed)
+            # Если выбранный заказ уже завершён, то слитки закрыть нельзя,
+            # и любой слиток пересчитать нельзя
+            self.ui.ingots_view.setItemDelegate(self.unclosed_ingot_dgt)
         else:
-            self.ui.recalculate.show()
-            self.ui.ingots_view.setItemDelegate(self.ingot_delegate)
+            # Если заказ запланирован, в работе или ожидании, то можно всё
+            self.ui.ingots_view.setItemDelegate(self.closed_ingot_dgt)
+        self.ui.recalculate.setHidden(order['status_id'] == 3)
+        self.ui.assign_ingot.setHidden(order['status_id'] == 3)
+        self.ui.complete_order.setHidden(order['status_id'] == 3)
 
-        self.ingot_model.order = order['id']
-        self.ui.ingots_view.setCurrentIndex(self.ingot_model.index(0, 0, QModelIndex()))
-        self.show_ingot_information(self.ui.ingots_view.currentIndex())
-        self.ingots_residuals_model.order = order['id']
-        self.ui.ingots_residuals_view.expandAll()
-        self.complect_model.order = order['id']
-        self.ui.complects_view.setColumnHidden(1, True)
-        for column, width in enumerate([240, 1, 115, 90, 55, 65, 70, 85, 75]):
-            self.ui.complects_view.setColumnWidth(column, width)
-        self.ui.complects_view.expandAll()
+        self.refresh_ingots_view(order)
+        self.refresh_residuals_view(order)
+        self.refresh_complects_view(order)
 
         self.ui.order_name.setText('Заказ ' + order['name'])
-        self.ui.orders_information_area.setCurrentWidget(self.ui.information_page)
+        self.ui.orders_information_area.setCurrentWidget(
+            self.ui.information_page)
 
-    def show_ingot_information(self, current: QModelIndex) -> None:
-        ingot = current.data(Qt.DisplayRole)
-        if not ingot:
+    def refresh_ingots_view(self, order: Dict):
+        # Обновляем модель слитков по выбранному заказу, отмечаем первый слиток
+        self.ingot_model.order = order['id']
+        if self.ingot_model.rowCount():
+            self.ui.ingots_view.setCurrentIndex(
+                self.ingot_model.index(0, 0, QModelIndex()))
+            self.ingot_changed(self.ui.ingots_view.currentIndex())
+            self.ui.complete_order.setEnabled(self.scheme_count(order) != 0)
+        else:
+            self.ui.plan.setEnabled(False)
+            self.ui.recalculate.setEnabled(False)
+            self.ui.complete_order.setEnabled(False)
+        
+    def ingot_changed(self, current: QModelIndex) -> None:
+        if not current.isValid():
             return
+        
+        ingot = current.data(Qt.DisplayRole)
+        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         self.ui.recalculate.setEnabled(ingot['status_id'] != 3)
+        self.ui.plan.setEnabled(self.is_file_exist(order, ingot))
 
-    def confirm_ingot_readiness(self, index: QModelIndex) -> None:
+    def refresh_residuals_view(self, order: Dict):
+        self.ingots_residuals_model.order = order['id']
+        if self.ingots_residuals_model.rowCount():
+            self.ui.ingots_residuals_view.expandAll()
+            self.ui.ingots_residuals_view.setCurrentIndex(
+                self.ingots_residuals_model.index(0, 0, QModelIndex()))
+            self.ui.ingots_residuals_view.clicked.emit(
+                self.ingots_residuals_model.index(0, 0, QModelIndex()))
+
+    def residual_changed(self, index: QModelIndex):
+        parent = self.ingots_residuals_model.parent(index)
+        tree_index = self.ingots_residuals_model.index(index.row(), 5, parent)
+        eff_index = self.ingots_residuals_model.index(index.row(), 4, parent)
+        
+        # Здесь получается дерево, по которому будет отображен раскрой планов
+        # и карты одновременно
+        self._map_tree = self.ingots_residuals_model.data(tree_index, Qt.DisplayRole)
+        efficiency = self.ingots_residuals_model.data(eff_index, Qt.DisplayRole)
+        self.update_height_line(self._map_tree)
+        self.draw_map(self._map_tree, efficiency)
+        self.go_to_map_page()
+
+    def refresh_complects_view(self, order: Dict):
+        self.complect_model.order = order['id']
+        for column, width in enumerate([240, 90, 115, 90, 55, 65, 70, 85, 75]):
+            self.ui.complects_view.setColumnWidth(column, width)
+        self.ui.complects_view.setColumnHidden(1, True)
+        self.ui.complects_view.expandAll()
+
+    def ingot_delivered(self, index: QModelIndex) -> None:
         """Подтверждение готовности слитка.
 
         :param index: Индекс подтверждаемого слитка
         :type index: QModelIndex
         """
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
-        fusion_name = StandardDataService.get_by_id('fusions', Field('id', ingot['fusion_id']))[1]
-        sizes = ingot['size']
+        _, fusion, _ = StandardDataService.get_by_id(
+            'fusions', Field('id', ingot['fusion_id']))
         # Запрос данных о готовности слитка
-        window = IngotReadinessDialog(ingot['id'], sizes, fusion_name, self)
+        window = IngotReadinessDialog(ingot['id'], ingot['size'], fusion, self)
         if window.exec_() == QDialog.Accepted:
             # Заказ возможно стоит сделать обычным и готовым
-            self.ingot_model.setData(index, {'status_id': 1, 'batch': window.get_batch()}, Qt.EditRole)
-            self.check_current_order()
-            # ingot = self.unused_ingots_model.data(index, Qt.DisplayRole)
+            data = {'status_id': 1, 'batch': window.get_batch()}
+            self.ingot_model.setData(index, data, Qt.EditRole)
+            self.possible_change_status()
 
-    def confirm_ingot_removing(self, index: QModelIndex) -> None:
+    def possible_change_status(self) -> None:
+        """Проверка текущего заказа с возможным изменением статуса"""
+        order_index = self.ui.orders_view.currentIndex()
+        order = order_index.data(Qt.DisplayRole)
+        # При обновлении статусов слитков нужно обновлять и модель 
+        # слитков-поддеревьев на планах раскроя
+        self.ingots_residuals_model.order = order['id']
+        if self.ingot_model.rowCount():
+            for row in range(self.ingot_model.rowCount()):
+                ingot_index = self.ingot_model.index(row, 0, QModelIndex())
+                ingot = self.ingot_model.data(ingot_index, Qt.DisplayRole)
+                # Если есть запланированный слиток, то и заказ остаётся таким
+                if ingot['status_id'] == 3:
+                    break
+            else:
+                # Если запланированных слитков нет и заказ готов к началу
+                self.change_status(order_index, 1)
+        else:
+            # Если слитков вообще нет, то заказ ожидает
+            self.change_status(order_index, 0)
+
+    def change_status(self, index: QModelIndex(), status: int) -> None:
+        order = index.data(Qt.DisplayRole)
+        self.order_model.setData(index, {'status_id': status}, Qt.EditRole)
+        StandardDataService.update_record(
+            'orders', Field('id', order['id']), status_id=status)
+    
+    def change_efficiency(self, index: QModelIndex(),
+                          efficiency: float = None) -> None:
+        order = index.data(Qt.DisplayRole)
+        if not efficiency:
+            efficiency = OrderDataService.efficiency(
+                Field('order_id', order['id']))
+        self.order_model.setData(index, {'efficiency': efficiency}, Qt.EditRole)
+        StandardDataService.update_record(
+            'orders', Field('id', order['id']), efficiency=efficiency)
+
+    def ingot_removed(self, index: QModelIndex) -> None:
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
-        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
+        order_index = self.ui.orders_view.currentIndex()
+        order = order_index.data(Qt.DisplayRole)
 
+        # FIXME: вариант в одну строку им не нравится, так как у кнопок текст   
+        #        не "Да" + "Отмена", а "Ok" + "Cancel"
+        # FIXME: если можно короче, сделаю короче, пока хз
+        # TODO:  или можно вынести создание таких вопросительных окон в
+        #        отдельный модуль, как было с информационными окнами
         message = QMessageBox(self)
         message.setWindowTitle('Подтверждение удаления')
         message.setText('Вы уверены, что хотите удалить этот слиток?')
@@ -292,70 +388,60 @@ class OCIMainWindow(QMainWindow):
         if answer == message.clickedButton():
             success = False
             if ingot['status_id'] == 3:
+                # Если слиток только в планах, то просто удаляем его
                 success = StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
             elif ingot['status_id'] in [1, 2]:
+                # Если слиток складской, то просто отвязываем от заказа
                 success = StandardDataService.update_record('ingots', Field('id', ingot['id']), order_id=None)
             if not success:
                 QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить слиток.', QMessageBox.Ok)
                 return
+            # Сначала нужно удалить карту раскроя от удаляемого слитка в
+            # выбранном заказе и удалить его из модели слитков заказа...
+            self.delete_tree(order, ingot=ingot)
             self.ingot_model.deleteRow(index.row())
+            # Необходимо сбросить статусы комплектов от этого слитка
+            # TODO: ЕСЛИ БУДЕТ 2+ СЛИТКОВ ОДНОГО СПЛАВА ТО ВСЁ СЛОМАЕТСЯ
             self.complect_model.discard_statuses(order['id'], ingot['fusion_id'])
-            self.ui.complects_view.expandAll()
-            try:
-                order_efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
-            except ZeroDivisionError:
-                order_efficiency = 0
-                self.map_scene.clear()
-            self.order_model.setData(self.ui.orders_view.currentIndex(), {'efficiency': order_efficiency}, Qt.EditRole)
-            StandardDataService.update_record('orders', Field('id', order['id']), efficiency=order_efficiency)
+            # Обновляем эффективность заказа
+            self.change_efficiency(order_index)
+            # Проверяем возможность изменения статуса заказа
+            self.possible_change_status()
+            # Обновляем итоговый вид заказа
+            self.refresh_orders_view(order_index)
 
-    def check_current_order(self) -> None:
-        """Проверка текущего заказа с возможным изменением статуса"""
-        order_index = self.ui.orders_view.currentIndex()
-        # При обновлении статусов слитков нужно обновлять и модель 
-        # слитков-поддеревьев на планах раскроя
-        self.ingots_residuals_model.order = order_index.data(Qt.DisplayRole)['id']
-        for row in range(self.ingot_model.rowCount()):
-            ingot_index = self.ingot_model.index(row, 0, QModelIndex())
-            ingot = self.ingot_model.data(ingot_index, Qt.DisplayRole)
-            # Если есть запланированный слиток, то и заказ остаётся таким
-            if ingot['status_id'] == 3:
-                break
-        # Если запланированных слитков не было и заказ готов к началу
-        else:
-            self.order_model.setData(order_index, {'status_id': 1}, Qt.EditRole)
-            StandardDataService.update_record('orders', Field('id', order_index.data(Qt.DisplayRole)['id']), status_id=1)
-
-    def confirm_order_adding(self, data: Dict) -> None:
-        self.order_model.appendRow(data)
-
-    def confirm_order_editing(self, data: Dict) -> None:
+    def order_edited(self, data: Dict) -> None:
         index = self.ui.orders_view.currentIndex()
         self.order_model.setData(index, data, Qt.EditRole)
-        self.show_order_information(index)
+        self.refresh_orders_view(index)
 
-    def confirm_order_removing(self, index: QModelIndex) -> None:
+    def order_removed(self, index: QModelIndex) -> None:
         order = index.data(Qt.DisplayRole)
 
         # FIXME: вариант в одну строку им не нравится, так как у кнопок текст
         #        не "Да" + "Отмена", а "Ok" + "Cancel"
+        # FIXME: если можно короче, сделаю короче, пока хз
+        # TODO:  или можно вынести создание таких вопросительных окон в
+        #        отдельный модуль, как было с информационными окнами
         message = QMessageBox(self)
         message.setWindowTitle('Подтверждение удаления')
-        message.setText(f'Вы уверены, что хотите удалить заказ "{order["name"]}"?')
+        message.setText(f'Вы точно хотите удалить заказ "{order["name"]}"?')
         message.setIcon(QMessageBox.Icon.Question)
         answer = message.addButton('Да', QMessageBox.ButtonRole.AcceptRole)
         message.addButton('Отмена', QMessageBox.ButtonRole.RejectRole)
         message.exec()
-        # FIXME: если можно короче, сделаю короче, пока хз
 
         if answer == message.clickedButton():
             success = StandardDataService.delete_by_id('orders', Field('id', order['id']))
             if not success:
                 QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить заказ.', QMessageBox.Ok)
                 return
+            # Если удаление прошло успешно, то можно удалять все схемы этого
+            # заказа и удалять его из модели
+            self.delete_tree(order)
             self.order_model.deleteRow(index.row())
             self.ui.orders_information_area.setCurrentWidget(self.ui.default_page)
-        self.ui.orders_view.clearSelection()
+            self.ui.orders_view.clearSelection()
 
     def update_complect_statuses(self, order_id: int,
                                  ingot_fusion: int) -> None:
@@ -484,9 +570,7 @@ class OCIMainWindow(QMainWindow):
                     index, {'efficiency': round(efficiency, 2)},
                     Qt.EditRole
                 )
-                self.order_model.setData(
-                    order_index, {'efficiency': order_efficiency}, Qt.EditRole
-                )
+                self.change_efficiency(order_index, efficiency=order_efficiency)
                 for leave in self._tree.root.cc_leaves:
                     placed_blanks[material.name] += Counter(b.name for b in leave.placed)
 
@@ -686,18 +770,7 @@ class OCIMainWindow(QMainWindow):
         :type material: Material
         """
         order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-        settings = {
-            'max_size': (
-                (self.maximum_plate_height, self.clean_roll_plate_width),
-                (self.maximum_plate_height, self.rough_roll_plate_width)
-            ),
-            'cutting_length': self.guillotine_width,
-            'cutting_thickness': round(order['thickness'], 4),
-            'hem_until_3': self.rough_roll_edge_loss,
-            'hem_after_3': self.clean_roll_edge_loss,
-            'allowance': self.cut_allowance,
-            'end': round(self.end_face_loss, 4),
-        }
+        settings = self.general_settings(order)
         ingot_bin = Bin(*ingot_size, material=material)
         tree = Tree(BinNode(ingot_bin, kit=kit))
         tree = self.stmh_idrd(tree, restrictions=settings, progress=progress)
@@ -788,7 +861,6 @@ class OCIMainWindow(QMainWindow):
         get_all_residuals(best)
         return best
 
-    # @staticmethod
     def _stmh_idrd(self, tree: Tree, local: bool = False,
                    with_filter: bool = True, restrictions: dict = None,
                    progress: QProgressDialog = None, end_progress: bool = True,
@@ -899,7 +971,7 @@ class OCIMainWindow(QMainWindow):
                               рекурсивное построение деревьев
         :type level_subtree: int
         """
-        min_size = self.minimum_plate_height, self.minimum_plate_width
+        min_size = self.minimum_plate_length, self.minimum_plate_width
         tailings = get_residuals(node)
         tailings = filtration_residues(node.result.tailings, min_size=min_size)
         suitable_residues = [
@@ -1090,7 +1162,7 @@ class OCIMainWindow(QMainWindow):
     def save_residuals(self, ingot: Dict, order: Dict) -> Sequence[Tuple]:
         """Сохранение остатков в БД"""
         batch = ingot['batch']
-        min_size = self.minimum_plate_height, self.minimum_plate_width
+        min_size = self.minimum_plate_length, self.minimum_plate_width
 
         if self.is_file_exist(order, ingot):
             self.load_tree(order, ingot)
@@ -1171,7 +1243,7 @@ class OCIMainWindow(QMainWindow):
         self.plan_scene.clear()
         self.plan_view.setScene(self.plan_scene)
 
-        node: CuttingChartNode = self.map_tree.root.cc_leaves[index]
+        node: CuttingChartNode = self._map_tree.root.cc_leaves[index]
         self.plan_painter.setBin(
             math.ceil(node.bin.length),
             math.ceil(node.bin.width),
@@ -1188,19 +1260,6 @@ class OCIMainWindow(QMainWindow):
                 rect.name
             )
         self.plan_painter.drawPlan()
-
-    def change_plan_tree(self, index: QModelIndex):
-        parent = self.ingots_residuals_model.parent(index)
-        tree_index = self.ingots_residuals_model.index(index.row(), 5, parent)
-        eff_index = self.ingots_residuals_model.index(index.row(), 4, parent)
-        
-        # Здесь получается дерево, по которому будет отображен раскрой планов
-        # и карты одновременно
-        self.map_tree = self.ingots_residuals_model.data(tree_index, Qt.DisplayRole)
-        efficiency = self.ingots_residuals_model.data(eff_index, Qt.DisplayRole)
-        self.update_height_line(self.map_tree)
-        self.draw_map(self.map_tree, efficiency)
-        self.go_to_map_page()
 
     def draw_map(self, tree: Tree, efficiency: float) -> None:
         self.map_scene.clear()
@@ -1247,68 +1306,52 @@ class OCIMainWindow(QMainWindow):
 
     def open_assign_dialog(self) -> None:
         """Добавление слитка к заказу"""
-        order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-        window = IngotAssignmentDialog(order, self)
-        settings = {
-            'max_size': (
-                (self.maximum_plate_height, self.clean_roll_plate_width),
-                (self.maximum_plate_height, self.rough_roll_plate_width)
-            ),
-            'cutting_length': self.guillotine_width,
-            'cutting_thickness': round(order['thickness'], 4),
-            'hem_until_3': self.rough_roll_edge_loss,
-            'hem_after_3': self.clean_roll_edge_loss,
-            'allowance': self.cut_allowance,
-            'end': round(self.end_face_loss, 4),
-        }
-        ingot_settings = {
-            'max_size': (self.ingot_max_height, self.ingot_max_width, self.ingot_max_depth),
-            'min_size': (self.ingot_min_height, self.ingot_min_width, self.ingot_min_depth),
-            'size_error': self.size_error,
-            'allowance': self.allowance,
-        }
-        window.set_settings(settings, ingot_settings)
+        order_index = self.ui.orders_view.currentIndex()
+        order = order_index.data(Qt.DisplayRole)
+        
+        window = IngotAssignmentDialog(
+            order, self.general_settings(order), self.forge_settings(), self)
         window.predictedIngotSaved.connect(self.save_tree)
-        if window.exec() == QDialog.Accepted:
-            efficiency = OrderDataService.efficiency(Field('order_id', order['id']))
-            status_id = order['status_id']
-            if window.predicted and status_id != 2:
-                status_id = 2
-                self.order_model.setData(self.ui.orders_view.currentIndex(), {'status_id': status_id}, Qt.EditRole)
-            self.order_model.setData(self.ui.orders_view.currentIndex(), {'efficiency': efficiency}, Qt.EditRole)
-            StandardDataService.update_record('orders', Field('id', order['id']), efficiency=efficiency, status_id=status_id)
-        self.show_order_information(self.ui.orders_view.currentIndex())
+
+        if window.exec() == QDialog.DialogCode.Accepted:
+            # Если был добавлен хотя бы один запланированный слиток, нужно
+            # сделать заказ запланированным в любом случае
+            if window.predicted and order['status_id'] != 2:
+                self.change_status(order_index, 2)
+            self.change_efficiency(order_index)
+        self.refresh_orders_view(order_index)
 
     def open_order_dialog(self) -> None:
         """Добавление нового заказа"""
         window = OrderAddingDialog(self.cutting_thickness, self)
-        window.recordSavedSuccess.connect(self.confirm_order_adding)
+        window.recordSavedSuccess.connect(self.order_model.appendRow)
         window.exec_()
 
     def open_complete_dialog(self) -> None:
         """Заврешение выбранного заказа и добавление остатков"""
         residuals = []
+        order_index = self.ui.orders_view.currentIndex()
+        order = order_index.data(Qt.DisplayRole)
         if self.ingot_model.rowCount() == 0:
-            message_bon_info('В заказе отсутствует металл!', self)
+            message_box_info('В заказе отсутствует металл!', self)
             return
         for row in range(self.ingot_model.rowCount()):
             ingot = self.ingot_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
             if ingot['status_id'] == 3:
-                message_bon_info('Добавьте расчетный слиток на склад!', self)
+                message_box_info('Добавьте расчетный слиток на склад!', self)
                 return
-            order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
             with suppress(TypeError):
                 residuals.extend(self.save_residuals(ingot, order))
         window = OrderCompletingDialog(residuals, self)
         if window.exec() == QDialog.Accepted:
-            self.order_model.setData(self.ui.orders_view.currentIndex(), {'status_id': 3}, Qt.EditRole)
-            StandardDataService.update_record('orders', Field('id', order['id']), status_id=3)
+            self.change_status(order_index, 3)
+            self.refresh_orders_view(order_index)
 
     def open_edit_dialog(self) -> None:
         """Изменение текущего заказа"""
         order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         window = OrderEditingDialog(order, self.complect_model, self)
-        window.orderEditedSuccess.connect(self.confirm_order_editing)
+        window.orderEditedSuccess.connect(self.order_edited)
         window.show()
 
     def read_settings(self) -> None:
@@ -1321,14 +1364,14 @@ class OCIMainWindow(QMainWindow):
             'cutting/min_width', defaultValue=50, type=int)
         self.guillotine_width = self.settings.value(
             'cutting/guillotine', defaultValue=1250, type=int)
-        self.minimum_plate_height = self.settings.value(
-            'cutting/min_height', defaultValue=100, type=int)
-        self.maximum_plate_height = self.settings.value(
-            'cutting/max_height', defaultValue=1300, type=int)
+        self.minimum_plate_length = self.settings.value(
+            'cutting/min_length', defaultValue=100, type=int)
+        self.maximum_plate_length = self.settings.value(
+            'cutting/max_length', defaultValue=1300, type=int)
         self.cutting_thickness = self.settings.value(
             'cutting/cutting_thickness', defaultValue=4.2, type=float)
-        self.clean_roll_depth = self.settings.value(
-            'rolling/clean_depth', defaultValue=3, type=int)
+        self.clean_roll_height = self.settings.value(
+            'rolling/clean_height', defaultValue=3, type=int)
         self.rough_roll_edge_loss = self.settings.value(
             'rolling/rough_edge', defaultValue=4, type=int)
         self.clean_roll_edge_loss = self.settings.value(
@@ -1339,18 +1382,18 @@ class OCIMainWindow(QMainWindow):
             'rolling/max_rough_width', defaultValue=450, type=int)
         self.clean_roll_plate_width = self.settings.value(
             'rolling/max_clean_width', defaultValue=280, type=int)
-        self.ingot_min_height = self.settings.value(
-            'forging/min_height', defaultValue=70, type=int)
+        self.ingot_min_length = self.settings.value(
+            'forging/min_forge_length', defaultValue=70, type=int)
         self.ingot_min_width = self.settings.value(
-            'forging/min_width', defaultValue=70, type=int)
-        self.ingot_min_depth = self.settings.value(
-            'forging/min_depth', defaultValue=20.0, type=float)
-        self.ingot_max_height = self.settings.value(
-            'forging/max_height', defaultValue=180, type=int)
+            'forging/min_forge_width', defaultValue=70, type=int)
+        self.ingot_min_height = self.settings.value(
+            'forging/min_forge_height', defaultValue=20.0, type=float)
+        self.ingot_max_length = self.settings.value(
+            'forging/max_forge_length', defaultValue=180, type=int)
         self.ingot_max_width = self.settings.value(
-            'forging/max_width', defaultValue=180, type=int)
-        self.ingot_max_depth = self.settings.value(
-            'forging/max_depth', defaultValue=30.0, type=float)
+            'forging/max_forge_width', defaultValue=180, type=int)
+        self.ingot_max_height = self.settings.value(
+            'forging/max_forge_height', defaultValue=30.0, type=float)
         self.size_error = self.settings.value(
             'forging/size_error', defaultValue=2.0, type=float)
         self.allowance = self.settings.value(
@@ -1367,13 +1410,13 @@ class OCIMainWindow(QMainWindow):
         self.settings.setValue(
             'cutting/min_width', self.minimum_plate_width)
         self.settings.setValue(
-            'cutting/min_height', self.minimum_plate_height)
+            'cutting/min_length', self.minimum_plate_length)
         self.settings.setValue(
-            'cutting/max_height', self.maximum_plate_height)
+            'cutting/max_length', self.maximum_plate_length)
         self.settings.setValue(
             'cutting/cutting_thickness', self.cutting_thickness)
         self.settings.setValue(
-            'rolling/clean_depth', self.clean_roll_depth)
+            'rolling/clean_height', self.clean_roll_height)
         self.settings.setValue(
             'rolling/rough_edge', self.rough_roll_edge_loss)
         self.settings.setValue(
@@ -1385,21 +1428,45 @@ class OCIMainWindow(QMainWindow):
         self.settings.setValue(
             'rolling/max_clean_width', self.clean_roll_plate_width)
         self.settings.setValue(
-            'forging/min_height', self.ingot_min_height)
+            'forging/min_forge_length', self.ingot_min_length)
         self.settings.setValue(
-            'forging/min_width', self.ingot_min_width)
+            'forging/min_forge_width', self.ingot_min_width)
         self.settings.setValue(
-            'forging/min_depth', self.ingot_min_depth)
+            'forging/min_forge_height', self.ingot_min_height)
         self.settings.setValue(
-            'forging/max_height', self.ingot_max_height)
+            'forging/max_forge_length', self.ingot_max_length)
         self.settings.setValue(
-            'forging/max_width', self.ingot_max_width)
+            'forging/max_forge_width', self.ingot_max_width)
         self.settings.setValue(
-            'forging/max_depth', self.ingot_max_depth)
+            'forging/max_forge_height', self.ingot_max_height)
         self.settings.setValue(
             'forging/size_error', self.size_error)
         self.settings.setValue(
             'forging/allowance', self.allowance)
+
+    def general_settings(self, order: Dict) -> Dict:
+        return {
+            'max_size': (
+                (self.maximum_plate_length, self.clean_roll_plate_width),
+                (self.maximum_plate_length, self.rough_roll_plate_width)
+            ),
+            'cutting_length': self.guillotine_width,
+            'cutting_thickness': round(order['thickness'], 4),
+            'hem_until_3': self.rough_roll_edge_loss,
+            'hem_after_3': self.clean_roll_edge_loss,
+            'allowance': self.cut_allowance,
+            'end': round(self.end_face_loss, 4),
+        }
+    
+    def forge_settings(self) -> Dict:
+        return {
+            'max_size': (self.ingot_max_length, self.ingot_max_width,
+                         self.ingot_max_height),
+            'min_size': (self.ingot_min_length, self.ingot_min_width,
+                         self.ingot_min_height),
+            'size_error': self.size_error,
+            'allowance': self.allowance,
+        }
 
     def save_tree(self, order: Dict, ingot: Dict, tree: Tree = None) -> None:
         """Сохранение корневого узла дерева"""
@@ -1419,6 +1486,12 @@ class OCIMainWindow(QMainWindow):
         abs_path = get_abs_path(file_name, path)
         return abs_path.exists()
 
+    def scheme_count(self, order: Dict):
+        dir_path = Path(__file__).parent.absolute()
+        schemes_path = 'schemes'
+        schemes_path = dir_path / schemes_path
+        return len(list(schemes_path.glob(f'{order["id"]}_*.oci')))
+
     def load_tree(self, order: Dict, ingot: Dict) -> None:
         """Загрузка корневого узла дерева из файла"""
         file_name = self.get_file_name(order, ingot)
@@ -1426,6 +1499,21 @@ class OCIMainWindow(QMainWindow):
         abs_path = get_abs_path(file_name, path)
         with abs_path.open(mode='rb') as f:
             self._tree = pickle.load(f)
+
+    def delete_tree(self, order: Dict, ingot: Dict = None) -> None:
+        if ingot:
+            file_name = self.get_file_name(order, ingot)
+            path = 'schemes'
+            p = get_abs_path(file_name, path)
+            print(p.absolute())
+            p.unlink()
+        else:
+            files_name = Path(__file__).parent.absolute()
+            path = 'schemes'
+            abs_path = files_name / path
+            for p in abs_path.glob(f'{order["id"]}_*.oci'):
+                print(p.absolute())
+                p.unlink()
 
     def get_file_name(self, order: Dict, ingot: Dict) -> str:
         """Создание имени файла для сохранения дерева раскроя"""

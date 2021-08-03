@@ -10,7 +10,7 @@ from PyQt5.QtCore import (
 from PyQt5.QtWidgets import (
     QAbstractItemView, QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
     QScrollArea, QStyleOptionViewItem, QComboBox, QPushButton,
-    QStyledItemDelegate, QStyle
+    QStyledItemDelegate, QStyle, QGraphicsView
 )
 from PyQt5.QtGui import (
     QPixmap, QPainter, QPalette, QFont, QFontMetrics, QColor
@@ -20,6 +20,38 @@ import application_rc
 
 from service import StandardDataService, Field
 from models import IngotModel, OrderModel
+
+
+class ZoomGraphicsView(QGraphicsView):
+    """Представление для графической сцены с зумом на мышку"""
+
+    def wheelEvent(self, event): # pylint: disable=invalid-name
+        """Переопределение события поворота колеса мышки
+
+        Поворот колеса мышки в пределах представления инициирует приближение с
+        определённой интерсивностью в определённом месте представления
+
+        :param event: Событие поворота колесом мышки
+        :type event: QWheelEvent
+        """
+        zoom_in_factor = 1.25
+        zoom_out_factor = 1 / zoom_in_factor
+
+        self.setTransformationAnchor(QGraphicsView.NoAnchor)
+        self.setResizeAnchor(QGraphicsView.NoAnchor)
+
+        old_pos = self.mapToScene(event.position().toPoint())
+
+        if event.angleDelta().y() > 0:
+            zoom_factor = zoom_in_factor
+        else:
+            zoom_factor = zoom_out_factor
+        self.scale(zoom_factor, zoom_factor)
+
+        new_pos = self.mapToScene(event.position().toPoint())
+
+        delta = new_pos - old_pos
+        self.translate(delta.x(), delta.y())
 
 
 class ExclusiveButton(QPushButton):
@@ -209,16 +241,19 @@ class OrderDelegate(QStyledItemDelegate):
         border = content_rect.top() + title_rect.height()
         half_margin = border + self.__margin // 2
 
-        painter.drawLine(
-            content_rect.left(), half_margin,
-            content_rect.left() + title_rect.width(), half_margin
-        )
+        if _option.state & QStyle.StateFlag.State_MouseOver:
+            painter.drawLine(
+                content_rect.left(), half_margin,
+                content_rect.left() + title_rect.width(), half_margin
+            )
 
         for text, text_rect in self._info(border, small_font, order):
             painter.drawText(text_rect, self._textFlags(), text)
 
-        painter.drawPixmap(self._deleteIconPos(_option), self.__deleteIcon)
-        painter.drawPixmap(self._editIconPos(_option), self.__editIcon)
+        if _option.state & QStyle.StateFlag.State_MouseOver:
+            painter.drawPixmap(self._deleteIconPos(_option), self.__deleteIcon)
+            if order['status_id'] != 3:
+                painter.drawPixmap(self._editIconPos(_option), self.__editIcon)
 
         # Конец отрисовки
         painter.restore()
@@ -329,7 +364,9 @@ class OrderDelegate(QStyledItemDelegate):
                 self.deleteIndexClicked.emit(index)
 
             if(self._editIconRect(_option).contains(event.pos())):
-                self.editIndexClicked.emit(index)
+                order = index.data(Qt.DisplayRole)
+                if order['status_id'] != 3:
+                    self.editIndexClicked.emit(index)
 
         return super().editorEvent(event, model, option, index)
 

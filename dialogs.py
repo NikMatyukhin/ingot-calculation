@@ -783,12 +783,15 @@ class IngotAssignmentDialog(QDialog):
 
     predictedIngotSaved = pyqtSignal(dict, dict, Tree)
 
-    def __init__(self, order: dict, parent: typing.Optional[QWidget] = None) -> None:    
-        super().__init__(parent)
+    def __init__(self, order: dict, settings: Dict, ingot_settings: Dict,
+                 parent: typing.Optional[QWidget] = None) -> None:
+        super(IngotAssignmentDialog, self).__init__(parent)
         self.ui = ui_assign_ingot_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.order = order
+        self.settings = settings
+        self.ingot_settings = ingot_settings
         self.predicted = False
 
         # Сплавы
@@ -1065,10 +1068,6 @@ class IngotAssignmentDialog(QDialog):
         height = tree.root.bin.height # + size_error + 2 * allowance
 
         return [math.ceil(length), math.ceil(width), math.ceil(height)], tree, efficiency
-
-    def set_settings(self, settings: Dict, ingot_settings: Dict):
-        self.settings = settings
-        self.ingot_settings = ingot_settings
 
 
 class IngotReadinessDialog(QDialog):

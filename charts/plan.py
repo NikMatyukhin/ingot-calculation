@@ -11,38 +11,6 @@ from PyQt5.QtGui import (
 )
 
 
-class MyQGraphicsView(QGraphicsView):
-    """Представление для графической сцены с зумом на мышку"""
-
-    def wheelEvent(self, event): # pylint: disable=invalid-name
-        """Переопределение события поворота колеса мышки
-
-        Поворот колеса мышки в пределах представления инициирует приближение с
-        определённой интерсивностью в определённом месте представления
-
-        :param event: Событие поворота колесом мышки
-        :type event: QWheelEvent
-        """
-        zoom_in_factor = 1.25
-        zoom_out_factor = 1 / zoom_in_factor
-
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self.setResizeAnchor(QGraphicsView.NoAnchor)
-
-        old_pos = self.mapToScene(event.position().toPoint())
-
-        if event.angleDelta().y() > 0:
-            zoom_factor = zoom_in_factor
-        else:
-            zoom_factor = zoom_out_factor
-        self.scale(zoom_factor, zoom_factor)
-
-        new_pos = self.mapToScene(event.position().toPoint())
-
-        delta = new_pos - old_pos
-        self.translate(delta.x(), delta.y())
-
-
 class ButtEdgeGraphicsItem(QGraphicsItem):
     def __init__(self, x, y, w, h, parent=None):
         super().__init__(parent)

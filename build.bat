@@ -1,6 +1,6 @@
 call venv\Scripts\activate.bat
 echo RUN PYINSTALLER
-pyinstaller mainwindow.spec
+pyinstaller mainwindow.spec --noconfirm
 echo CREATE SCHEMES DIRECTORY
 mkdir dist\mainwindow\schemes
 echo CREATE INFO.LOG FILE
