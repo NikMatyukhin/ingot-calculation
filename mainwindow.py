@@ -38,7 +38,7 @@ from dialogs import (
     IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
     FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
-from messagebox import message_box_info
+from messagebox import message_box_error, message_box_info
 from storage import Storage
 from charts.plan import CuttingPlanPainter
 from charts.map import CuttingMapPainter
@@ -628,6 +628,14 @@ class OCIMainWindow(QMainWindow):
             )
             message_box_info('Процесс раскроя был прерван!', self)
             return
+        except BPPError as ex:
+            message_box_error(str(ex), parent=self)
+            return
+        except Exception as exception:
+            QMessageBox.critical(
+                self, 'Раскрой завершился с неизвестной ошибкой', f'{exception}', QMessageBox.Ok
+            )
+            return
         else:
             progress.setLabelText('Завершение раскроя...')
             progress.close()
@@ -778,6 +786,14 @@ class OCIMainWindow(QMainWindow):
         #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
 
         efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), tree.main_kit, is_total=True)
+
+        # NOTE: тест перерасчета
+        # node_1 = tree.node_by_id(55)
+        # node_1 = tree.node_by_id(63)
+        # print(f'{node_1.bin.size}')
+        # node_2 = tree.node_by_id(64)
+        # print(f'{node_2.bin.size}')
+        # self.recalculation(tree, [(node_2, (30, 180, 4.2)), (node_1, (50, 180, 4.2))], settings)
         return efficiency
 
     @timeit
@@ -827,7 +843,9 @@ class OCIMainWindow(QMainWindow):
             ]
 
         if not trees:
-            raise BPPError('Не удалось получить раскрой')
+            raise BPPError(
+                'Не удалось получить раскрой. Измените приоритеты или ограничения'
+            )
 
         print(f'Годных деревьев: {len(trees)}')
         # for t in trees:
@@ -1098,6 +1116,50 @@ class OCIMainWindow(QMainWindow):
         #             for subnode in subtree.root.cc_leaves:
         #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
         return best
+
+    def recalculation(self, tree, updatable_nodes, restrictions):
+        # tree - исходное дерево
+        # nodes - список пар из узлов и новых размеров
+        node = updatable_nodes[0][0]
+        if len(updatable_nodes) == 2:
+            main_kit = copy.deepcopy(node.parent.parent.kit)
+        else:
+            main_kit = copy.deepcopy(node.kit)
+        for i, (node, new_size) in enumerate(updatable_nodes):
+            ingot_bin = Bin(*new_size, material=node.bin.material)
+            # создать новое дерево
+            new_tree = Tree(BinNode(ingot_bin, kit=copy.deepcopy(main_kit)))
+            new_tree = self.stmh_idrd(new_tree, restrictions=restrictions)
+            # удалить размещенные заготовки
+            # unplaced_counter = Counter(b.name for b in new_tree.main_kit)
+            # for leave in new_tree.root.cc_leaves:
+            #     unplaced_counter -= Counter(b.name for b in leave.placed)
+
+            for cc_node in new_tree.root.cc_leaves:
+                blanks = [r.rectangle for r in chain.from_iterable(cc_node.result.blanks.values())]
+                main_kit.delete_items(list(blanks), cc_node.bin.height)
+
+            # меняем поддерево
+            parent = node.parent
+            print(f'{node.bin.bin_type = }')
+            print(f'{node.parent = }')
+
+            new_tree.root.bin.bin_type = node.bin.bin_type
+            new_tree.root.parent = parent
+            # node.parent = None
+            # parent.children = new_tree.root
+            parent.delete(node)
+            parent.add(new_tree.root)
+
+            # NOTE: своя визуализация для отладки
+            debug_graph_tree(tree, name=f'tree_{i}')
+            for node in tree.root.cc_leaves:
+                debug_visualize(node, 'Основной')
+                if node.subtree:
+                    for subtree in node.subtree:
+                        for subnode in subtree.root.cc_leaves:
+                            debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
+
 
     def save_residuals(self, ingot: Dict, order: Dict) -> Sequence[Tuple]:
         """Сохранение остатков в БД"""
@@ -1551,12 +1613,14 @@ def debug_visualize(node, name):
     )
 
 
-def debug_graph_tree(tree):
+def debug_graph_tree(tree, name=''):
     # NOTE: своя визуализация дерева, удалить по завершении
     import os
     os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin'
     from sequential_mh.bpp_dsc.graph import plot, create_edges
-    graph1, all_nodes1 = plot(tree.root, 'pdf/tree.gv')
+    if not name:
+        name = 'tree'
+    graph1, all_nodes1 = plot(tree.root, f'pdf/{name}.gv')
     create_edges(graph1, all_nodes1)
     graph1.view()
     k = 0
@@ -1567,7 +1631,7 @@ def debug_graph_tree(tree):
             for subnode in subtree.root.cc_leaves:
                 placed += len(subnode.placed)
             print(f'\tКоличество заготовок в поддереве: {placed}')
-            graph1, all_nodes1 = plot(subtree.root, f'pdf/subtree{k}.gv')
+            graph1, all_nodes1 = plot(subtree.root, f'pdf/{name}_subtree{k}.gv')
             create_edges(graph1, all_nodes1)
             graph1.view()
             k+=1
