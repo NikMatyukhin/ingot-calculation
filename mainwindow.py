@@ -2,6 +2,7 @@
 
 
 import copy
+from operator import itemgetter
 import sys
 import pickle
 import logging
@@ -1204,16 +1205,16 @@ class OCIMainWindow(QMainWindow):
                     adj_node.bin.material, batch)
                 )
         for node in self.tree.cc_leaves:
-            tailings = list(node.result.tailings)
+            tailings = [(tailing, node.bin.height) for tailing in node.result.tailings]
             for subtree in node.subtree:
                 for subnode in subtree.root.cc_leaves:
-                    tailings.extend(subnode.result.tailings)
-                tailings.extend([adj_node.bin for adj_node in subtree.root.adj_leaves])
-            tailings = filtration_residues(tailings, min_size=min_size)
-            for tailing in tailings:
+                    tailings.extend([(tailing, subnode.bin.height) for tailing in subnode.result.tailings])
+                tailings.extend([(adj_node.bin, adj_node.bin.height) for adj_node in subtree.root.adj_leaves])
+            tailings = filtration_residues(tailings, min_size=min_size, key=itemgetter(0))
+            for tailing, height in tailings:
                 # получаем сплав
                 all_tailings.append(
-                    (tailing.length, tailing.width, node.bin.height,
+                    (tailing.length, tailing.width, height,
                      node.bin.material, batch)
                 )
         return all_tailings
@@ -1611,7 +1612,7 @@ def incoming_rectangles(rect, height: float, kit: List[Any]):
     return [Rectangle3d(rect.length, rect.width, height).is_subrectangle(b, b.is_rotatable) for b in kit]
 
 
-def filtration_residues(items: List, min_size: Tuple[Number, Number] = None):
+def filtration_residues(items: List, min_size: Tuple[Number, Number] = None, key=None):
     """Фильтрация остатков
 
     :param items: список прямоугольников
@@ -1621,10 +1622,11 @@ def filtration_residues(items: List, min_size: Tuple[Number, Number] = None):
     :return: остатки с подходящими размерами
     :rtype: list[Rectangle]
     """
-    residues = filter(is_residual, items)
+    key = key or (lambda x: x)
+    residues = filter(lambda item: is_residual(key(item)), items)
     p_is_suitable_sizes = partial(is_suitable_sizes, min_size=min_size)
     if min_size:
-        residues = filter(p_is_suitable_sizes, residues)
+        residues = filter(lambda item: p_is_suitable_sizes(key(item)), residues)
     return list(residues)
 
 
