@@ -88,8 +88,10 @@ def eq_with_deformation_one_side(blank_size, ingot_size) -> bool:
 
     deformed_length = length * height / height_blank
     deformed_width = width * height / height_blank
-    without_rotate = deformed_length >= length_blank and deformed_width >= width_blank
-    with_rotate = deformed_width >= length_blank and deformed_width >= width_blank
+    without_rotate = (deformed_length >= length_blank and width >= width_blank) or \
+                     (length >= length_blank and deformed_width >= width_blank)
+    with_rotate = (deformed_width >= length_blank and length >= width_blank) or \
+                  (width >= length_blank and deformed_length >= width_blank)
 
     return without_rotate or with_rotate
 
@@ -108,7 +110,12 @@ def eq_with_deformation_double_side(blank_size, ingot_size) -> bool:
     length_blank, width_blank, height_blank = blank_size
     length, width, height = ingot_size
 
-    intermediate_height = length * height / length_blank
-    target_height = width * intermediate_height / width_blank
+    intermediate_height = length * height / max(length_blank, length)
+    target_height = width * intermediate_height / max(width_blank, width)
+    without_rotate = target_height >= height_blank
 
-    return target_height >= height_blank
+    width_blank, length_blank, height_blank = blank_size
+    intermediate_height = length * height / max(length_blank, length)
+    target_height = width * intermediate_height / max(width_blank, width)
+    with_rotate = target_height >= height_blank
+    return without_rotate or with_rotate
