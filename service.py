@@ -392,7 +392,7 @@ class OrderDataService(StandardDataService):
     @staticmethod
     @db_connector
     def discard_statuses(updates: FieldCollection, connection: Connection = connect(':memory:')) -> bool:
-        sql = str('UPDATE complects SET {}=? WHERE {}=? AND {}=?'.format(*updates.names))
+        sql = str('UPDATE complects SET {}=?, total=0 WHERE {}=? AND {}=?'.format(*updates.names))
         cursor = connection.cursor()
         cursor.executemany(sql, updates)
 
