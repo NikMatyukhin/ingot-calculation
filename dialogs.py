@@ -4,6 +4,7 @@ import typing
 from datetime import datetime
 from operator import attrgetter
 from typing import Dict, List, Tuple, Union, Optional
+from itertools import chain
 from collections import Counter
 
 from PyQt5.QtCore import (
@@ -811,7 +812,7 @@ class IngotAssignmentDialog(QDialog):
 
         # Модель данных со свободными слитками
         self.ingot_model = IngotModel('unused', fusions_id=fusions_id)
-        self.proxy_model = SortIngotModel(self, min_size=min_sizes)
+        self.proxy_model = SortIngotModel(self, blanks=blanks)
         self.proxy_model.setDynamicSortFilter(True)
         self.proxy_model.setSourceModel(self.ingot_model)
         self.proxy_model.sort(0)
