@@ -325,9 +325,11 @@ class OCIMainWindow(QMainWindow):
         window = IngotReadinessDialog(ingot['id'], ingot['size'], fusion, self)
         if window.exec_() == QDialog.Accepted:
             # Заказ возможно стоит сделать обычным и готовым
+            order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
             data = {'status_id': 1, 'batch': window.get_batch()}
             self.ingot_model.setData(index, data, Qt.EditRole)
             self.possible_change_status()
+            self.refresh_residuals_view(order)
 
     def possible_change_status(self) -> None:
         """Проверка текущего заказа с возможным изменением статуса"""
@@ -400,23 +402,27 @@ class OCIMainWindow(QMainWindow):
             # выбранном заказе и удалить его из модели слитков заказа...
             not_cutted_ingot = self.is_file_exist(order, ingot)
             if not_cutted_ingot:
+                # self.load_tree(order, ingot)
                 self.delete_tree(order, ingot=ingot)
             self.ingot_model.deleteRow(index.row())
             if not_cutted_ingot:
                 # Необходимо сбросить статусы комплектов от этого слитка
-                # TODO: ЕСЛИ БУДЕТ 2+ СЛИТКОВ ОДНОГО СПЛАВА ТО ВСЁ СЛОМАЕТСЯ
                 self.complect_model.discard_statuses(
                     order['id'], ingot['fusion_id'])
+                # self.update_complect_statuses(
+                #     order['id'], ingot['fusion_id'], discard=True)
                 # Обновляем эффективность заказа
                 self.change_efficiency(order_index)
-                # Проверяем возможность изменения статуса заказа
-                self.possible_change_status()
-                # Обновляем итоговый вид заказа
-                self.refresh_orders_view(order_index)
+            # Проверяем возможность изменения статуса заказа
+            self.possible_change_status()
+            # Обновляем итоговый вид заказа
+            self.refresh_orders_view(order_index)
 
     def order_edited(self, data: Dict) -> None:
         index = self.ui.orders_view.currentIndex()
         self.order_model.setData(index, data, Qt.EditRole)
+        self.possible_change_status()
+        self.change_efficiency(index)
         self.refresh_orders_view(index)
 
     def order_removed(self, index: QModelIndex) -> None:
@@ -456,18 +462,12 @@ class OCIMainWindow(QMainWindow):
             self.ui.orders_information_area.setCurrentWidget(self.ui.default_page)
             self.ui.orders_view.clearSelection()
 
-    def update_complect_statuses(self, order_id: int,
-                                 ingot_fusion: int) -> None:
+    def update_complect_statuses(self, order_id: int, ingot_fusion: int,
+                                 discard: bool = False) -> None:
         """Обновление статусов заготовок"""
-        # Подсчитываем количество неразмещенных заготовок (название: количество)
-        unplaced_counter = Counter(b.name for b in self._tree.main_kit)
-        for leave in self.tree.cc_leaves:
-            unplaced_counter -= Counter(b.name for b in leave.placed)
-
         # Переходим по всем изделиям в заказе
         model = self.complect_model
         complect_counter = dict()
-
         for row in range(model.rowCount(QModelIndex())):
             article = model.index(row, 0, QModelIndex())
             article_name = model.data(article, Qt.DisplayRole)
@@ -489,19 +489,40 @@ class OCIMainWindow(QMainWindow):
                     'status_id': model.index(sub_row, 2, article),
                     'total': model.index(sub_row, 8, article)
                 }
-
-        # Сначала проходимся по счётчику неразмещённых заготовок
+        
         updates = FieldCollection(['status_id', 'total', 'order_id', 'detail_id'])
         order = Field('order_id', order_id)
 
+        # Если режим сброса, то просто находим все упакованные заготовки
+        if discard and self.tree:
+            placed_counter = Counter()
+            for leave in self.tree.cc_leaves:
+                placed_counter += Counter(b.name for b in leave.placed)
+            for name in placed_counter:
+                if name not in complect_counter:
+                    continue
+                detail = Field('detail_id', complect_counter[name]['detail_id'])
+                updates.append(Field('status_id', 0), Field('total', 0), order, detail)
+                model.setData(complect_counter[name]['status_id'], 0, Qt.EditRole)
+                model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
+            OrderDataService.update_statuses(updates)
+            return
+        
+        # Подсчитываем количество неразмещенных заготовок (название: количество)
+        unplaced_counter = Counter(b.name for b in self._tree.main_kit)
+        for leave in self.tree.cc_leaves:
+            unplaced_counter -= Counter(b.name for b in leave.placed)
+
+        # Сначала проходимся по счётчику неразмещённых заготовок
         for name in unplaced_counter:
             detail = Field('detail_id', complect_counter[name]['detail_id'])
 
             # Если количество заготовок совпадает с остатком
             if complect_counter[name]['amount'] == unplaced_counter[name]:
-                updates.append(Field('status_id', 4), Field('total', 0), order, detail)
-                model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
-                model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
+                continue
+                # updates.append(Field('status_id', 4), Field('total', 0), order, detail)
+                # model.setData(complect_counter[name]['status_id'], 4, Qt.EditRole)
+                # model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             # Если количество заготовок не совпадает с остатком
             else:
                 updates.append(
@@ -592,8 +613,8 @@ class OCIMainWindow(QMainWindow):
                 # модель с комплектами и их статусами
                 self.update_complect_statuses(order['id'], ingot['fusion_id'])
                 self.save_tree(order, ingot)
+                self.possible_change_status()
         self.change_efficiency(order_index)
-        self.possible_change_status()
         self.refresh_orders_view(order_index)
 
     def create_tree(self, order: Dict, ingot: Dict, material: Material,
@@ -1269,6 +1290,9 @@ class OCIMainWindow(QMainWindow):
         self.plan_view.verticalScrollBar().setValue(
             self.plan_view.verticalScrollBar().minimum()
         )
+        self.plan_view.horizontalScrollBar().setValue(
+            self.plan_view.horizontalScrollBar().minimum()
+        )
         self.map_painter.setTree(tree)
         self.map_painter.setEfficiency(efficiency)
         self.map_painter.drawTree()
@@ -1353,9 +1377,13 @@ class OCIMainWindow(QMainWindow):
         """Изменение текущего заказа"""
         order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
         if self.scheme_count(order):
-            message_box_info('Удалите рассчитанные под заказ слитки,\n'
-                             'чтобы отредактировать его состав!', self)
-            return
+            self.delete_tree(order)
+            for row in range(self.ingot_model.rowCount()):
+                ingot_index = self.ingot_model.index(row, 0, QModelIndex())
+                ingot = ingot_index.data(Qt.DisplayRole)
+                if ingot['status_id'] == 3:
+                    # Если слиток только в планах, то просто удаляем его
+                    StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
         window = OrderEditingDialog(order, self.complect_model, self)
         window.orderEditedSuccess.connect(self.order_edited)
         window.show()
