@@ -19,7 +19,7 @@ from math import prod
 
 from .ph import ph_bpp
 from .support import (
-    deformation, is_subrectangle, is_subrectangle_with_def, dfs
+    deformation, eq_with_deformation_double_side, is_subrectangle, is_subrectangle_with_def, dfs
 )
 from .exception import (
     DirectionError, KitError, ParentNodeError, SizeError,
@@ -509,7 +509,7 @@ class BinNode(Node):
                     #     raise DirectionError(msg)
             else:
                 if double_sided:
-                    if item.volume <= dst[LENGTH] * dst[WIDTH] * dst[HEIGHT]:
+                    if eq_with_deformation_double_side(item.size, dst):
                         number += 1
                 else:
                     for i in (Direction.H, Direction.V):

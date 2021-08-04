@@ -798,7 +798,7 @@ class OCIMainWindow(QMainWindow):
         self._tree = tree
 
         # NOTE: своя визуализация для отладки
-        # debug_graph_tree(best)
+        # debug_graph_tree(tree)
         # for node in self.tree.cc_leaves:
         #     debug_visualize(node, 'Основной')
         #     if node.subtree:
@@ -1004,7 +1004,10 @@ class OCIMainWindow(QMainWindow):
         # если нет прямоугольников для размещения текущей
         # толщины пробуем упаковать другие
         adjacent_branch = node.adjacent_branch()
-        adj_node = adjacent_branch.adj_leaves[0]
+        if adjacent_branch:
+            adj_node = adjacent_branch.adj_leaves[0]
+        else:
+            return
         if not suitable_residues and not adj_node.kit.is_empty():
             # получить неупакованные элементы из соседней ветки
             # построить дерево для остатков
@@ -1173,13 +1176,13 @@ class OCIMainWindow(QMainWindow):
             parent.add(new_tree.root)
 
             # NOTE: своя визуализация для отладки
-            debug_graph_tree(tree, name=f'tree_{i}')
-            for node in tree.root.cc_leaves:
-                debug_visualize(node, 'Основной')
-                if node.subtree:
-                    for subtree in node.subtree:
-                        for subnode in subtree.root.cc_leaves:
-                            debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
+            # debug_graph_tree(tree, name=f'tree_{i}')
+            # for node in tree.root.cc_leaves:
+            #     debug_visualize(node, 'Основной')
+            #     if node.subtree:
+            #         for subtree in node.subtree:
+            #             for subnode in subtree.root.cc_leaves:
+            #                 debug_visualize(subnode, f'Остаток от {node.bin.height} мм')
 
 
     def save_residuals(self, ingot: Dict, order: Dict) -> Sequence[Tuple]:

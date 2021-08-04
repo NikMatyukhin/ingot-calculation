@@ -631,9 +631,9 @@ class IngotModel(ListModel):
 
 class SortIngotModel(QSortFilterProxyModel):
     """Сортировка слитков по объему и фильтрация по вместимости"""
-    def __init__(self, parent: Optional[QObject], min_size=None) -> None:
+    def __init__(self, parent: Optional[QObject], blanks=None) -> None:
         super().__init__(parent=parent)
-        self.min_size = min_size
+        self.blanks = blanks
         self.invalidateFilter()
 
     def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
@@ -652,13 +652,19 @@ class SortIngotModel(QSortFilterProxyModel):
         ingot_data = index.data(Qt.DisplayRole)
         if not ingot_data:
             return True
-        if self.min_size and ingot_data['fusion_id'] in self.min_size:
-            min_side = self.min_size[ingot_data['fusion_id']]
-            if ingot_data['size'][-1] >= min_side[1]:
-                eq_with_one_side_def = eq_with_deformation_one_side((min_side[0], *min_side), ingot_data['size'])
-                eq_with_two_side_def = eq_with_deformation_double_side((min_side[0], *min_side), ingot_data['size'])
-                return eq_with_one_side_def or eq_with_two_side_def
-            return False
+        fusion: str = StandardDataService.get_by_id(
+            'fusions', Field('id', ingot_data['fusion_id'])
+        )[1]
+        if self.blanks and fusion in self.blanks:
+            for blank in self.blanks[fusion]:
+                if ingot_data['size'][-1] >= blank.height:
+                    size = blank.length, blank.width, blank.height
+                    eq_with_one_side_def = eq_with_deformation_one_side(size, ingot_data['size'])
+                    eq_with_two_side_def = eq_with_deformation_double_side(size, ingot_data['size'])
+                    if eq_with_one_side_def or eq_with_two_side_def:
+                        return True
+            else:
+                return False
         return True
 
 
