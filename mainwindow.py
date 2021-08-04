@@ -482,14 +482,15 @@ class OCIMainWindow(QMainWindow):
 
                 # Собираем все нужные данные по колонкам
                 name = model.data(model.index(sub_row, 0, article), Qt.DisplayRole)
-                complect_counter[article_name + '_' + name] = {
+                depth = float(model.data(model.index(sub_row, 6, article), Qt.DisplayRole))
+                complect_counter[str(depth) + '_' + article_name + '_' + name] = {
                     'detail_id': int(model.data(model.index(sub_row, 1, article), Qt.DisplayRole)),
-                    'depth': float(model.data(model.index(sub_row, 6, article), Qt.DisplayRole)),
+                    'depth': depth,
                     'amount': int(model.data(model.index(sub_row, 7, article), Qt.DisplayRole)),
                     'status_id': model.index(sub_row, 2, article),
                     'total': model.index(sub_row, 8, article)
                 }
-        
+
         updates = FieldCollection(['status_id', 'total', 'order_id', 'detail_id'])
         order = Field('order_id', order_id)
 
@@ -497,7 +498,7 @@ class OCIMainWindow(QMainWindow):
         if discard and self.tree:
             placed_counter = Counter()
             for leave in self.tree.cc_leaves:
-                placed_counter += Counter(b.name for b in leave.placed)
+                placed_counter += Counter(f'{b.height}_{b.name}' for b in leave.placed)
             for name in placed_counter:
                 if name not in complect_counter:
                     continue
@@ -509,9 +510,9 @@ class OCIMainWindow(QMainWindow):
             return
         
         # Подсчитываем количество неразмещенных заготовок (название: количество)
-        unplaced_counter = Counter(b.name for b in self._tree.main_kit)
+        unplaced_counter = Counter(f'{b.height}_{b.name}' for b in self._tree.main_kit)
         for leave in self.tree.cc_leaves:
-            unplaced_counter -= Counter(b.name for b in leave.placed)
+            unplaced_counter -= Counter(f'{b.height}_{b.name}' for b in leave.placed)
 
         # Сначала проходимся по счётчику неразмещённых заготовок
         for name in unplaced_counter:
