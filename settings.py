@@ -17,6 +17,7 @@ class SettingsDialog(QDialog):
         self.saved = False
 
         self.ui.save.clicked.connect(self.save)
+        self.ui.cancel.clicked.connect(self.reject)
         self.ui.cutting.clicked.connect(
             lambda: self.ui.page_area.setCurrentWidget(self.ui.cutting_page))
         self.ui.rolling.clicked.connect(
