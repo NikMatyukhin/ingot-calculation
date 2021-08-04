@@ -235,17 +235,20 @@ class Ui_MainWindow(object):
         self.new_order = QtWidgets.QPushButton(self.orders_area)
         self.new_order.setMinimumSize(QtCore.QSize(0, 50))
         self.new_order.setStyleSheet("QPushButton {\n"
-"    background-color: rgb(232, 232, 232);\n"
+"    background-color: rgb(215, 215, 215);\n"
 "    border: 1px solid gray;\n"
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    background-color: rgb(225, 225, 225);\n"
+"    background-color: rgb(220, 220, 220);\n"
 "}\n"
 "\n"
 "QPushButton:pressed {\n"
-"    background-color: rgb(209, 209, 209);\n"
+"    background-color: rgb(205, 205, 205);\n"
 "}")
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap(":/icons/add.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.new_order.setIcon(icon4)
         self.new_order.setFlat(True)
         self.new_order.setObjectName("new_order")
         self.verticalLayout_2.addWidget(self.new_order)
@@ -254,7 +257,7 @@ class Ui_MainWindow(object):
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.frame)
-        self.verticalLayout_5.setContentsMargins(0, 20, 0, 0)
+        self.verticalLayout_5.setContentsMargins(0, 10, 0, 0)
         self.verticalLayout_5.setSpacing(0)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.orders_view = QtWidgets.QListView(self.frame)
@@ -577,7 +580,7 @@ class Ui_MainWindow(object):
         self.heigths_scroll_area.setWidgetResizable(True)
         self.heigths_scroll_area.setObjectName("heigths_scroll_area")
         self.heigths_content = QtWidgets.QWidget()
-        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 50, 23))
+        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 100, 23))
         self.heigths_content.setObjectName("heigths_content")
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.heigths_content)
         self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
