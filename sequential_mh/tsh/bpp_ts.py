@@ -331,15 +331,16 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
         for j in range(1 + rect.is_rotatable):
             rect_w = size[(1 + j) % 2]
             rect_l = size[(0 + j) % 2]
-            if packed and (rect_w >= 350 or rect_l >= 350):
-                count = len(
-                    [
-                        item for item in packed
-                        if (rect.size[0] >= 400 and rect.size[1] > 80) or (rect.size[1] >= 400 and rect.size[0] > 80)
-                    ]
-                )
-                if count >= 2:
-                    continue
+            # if packed and (rect_w >= 350 or rect_l >= 350):
+            #     count = len(
+            #         [
+            #             item for item in packed
+            #             if (item.rectangle.size[0] >= 400 and item.rectangle.size[1] > 40) or (item.rectangle.size[1] >= 400 and item.rectangle.size[0] > 40)
+            #             # if (rect.size[0] >= 400 and rect.size[1] > 80) or (rect.size[1] >= 400 and rect.size[0] > 80)
+            #         ]
+            #     )
+            #     if count >= 4:
+            #         continue
             # На большие листы ничего не размещается
             # trp = estimator.rectangle.trp
             # estimate_point = max(x0 + rect_w, trp.x), max(y0 + rect_l, trp.y)
@@ -349,7 +350,7 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
             dist = estimator(x0 + rect_w, y0)
             if dist is None:
                 continue
-            _, l_max = dist
+            # _, l_max = dist
 
             width, length = estimator(x0, y0)
             # p = 4
@@ -367,6 +368,8 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
             elif priority > 4:
                 # ничего не входит
                 priority, orientation, best = 12, j, rect
+            if x0 + rect_w > 800 or y0 + rect_l > 800:
+                priority= 12
 
             # if priority > 1 and rect_w == w_0 and rect_l == l_max:
             #     # вариант 1
