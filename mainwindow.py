@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
     QApplication, QGraphicsDropShadowEffect, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
     QMessageBox, QDialog, QVBoxLayout, QGraphicsScene, QLayout, QProgressDialog
 )
+from PyQt5.QtGui import QGuiApplication
 
 from gui import ui_mainwindow
 from widgets import (
@@ -218,7 +219,8 @@ class OCIMainWindow(QMainWindow):
         self.ui.ingots_view.clicked.connect(self.ingot_changed)
         
         # Делегат слитка - события закрытия и готовности слитка
-        self.closed_ingot_dgt.forgedIndexClicked.connect(self.ingot_delivered)
+        self.closed_ingot_dgt.orderedIndexClicked.connect(self.ingot_ordered)
+        self.closed_ingot_dgt.deliveredIndexClicked.connect(self.ingot_delivered)
         self.closed_ingot_dgt.deleteFromOrderClicked.connect(self.ingot_removed)
         
         # Сигналы кнопок на главном окне - другие секции или кнопки заказа
@@ -243,16 +245,16 @@ class OCIMainWindow(QMainWindow):
             return
         
         order = index.data(Qt.DisplayRole)
-        if order['status_id'] == 3:
+        if order['status_id'] in [3, 5]:
             # Если выбранный заказ уже завершён, то слитки закрыть нельзя,
             # и любой слиток пересчитать нельзя
             self.ui.ingots_view.setItemDelegate(self.unclosed_ingot_dgt)
         else:
             # Если заказ запланирован, в работе или ожидании, то можно всё
             self.ui.ingots_view.setItemDelegate(self.closed_ingot_dgt)
-        self.ui.recalculate.setHidden(order['status_id'] == 3)
-        self.ui.assign_ingot.setHidden(order['status_id'] == 3)
-        self.ui.complete_order.setHidden(order['status_id'] == 3)
+        self.ui.recalculate.setHidden(order['status_id'] in [3, 5])
+        self.ui.assign_ingot.setHidden(order['status_id'] in [3, 5])
+        self.ui.complete_order.setHidden(order['status_id'] in [3, 5])
 
         self.refresh_ingots_view(order)
         self.refresh_residuals_view(order)
@@ -281,7 +283,7 @@ class OCIMainWindow(QMainWindow):
             return
         
         ingot = current.data(Qt.DisplayRole)
-        self.ui.recalculate.setEnabled(ingot['status_id'] != 3)
+        self.ui.recalculate.setEnabled(ingot['status_id'] not in [3, 5])
 
     def refresh_residuals_view(self, order: Dict):
         self.ingots_residuals_model.order = order['id']
@@ -311,6 +313,26 @@ class OCIMainWindow(QMainWindow):
             self.ui.complects_view.setColumnWidth(column, width)
         self.ui.complects_view.setColumnHidden(1, True)
         self.ui.complects_view.expandAll()
+
+    def ingot_ordered(self, index: QModelIndex) -> None:
+        ingot = index.data(Qt.ItemDataRole.DisplayRole)
+        size = 'x'.join(map(str, ingot['size']))
+        _, fusion, density = StandardDataService.get_by_id(
+            'fusions', Field('id', ingot['fusion_id'])
+        )
+        mass = str(round(math.prod(ingot['size'], start=density), 2))
+        text = f'Размер: {size}\nСплав: {fusion}\nВес: {mass} г.'
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText(text)
+
+        message = str('Для заказа слитка отправьте мастеру участка получения '
+                      'сплавов размеры и вес необходимого слитка.\n\n')
+        clipboard_alert = str('\n\nПараметры скопированы в буфер обмена.')
+        QMessageBox.information(
+            self, 'Заказ слитка', message + text + clipboard_alert)
+        
+        success = StandardDataService.update_record('ingots', Field('id', ingot['id']), status_id=5)
+        self.ingot_model.setData(index, {'status_id': 5}, Qt.EditRole)
 
     def ingot_delivered(self, index: QModelIndex) -> None:
         """Подтверждение готовности слитка.
@@ -343,7 +365,7 @@ class OCIMainWindow(QMainWindow):
                 ingot_index = self.ingot_model.index(row, 0, QModelIndex())
                 ingot = self.ingot_model.data(ingot_index, Qt.DisplayRole)
                 # Если есть запланированный слиток, то и заказ остаётся таким
-                if ingot['status_id'] == 3:
+                if ingot['status_id'] in [3, 5]:
                     break
             else:
                 # Если запланированных слитков нет и заказ готов к началу
@@ -389,7 +411,7 @@ class OCIMainWindow(QMainWindow):
         message.exec()
 
         if answer == message.clickedButton():
-            if ingot['status_id'] == 3:
+            if ingot['status_id'] in [3, 5]:
                 # Если слиток только в планах, то просто удаляем его
                 success = StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
             elif ingot['status_id'] in [1, 2]:
@@ -445,12 +467,13 @@ class OCIMainWindow(QMainWindow):
             for row in range(self.ingot_model.rowCount()):
                 ingot_index = self.ingot_model.index(row, 0, QModelIndex())
                 ingot = ingot_index.data(Qt.DisplayRole)
-                if ingot['status_id'] == 3:
-                    # Если слиток только в планах, то просто удаляем его
-                    StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
-                elif ingot['status_id'] in [1, 2]:
-                    # Если слиток складской, то просто отвязываем от заказа
+                if order['status_id'] != 3 and ingot['status_id'] in [1, 2]:
+                    # Если слиток складской в незавершённом заказе, то нужно
+                    # отвязать слиток
                     StandardDataService.update_record('ingots', Field('id', ingot['id']), order_id=None)
+                else:
+                    # Если слиток любой, а заказ завершён, то просто удаляем
+                    StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
             success = StandardDataService.delete_by_id('orders', Field('id', order['id']))
             if not success:
                 QMessageBox.critical(self, 'Ошибка удаления', 'Не удалось удалить заказ.', QMessageBox.Ok)
@@ -1366,7 +1389,7 @@ class OCIMainWindow(QMainWindow):
             return
         for row in range(self.ingot_model.rowCount()):
             ingot = self.ingot_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
-            if ingot['status_id'] == 3:
+            if ingot['status_id'] in [3, 5]:
                 message_box_info('Добавьте расчетный слиток на склад!', self)
                 return
             with suppress(TypeError):
@@ -1384,7 +1407,7 @@ class OCIMainWindow(QMainWindow):
             for row in range(self.ingot_model.rowCount()):
                 ingot_index = self.ingot_model.index(row, 0, QModelIndex())
                 ingot = ingot_index.data(Qt.DisplayRole)
-                if ingot['status_id'] == 3:
+                if ingot['status_id'] in [3, 5]:
                     # Если слиток только в планах, то просто удаляем его
                     StandardDataService.delete_by_id('ingots', Field('id', ingot['id']))
         window = OrderEditingDialog(order, self.complect_model, self)
