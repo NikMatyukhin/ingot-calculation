@@ -134,7 +134,7 @@ class BaseBin(Rectangle3d):
     def __init__(self, length: Number, width: Number, height: Number,
                  material: Optional[Material]=None) -> None:
         super().__init__(length, width, height)
-        self.name = ''
+        self._name = ''
         self.material = material
 
     @property
@@ -149,6 +149,14 @@ class BaseBin(Rectangle3d):
         if self.material:
             return self.volume * self.material.density
         return 0.
+
+    @property
+    def name(self):
+        return f'{self.height}_{self._name}'
+
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     def eq_rot(self, obj):
         return (
