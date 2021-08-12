@@ -2,6 +2,7 @@
 
 
 import copy
+from operator import itemgetter
 import sys
 import pickle
 import logging
@@ -505,14 +506,15 @@ class OCIMainWindow(QMainWindow):
 
                 # Собираем все нужные данные по колонкам
                 name = model.data(model.index(sub_row, 0, article), Qt.DisplayRole)
-                complect_counter[article_name + '_' + name] = {
+                depth = float(model.data(model.index(sub_row, 6, article), Qt.DisplayRole))
+                complect_counter[str(depth) + '_' + article_name + '_' + name] = {
                     'detail_id': int(model.data(model.index(sub_row, 1, article), Qt.DisplayRole)),
-                    'depth': float(model.data(model.index(sub_row, 6, article), Qt.DisplayRole)),
+                    'depth': depth,
                     'amount': int(model.data(model.index(sub_row, 7, article), Qt.DisplayRole)),
                     'status_id': model.index(sub_row, 2, article),
                     'total': model.index(sub_row, 8, article)
                 }
-        
+
         updates = FieldCollection(['status_id', 'total', 'order_id', 'detail_id'])
         order = Field('order_id', order_id)
 
@@ -530,7 +532,7 @@ class OCIMainWindow(QMainWindow):
                 model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             OrderDataService.update_statuses(updates)
             return
-        
+
         # Подсчитываем количество неразмещенных заготовок (название: количество)
         unplaced_counter = Counter(b.name for b in self._tree.main_kit)
         for leave in self.tree.cc_leaves:
@@ -886,10 +888,12 @@ class OCIMainWindow(QMainWindow):
                 item for item in trees if not is_defective_tree(item, max_size)
             ]
 
-        if not trees:
+        if not trees and level_subtree == 0:
             raise BPPError(
                 'Не удалось получить раскрой. Измените приоритеты или ограничения'
             )
+        elif not trees:
+            return
 
         print(f'Годных деревьев: {len(trees)}')
         # for t in trees:
@@ -981,6 +985,7 @@ class OCIMainWindow(QMainWindow):
                 if level_subtree < 1:
                     level_subtree += 1
                     self.create_subtree(node, restrictions, level_subtree)
+                    level_subtree -= 1
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -1052,6 +1057,8 @@ class OCIMainWindow(QMainWindow):
                 except BPPError:
                     print(f'\tОстаток {tailing.length, tailing.width, node.bin.height} из {node.bin}: {adj_node.kit.keys()}')
                 else:
+                    if new_tree is None:
+                        continue
                     if new_tree.root.children:
                         tailing.rtype = RectangleType.USED_RESIDUAL
                         node.subtree.append(new_tree)
@@ -1226,16 +1233,16 @@ class OCIMainWindow(QMainWindow):
                     adj_node.bin.material, batch)
                 )
         for node in self.tree.cc_leaves:
-            tailings = list(node.result.tailings)
+            tailings = [(tailing, node.bin.height) for tailing in node.result.tailings]
             for subtree in node.subtree:
                 for subnode in subtree.root.cc_leaves:
-                    tailings.extend(subnode.result.tailings)
-                tailings.extend([adj_node.bin for adj_node in subtree.root.adj_leaves])
-            tailings = filtration_residues(tailings, min_size=min_size)
-            for tailing in tailings:
+                    tailings.extend([(tailing, subnode.bin.height) for tailing in subnode.result.tailings])
+                tailings.extend([(adj_node.bin, adj_node.bin.height) for adj_node in subtree.root.adj_leaves])
+            tailings = filtration_residues(tailings, min_size=min_size, key=itemgetter(0))
+            for tailing, height in tailings:
                 # получаем сплав
                 all_tailings.append(
-                    (tailing.length, tailing.width, node.bin.height,
+                    (tailing.length, tailing.width, height,
                      node.bin.material, batch)
                 )
         return all_tailings
@@ -1516,8 +1523,9 @@ class OCIMainWindow(QMainWindow):
             'hem_after_3': self.clean_roll_edge_loss,
             'allowance': self.cut_allowance,
             'end': round(self.end_face_loss, 4),
+            'min_size': (self.minimum_plate_width, self.minimum_plate_length),
         }
-    
+
     def forge_settings(self) -> Dict:
         return {
             'max_size': (self.ingot_max_length, self.ingot_max_width,
@@ -1633,7 +1641,7 @@ def incoming_rectangles(rect, height: float, kit: List[Any]):
     return [Rectangle3d(rect.length, rect.width, height).is_subrectangle(b, b.is_rotatable) for b in kit]
 
 
-def filtration_residues(items: List, min_size: Tuple[Number, Number] = None):
+def filtration_residues(items: List, min_size: Tuple[Number, Number] = None, key=None):
     """Фильтрация остатков
 
     :param items: список прямоугольников
@@ -1643,10 +1651,11 @@ def filtration_residues(items: List, min_size: Tuple[Number, Number] = None):
     :return: остатки с подходящими размерами
     :rtype: list[Rectangle]
     """
-    residues = filter(is_residual, items)
+    key = key or (lambda x: x)
+    residues = filter(lambda item: is_residual(key(item)), items)
     p_is_suitable_sizes = partial(is_suitable_sizes, min_size=min_size)
     if min_size:
-        residues = filter(p_is_suitable_sizes, residues)
+        residues = filter(lambda item: p_is_suitable_sizes(key(item)), residues)
     return list(residues)
 
 

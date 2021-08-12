@@ -204,6 +204,7 @@ def _stmh_idrd(tree, local=False, with_filter=True, restrictions=None,
 def _pack(node, level, restrictions, with_priority=True):
     if restrictions:
         # максимальная длина реза
+        min_size = restrictions.get('min_size')
         max_len = restrictions.get('cutting_length')
         max_size = restrictions.get('max_size')
         if is_ubin_node(node.parent_cont):
@@ -213,10 +214,11 @@ def _pack(node, level, restrictions, with_priority=True):
         if max_size:
             max_size = max_size[height >= 3]
     else:
+        min_size = None
         max_len = None
         max_size = None
     # 4.1) перенос размеров вправо
-    node.transfer_size(to_right=True)
+    node.transfer_size(to_right=True, min_size=min_size)
     # 4.2) получение соседней ветки
     adj_branch = node.adjacent_branch()
     # 4.3) если ветка не существует:
@@ -224,10 +226,10 @@ def _pack(node, level, restrictions, with_priority=True):
         # 4.3.1) упаковать
         node.pack(
             max_size=max_size, restrictions=restrictions,
-            with_priority=with_priority
+            min_size=min_size, with_priority=with_priority
         )
         # 4.3.2) обновить размеры
-        node.update_size(max_len=max_len)
+        node.update_size(max_len=max_len, min_size=min_size)
         if node.result.unplaced:
             # if adj_branch._size_check(node.result.unplaced):
             adj_branch.kit.update(node.result.unplaced)
@@ -239,25 +241,25 @@ def _pack(node, level, restrictions, with_priority=True):
         rolling_node = cur_branch.parent
         # 4.4.2) упаковать (проверка набора на пустоту внутри
         # метода pack)
-        node.pack(max_size=max_size, restrictions=restrictions)
-        adj_cc_node.pack(max_size=max_size, restrictions=restrictions)
+        node.pack(max_size=max_size, min_size=min_size, restrictions=restrictions)
+        adj_cc_node.pack(max_size=max_size, min_size=min_size, restrictions=restrictions)
         delete_all_branch(
             rolling_node, restrictions.get('max_size'), without_root=True
         )
 
         if len(rolling_node.list_of_children()) != 2:
             if adj_branch is rolling_node.children:
-                adj_cc_node.update_size(max_len=max_len)
+                adj_cc_node.update_size(max_len=max_len, min_size=min_size)
             if cur_branch is rolling_node.children:
-                node.update_size(max_len=max_len)
+                node.update_size(max_len=max_len, min_size=min_size)
         else:
             rolling_node.delete(adj_branch)
-            rolling_node.parent.parent.update_size(max_len=max_len)
+            rolling_node.parent.parent.update_size(max_len=max_len, min_size=min_size)
             rolling_node.direction = None
 
             rolling_node.delete(cur_branch)
             rolling_node.add(adj_branch)
-            rolling_node.parent.parent.update_size(max_len=max_len)
+            rolling_node.parent.parent.update_size(max_len=max_len, min_size=min_size)
             rolling_node.direction = None
             rolling_node.add(cur_branch)
 
@@ -278,14 +280,16 @@ def _pack(node, level, restrictions, with_priority=True):
             if min_branch[1] in level:
                 level.remove(min_branch[1])
             min_branch[0].parent.delete(min_branch[0])
-            max_branch[1].update_size(max_len=max_len)
+            max_branch[1].update_size(max_len=max_len, min_size=min_size)
 
 
 def _create_insert_template(node, level, tree, local, restrictions, direction=0):
     if restrictions:
         max_len = restrictions.get('cutting_length')
         cut_thickness = restrictions.get('cutting_thickness')
+        min_size = restrictions.get('min_size')
     else:
+        min_size = None
         max_len = None
         cut_thickness = None
     # 5.2) получить неупакованную толщину (уже получена из сортировки)
@@ -312,13 +316,17 @@ def _create_insert_template(node, level, tree, local, restrictions, direction=0)
             cut_thickness = None
         res = tree.create_template_branches(
             new_parent, height, cut_thickness=cut_thickness,
-            direction=direction
+            direction=direction, min_size=min_size
         )
+        if res is None:
+            node.kit.delete_height(height)
+            level.append(tree)
+            return
         # 5.5) вставка шаблона с копированием нижестоящих узлов
         for new_tree, new_parent, branch in res:
             if new_parent.list_of_children() and not is_cutting_node(branch[0]):
                 continue
-            new_parent.insert(branch[0], max_len=max_len)
+            new_parent.insert(branch[0], max_len=max_len, min_size=min_size)
             # 5.6) обновление наборов у нижестоящих узлов
             # (Может перенести в метод вставки???)
             for item in new_parent.template_leaves(new_parent):
