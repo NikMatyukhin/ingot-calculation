@@ -897,7 +897,7 @@ class IngotAssignmentDialog(QDialog):
                 total_index = model.index(sub_row, 8, article)
                 depth: float = model.data(model.index(sub_row, 6, article), Qt.DisplayRole)
                 amount: int = model.data(model.index(sub_row, 7, article), Qt.DisplayRole)
-                complect_counter[article_name + '_' + name] = {
+                complect_counter[f'{depth}_{article_name}_{name}'] = {
                     'detail_id': int(detail_id),
                     'depth': float(depth),
                     'amount': int(amount),
