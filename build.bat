@@ -8,3 +8,6 @@ break > dist\mainwindow\log\info.log
 echo COPY CONFIGS
 copy configs dist\mainwindow
 call venv\Scripts\deactivate
+cd dist
+echo ARCHIVING FILES
+7z a -tzip new_version.zip mainwindow
