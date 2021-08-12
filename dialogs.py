@@ -429,6 +429,7 @@ class OrderEditingDialog(QDialog):
         self.ui.setupUi(self)
 
         self.order = order
+        self.ui.thickness.setValue(order['thickness'])
 
         # Иерархическая модель изделие->заготовки для формирования заказа
         # ID (int) - идентификатор конкретного изделия или заготовки
@@ -667,9 +668,13 @@ class OrderEditingDialog(QDialog):
                 updates.append(order, article, Field('detail_id', detail[0]), status, Field('amount', detail[1]), Field('priority', detail[2]))
         OrderDataService.save_complects(updates)
 
+        thickness = round(self.ui.thickness.value(), 1)
+        StandardDataService.update_record('orders', order, cutting_thickness=thickness)
+
         self.orderEditedSuccess.emit({
             'articles': marked_rows['articles_count'],
             'details': marked_rows['details_count'],
+            'thickness': thickness,
         })
         logging.info('Заказ %(name)s обновлён в базе.', {'name': self.order['id']})
         self.accept()
@@ -677,50 +682,109 @@ class OrderEditingDialog(QDialog):
 
 class OrderCompletingDialog(QDialog):
     def __init__(self, residuals: list, parent: typing.Optional[QWidget] = None) -> None:
-        super().__init__(parent)
+        super(OrderCompletingDialog, self).__init__(parent)
         self.ui = ui_finish_step_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
-        self.ui.lineEdit.setValidator(QIntValidator())
+        self.ui.batch.setValidator(QIntValidator())
 
         # Настройка списка со сплавами
         self.fusions_list = CatalogDataService.fusions_list()
-        self.ui.comboBox.addItems(list(self.fusions_list.keys()))
+        self.ui.fusion.addItems(list(self.fusions_list.keys()))
 
+        # Модель остатков
         self.residuals_model = ResidualsModel(residuals)
-        self.ui.leftoversTable.setModel(self.residuals_model)
         self.residuals_delegate = ResidualsSectionDelegate()
-        self.ui.leftoversTable.setItemDelegate(self.residuals_delegate)
-        self.residuals_delegate.deleteIndexClicked.connect(self.confirm_residual_removing)
+        self.ui.residuals_view.setModel(self.residuals_model)
+        self.ui.residuals_view.setItemDelegate(self.residuals_delegate)
 
-        self.ui.leftover.clicked.connect(self.confirm_residual_adding)
+        self.residuals_delegate.deleteIndexClicked.connect(self.confirm_residual_removing)
+        self.ui.save.clicked.connect(self.save_filter)
+        self.ui.residuals_view.clicked.connect(self.residual_changed)
         self.ui.finish.clicked.connect(self.confirm_order_completing)
+        self.ui.add.clicked.connect(self.prepare_form)
+
+    def enable_parameters(self, enable: bool):
+        self.ui.batch.setEnabled(enable)
+        self.ui.fusion.setEnabled(enable)
+
+    def residual_changed(self, index: QModelIndex):
+        self.ui.save.setFocus()
+        residual = index.data(Qt.ItemDataRole.DisplayRole)
+        if residual:
+            self.ui.length.setValue(residual['length'])
+            self.ui.width.setValue(residual['width'])
+            self.ui.height.setValue(residual['height'])
+            self.ui.batch.setText(str(residual['batch']))
+            self.ui.fusion.setCurrentText(residual['fusion'])
+            self.enable_parameters(False)
+
+    def prepare_form(self):
+        self.ui.length.setValue(1)
+        self.ui.width.setValue(1)
+        self.ui.height.setValue(1.0)
+        self.ui.batch.clear()
+        self.ui.fusion.setCurrentIndex(0)
+        self.enable_parameters(True)
+        self.ui.residuals_view.clearSelection()
+
+    def save_filter(self):
+        if self.ui.residuals_view.selectedIndexes():
+            self.confirm_residual_editing()
+        else:
+            self.confirm_residual_adding()
+
+    def confirm_residual_editing(self):
+        residual_index = self.ui.residuals_view.currentIndex()
+        data_row = {
+            'length': self.ui.length.value(),
+            'width': self.ui.width.value(),
+            'height': self.ui.height.value(),
+        }
+        self.residuals_model.setData(
+            residual_index, data_row, Qt.ItemDataRole.EditRole)
 
     def confirm_residual_adding(self):
-        if not self.ui.lineEdit.text():
+        if not self.ui.batch.text():
             return
 
         data_row = {
             'num': self.residuals_model.counter,
-            'length': self.ui.leftover_leigth.value(),
-            'width': self.ui.leftover_width.value(),
-            'height': self.ui.doubleSpinBox.value(),
-            'batch': int(self.ui.lineEdit.text()),
-            'fusion_id': self.fusions_list[self.ui.comboBox.currentText()],
+            'length': self.ui.length.value(),
+            'width': self.ui.width.value(),
+            'height': self.ui.height.value(),
+            'batch': int(self.ui.batch.text()),
+            'fusion': self.ui.fusion.currentText(),
         }
         self.residuals_model.appendRow(data_row)
+        row = self.residuals_model.rowCount()
+        last_index = self.residuals_model.index(row - 1, 0, QModelIndex())
+        self.ui.residuals_view.selectionModel().select(
+            last_index, QItemSelectionModel.SelectionFlag.SelectCurrent)
+        self.ui.residuals_view.setCurrentIndex(last_index)
+        self.residual_changed(last_index)
 
     def confirm_residual_removing(self, index: QModelIndex):
         self.residuals_model.deleteRow(index.row())
+        if self.residuals_model.rowCount() == 0:
+            self.ui.add.setFocus()
+            self.prepare_form()
+        else:
+            first_index = self.residuals_model.index(0, 0, QModelIndex())
+            self.ui.residuals_view.selectionModel().select(
+                first_index, QItemSelectionModel.SelectionFlag.SelectCurrent)
+            self.residual_changed(first_index)
 
     def confirm_order_completing(self):
         for row in range(self.residuals_model.rowCount()):
-            r = self.residuals_model.index(row, 0, QModelIndex()).data(Qt.DisplayRole)
+            residual_index = self.residuals_model.index(row, 0, QModelIndex())
+            residual = residual_index.data(Qt.ItemDataRole.DisplayRole)
             fusions = CatalogDataService.fusions_list()
-            fusion = fusions[r['fusion_id']]
-            suc = StandardDataService.save_record(
-                'ingots', length=r['length'], width=r['width'], height=r['height'],
-                batch=r['batch'], fusion_id=fusion, status_id=2
+            fusion = fusions[residual['fusion']]
+            success = StandardDataService.save_record(
+                'ingots', length=residual['length'], width=residual['width'],
+                height=residual['height'], batch=residual['batch'],
+                fusion_id=fusion, status_id=2
             )
         self.accept()
 

@@ -14,26 +14,18 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(640, 275)
+        Dialog.resize(640, 250)
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setContentsMargins(10, 0, 10, 0)
-        self.verticalLayout.setSpacing(0)
+        self.verticalLayout.setSpacing(5)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.label = QtWidgets.QLabel(Dialog)
-        self.label.setMinimumSize(QtCore.QSize(0, 40))
-        font = QtGui.QFont()
-        font.setPointSize(14)
-        self.label.setFont(font)
-        self.label.setStyleSheet("QLabel {\n"
-"    background-color: rgb(234, 234, 234);\n"
-"    margin-top: 10px;\n"
-"}")
-        self.label.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
-        self.label.setObjectName("label")
-        self.verticalLayout.addWidget(self.label)
         self.ingots_view = QtWidgets.QListView(Dialog)
-        self.ingots_view.setMinimumSize(QtCore.QSize(0, 195))
+        self.ingots_view.setMinimumSize(QtCore.QSize(0, 205))
         self.ingots_view.setMaximumSize(QtCore.QSize(16777215, 195))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(8)
+        self.ingots_view.setFont(font)
         self.ingots_view.setStyleSheet("")
         self.ingots_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.ingots_view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
@@ -73,6 +65,5 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Добавление слитков"))
-        self.label.setText(_translate("Dialog", "Свободные слитки"))
         self.add.setText(_translate("Dialog", "Добавить"))
         self.predict.setText(_translate("Dialog", "Рассчитать"))
