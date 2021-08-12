@@ -319,8 +319,13 @@ class OrderDataService(StandardDataService):
     def ware_ingots(category: Category, connection: Connection = connect(':memory:')) -> list:
         if category == 'planned':
             sql = str('SELECT * FROM ingots WHERE status_id = 3')
+        elif category == 'ordered':
+            sql = str('SELECT * FROM ingots WHERE status_id = 5')
         elif category == 'used':
-            sql = str('SELECT * FROM ingots AS i JOIN orders AS o ON i.order_id = o.id WHERE i.order_id NOT NULL AND i.status_id <> 3 AND o.status_id <> 3')
+            sql = str('SELECT * FROM ingots AS i JOIN orders AS o '
+                      'ON i.order_id = o.id WHERE i.order_id NOT NULL '
+                      'AND i.status_id <> 3 AND i.status_id <> 5 '
+                      'AND o.status_id <> 3')
         elif category == 'unused':
             sql = str('SELECT * FROM ingots WHERE order_id IS NULL')
         else:
