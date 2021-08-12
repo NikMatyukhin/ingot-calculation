@@ -499,7 +499,7 @@ class OCIMainWindow(QMainWindow):
         if discard and self.tree:
             placed_counter = Counter()
             for leave in self.tree.cc_leaves:
-                placed_counter += Counter(f'{b.height}_{b.name}' for b in leave.placed)
+                placed_counter += Counter(b.name for b in leave.placed)
             for name in placed_counter:
                 if name not in complect_counter:
                     continue
@@ -509,11 +509,11 @@ class OCIMainWindow(QMainWindow):
                 model.setData(complect_counter[name]['total'], 0, Qt.EditRole)
             OrderDataService.update_statuses(updates)
             return
-        
+
         # Подсчитываем количество неразмещенных заготовок (название: количество)
-        unplaced_counter = Counter(f'{b.height}_{b.name}' for b in self._tree.main_kit)
+        unplaced_counter = Counter(b.name for b in self._tree.main_kit)
         for leave in self.tree.cc_leaves:
-            unplaced_counter -= Counter(f'{b.height}_{b.name}' for b in leave.placed)
+            unplaced_counter -= Counter(b.name for b in leave.placed)
 
         # Сначала проходимся по счётчику неразмещённых заготовок
         for name in unplaced_counter:
@@ -865,10 +865,12 @@ class OCIMainWindow(QMainWindow):
                 item for item in trees if not is_defective_tree(item, max_size)
             ]
 
-        if not trees:
+        if not trees and level_subtree == 0:
             raise BPPError(
                 'Не удалось получить раскрой. Измените приоритеты или ограничения'
             )
+        elif not trees:
+            return
 
         print(f'Годных деревьев: {len(trees)}')
         # for t in trees:
@@ -960,6 +962,7 @@ class OCIMainWindow(QMainWindow):
                 if level_subtree < 1:
                     level_subtree += 1
                     self.create_subtree(node, restrictions, level_subtree)
+                    level_subtree -= 1
                 if is_empty_tree(tree):
                     result.append(tree)
                 else:
@@ -1031,6 +1034,8 @@ class OCIMainWindow(QMainWindow):
                 except BPPError:
                     print(f'\tОстаток {tailing.length, tailing.width, node.bin.height} из {node.bin}: {adj_node.kit.keys()}')
                 else:
+                    if new_tree is None:
+                        continue
                     if new_tree.root.children:
                         tailing.rtype = RectangleType.USED_RESIDUAL
                         node.subtree.append(new_tree)
@@ -1495,8 +1500,9 @@ class OCIMainWindow(QMainWindow):
             'hem_after_3': self.clean_roll_edge_loss,
             'allowance': self.cut_allowance,
             'end': round(self.end_face_loss, 4),
+            'min_size': (self.minimum_plate_width, self.minimum_plate_length),
         }
-    
+
     def forge_settings(self) -> Dict:
         return {
             'max_size': (self.ingot_max_length, self.ingot_max_width,

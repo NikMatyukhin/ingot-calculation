@@ -235,10 +235,10 @@ class Node(BaseNode):
             return estimates
         return self.children.estimate_size(start=start)
 
-    def update_size(self, *, start=None, max_len=None):
+    def update_size(self, *, start=None, max_len=None, min_size=None):
         start = start or self
         for node in self.list_of_children():
-            node.update_size(start=start, max_len=max_len)
+            node.update_size(start=start, max_len=max_len, min_size=min_size)
 
     def upward_size_update(self, min_size=None, max_size=None, change_height=False):
         # восходящее обновление размеров
@@ -390,7 +390,7 @@ class BinNode(Node):
             raise ParentNodeError(msg)
         return OperationNode(Operations.packing)
 
-    def insert(self, children, max_len=None):
+    def insert(self, children, max_len=None, min_size=None):
         temp_children = self.children
         self.children = children
         if temp_children:
@@ -399,7 +399,7 @@ class BinNode(Node):
             )
             max_height_node.children = temp_children
             # пустые шаблоны не будут вставляться
-            max_height_node.parent.update_size(max_len=max_len)
+            max_height_node.parent.update_size(max_len=max_len, min_size=min_size)
 
     def get_template_height(self, root=None):
         root = root or self.get_troot()
@@ -533,7 +533,7 @@ class BinNode(Node):
             return node is parent.list_of_children()[1]
         return False
 
-    def _fix_semifinished(self, width, length, max_size=None, **kwargs):
+    def _fix_semifinished(self, width, length, max_size=None, min_size=None, **kwargs):
         # print('Фиксация бина полуфабриката')
         p_cont = self.parent_cont
         rolldir = self.bin.last_rolldir
@@ -559,7 +559,7 @@ class BinNode(Node):
         )
         self.bin = bin_
         parent = self.get_parent_ubin()
-        parent.fix_sizes(width, length, max_size=max_size, **kwargs)
+        parent.fix_sizes(width, length, max_size=max_size, min_size=min_size, **kwargs)
 
     def _fix_intermediate(self, width, length, max_size=None, **kwargs):
         # фиксирование промежуточного узла
@@ -661,10 +661,10 @@ class BinNode(Node):
             adj_node.bin.bin_type
         )
         adj_node.bin = bin_
-        self.update_size(max_len=kwargs.get('max_len'))
+        self.update_size(max_len=kwargs.get('max_len'), min_size=kwargs.get('min_size'))
 
     def fix_sizes(self, width, length, is_min=False, miss_bins=False,
-                  max_len=None, max_size=None, restrictions=None):
+                  max_len=None, max_size=None, min_size=None, restrictions=None):
         # Лучше разнести этот метод по разным классам
         p_cont = self.parent_cont
         if not is_ubin_node(self):
@@ -672,7 +672,7 @@ class BinNode(Node):
                 p_cont.fix_sizes(
                     self.bin.width, self.bin.length, is_min=is_min,
                     miss_bins=miss_bins, max_size=max_size,
-                    restrictions=restrictions
+                    min_size=min_size, restrictions=restrictions
                 )
             return
         troot = self.get_troot()
@@ -693,7 +693,7 @@ class BinNode(Node):
             self._fix_semifinished(
                 width, length, max_size=max_size, is_min=is_min,
                 miss_bins=miss_bins, max_len=max_len,
-                restrictions=restrictions
+                min_size=min_size, restrictions=restrictions
             )
         elif len(last_deformations) == 2:
             # print('Фиксация бина с двумя деформациями')
@@ -747,7 +747,7 @@ class BinNode(Node):
                     last_rolldir, self.bin.material, adj_bin.bin_type
                 )
                 anj_node.bin = bin_
-                self.cc_leaves[0].transfer_size()
+                self.cc_leaves[0].transfer_size(min_size=min_size)
                 cc_leaves = [
                     node for node in anj_node.template_leaves(anj_node)
                     if is_cc_node(node)
@@ -755,11 +755,11 @@ class BinNode(Node):
                 for childe in cc_leaves:
                     childe.parent_cont.fix_sizes(
                         childe.bin.width, childe.bin.length, is_min=is_min,
-                        miss_bins=True, restrictions=restrictions
+                        miss_bins=True, min_size=min_size, restrictions=restrictions
                     )
                 p_cont.fix_sizes(
                     width, length, is_min=is_min, max_size=max_size,
-                    restrictions=restrictions
+                    min_size=min_size, restrictions=restrictions
                 )
             elif is_ubin_node(self) and self.bin.bin_type == BinType.INTERMEDIATE:
                 size = self.estimate_size()
@@ -779,7 +779,7 @@ class BinNode(Node):
                 self.bin = bin_
                 p_cont.fix_sizes(
                     width, length, is_min=is_min, max_size=max_size,
-                    restrictions=restrictions
+                    min_size=min_size, restrictions=restrictions
                 )
             else:
                 dist = self.bin.estimator(width, length, last_deformations)
@@ -801,7 +801,7 @@ class BinNode(Node):
                     last_rolldir, self.bin.material, adj_bin.bin_type
                 )
                 anj_node.bin = bin_
-                self.cc_leaves[0].transfer_size()
+                self.cc_leaves[0].transfer_size(min_size=min_size)
                 cc_leaves = [
                     node for node in anj_node.template_leaves(anj_node)
                     if is_cc_node(node)
@@ -809,13 +809,13 @@ class BinNode(Node):
                 for childe in cc_leaves:
                     childe.parent_cont.fix_sizes(
                         childe.bin.width, childe.bin.length, is_min=is_min,
-                        miss_bins=True, restrictions=restrictions
+                        miss_bins=True, min_size=min_size, restrictions=restrictions
                     )
                 parent = self.get_parent_ubin()
                 if parent:
                     parent.fix_sizes(
                         width, length, is_min=is_min, max_size=max_size,
-                        restrictions=restrictions
+                        min_size=min_size, restrictions=restrictions
                     )
         elif len(last_deformations) == 1:
             # print('Фиксация бина с одной деф')
@@ -854,7 +854,7 @@ class BinNode(Node):
                     length = length * current_height / p_cont.bin.d_height
                 p_cont.fix_sizes(
                     width, length, is_min=is_min, max_size=max_size,
-                    restrictions=restrictions
+                    min_size=min_size, restrictions=restrictions
                 )
                 return
             elif is_ubin_node(self) and self.bin.bin_type == BinType.INTERMEDIATE:
@@ -872,7 +872,7 @@ class BinNode(Node):
                 self.bin = bin_
                 p_cont.fix_sizes(
                     width, length, is_min=is_min, max_size=max_size,
-                    restrictions=restrictions
+                    min_size=min_size, restrictions=restrictions
                 )
             elif is_ubin_node(troot) and is_imt_node(troot):
                 self._fix_intermediate(
@@ -900,7 +900,8 @@ class BinNode(Node):
                             length = p_cont.bin.length
                         elif length <= p_cont.bin.length and width > p_cont.bin.width:
                             current_height = p_cont.bin.width * height / width
-                            length = round(length * current_height / height, 4)
+                            # length = round(length * current_height / height, 4)
+                            length = round(length * childe.bin.height / current_height, 4)
                         else:
                             current_height = height
                             length = round(length * self.bin.d_height / height, 4)
@@ -958,13 +959,13 @@ class BinNode(Node):
                 self.bin = bin_
                 p_cont.fix_sizes(
                     width, length, is_min=is_min, max_size=max_size,
-                    restrictions=restrictions
+                    min_size=min_size, restrictions=restrictions
                 )
         else:
             self._fix_node_withot_def(
                 width, length, max_size=max_size, is_min=is_min,
                 miss_bins=miss_bins, max_len=max_len,
-                restrictions=restrictions
+                min_size=min_size, restrictions=restrictions
             )
 
     def upward_size_update(self, min_size=None, max_size=None, change_height=False):
@@ -1202,17 +1203,17 @@ class OperationNode(Node):
             estimate = estimate[LENGTH], width, height
         return estimate
 
-    def update_size(self, *, start=None, max_len=None):
+    def update_size(self, *, start=None, max_len=None, min_size=None):
         if self.parent_bnode is None:
             return
         parent_size = self.parent_bnode.bin.size
         if self.operation == Operations.cutting:
             if self.direction is None:
                 # установить разрез
-                self.set_cut(max_len=max_len)
+                self.set_cut(max_len=max_len, min_size=min_size)
             else:
                 # обновить разрез
-                self.update_cut()
+                self.update_cut(min_size)
             left, right = self.children
             if self.direction == Direction.H:
                 right.bin.length = self.point[LENGTH]
@@ -1248,7 +1249,7 @@ class OperationNode(Node):
                 parent_size[LENGTH], parent_size[HEIGHT],
                 childe_bin.height, childe_bin.material.extension
             )
-        return super().update_size(start=start, max_len=max_len)
+        return super().update_size(start=start, max_len=max_len, min_size=min_size)
 
     def upward_size_update(self, min_size=None, max_size=None, change_height=False):
         parent = self.parent_bnode
@@ -1333,7 +1334,7 @@ class OperationNode(Node):
             min_size=min_size, max_size=max_size, change_height=change_height
         )
 
-    def transfer_size(self, to_right=False, max_len=None):
+    def transfer_size(self, to_right=False, max_len=None, min_size=None):
         if self.operation != Operations.cutting:
             msg = (
                 f'The node type "{self.operation.value}"'
@@ -1364,26 +1365,27 @@ class OperationNode(Node):
             else:
                 # перенос только по разрезу
                 if self.direction is None:
-                    self.set_cut(max_len)
+                    self.set_cut(max_len, min_size)
                     # msg = (
                     #     f'Узел {self} не имеет разреза. '
                     #     'Размеры не могут быть перенесены'
                     # )
                     # raise OperationNodeError(msg)
                 if self.direction == Direction.H:
-                    src.bin.length = estimate[LENGTH]
-                    dst.bin.length = size[LENGTH] - estimate[LENGTH]
+                    src.bin.length = self.point[LENGTH]
+                    dst.bin.length = size[LENGTH] - self.point[LENGTH]
                     dst.bin.width = size[WIDTH]
                     self.point = right.bin.length, 0.
                 else:
-                    src.bin.width = estimate[WIDTH]
-                    dst.bin.width = size[WIDTH] - estimate[WIDTH]
+                    src.bin.width = self.point[WIDTH]
+                    dst.bin.width = size[WIDTH] - self.point[WIDTH]
                     dst.bin.length = size[LENGTH]
                     self.point = 0., right.bin.width
-        src.update_size(max_len=max_len)
-        dst.update_size(max_len=max_len)
+        src.update_size(max_len=max_len, min_size=min_size)
+        dst.update_size(max_len=max_len, min_size=min_size)
 
-    def set_cut(self, max_len=None):
+    def set_cut(self, max_len=None, min_size=None):
+        # min_size = (50, 100)
         if self.operation == Operations.cutting:
             is_left = False
             parent_size = self.parent_bnode.bin.size
@@ -1404,56 +1406,88 @@ class OperationNode(Node):
                         if parent_size[LENGTH] > parent_size[WIDTH]:
                             self.direction = Direction.H
                             if is_left:
-                                self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
-                            else:
-                                self.point = (estimate[LENGTH], 0.)
+                                # self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
+                                estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
+                            # else:
+                                # self.point = (estimate[LENGTH], 0.)
                         else:
                             self.direction = Direction.V
                             if is_left:
-                                self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
-                            else:
-                                self.point = (0., estimate[WIDTH])
+                                estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                            #     self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
+                            # else:
+                            #     self.point = (0., estimate[WIDTH])
+                        self.point = cut_point_with_min_size(
+                            estimate[LENGTH], estimate[WIDTH],
+                            min_size, self.direction
+                        )
                     elif s_1 >= s_2:
                         self.direction = Direction.H
                         if is_left:
-                            self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
-                        else:
-                            self.point = (estimate[LENGTH], 0.)
+                            estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
+                            # self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
+                        # else:
+                            # self.point = (estimate[LENGTH], 0.)
+                        self.point = cut_point_with_min_size(
+                            estimate[LENGTH], estimate[WIDTH],
+                            min_size, self.direction
+                        )
                     else:
                         self.direction = Direction.V
                         if is_left:
-                            self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
-                        else:
-                            self.point = (0., estimate[WIDTH])
+                            # self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
+                            estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                        # else:
+                        #     # self.point = (0., estimate[WIDTH])
+                        self.point = cut_point_with_min_size(
+                            estimate[LENGTH], estimate[WIDTH],
+                            min_size, self.direction
+                        )
                 elif parent_size[WIDTH] <= max_len:
                     # только горизонтальный
                     self.direction = Direction.H
                     if is_left:
-                        self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
-                    else:
-                        self.point = (estimate[LENGTH], 0.)
+                        estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
+                    #     self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
+                    # else:
+                    #     self.point = (estimate[LENGTH], 0.)
+                    self.point = cut_point_with_min_size(
+                        estimate[LENGTH], estimate[WIDTH],
+                        min_size, self.direction
+                    )
                 elif parent_size[LENGTH] <= max_len:
                     # только вертикальный
                     self.direction = Direction.V
                     if is_left:
-                        self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
-                    else:
-                        self.point = (0., estimate[WIDTH])
+                        estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                    #     self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
+                    # else:
+                    #     self.point = (0., estimate[WIDTH])
+                    self.point = cut_point_with_min_size(
+                        estimate[LENGTH], estimate[WIDTH],
+                        min_size, self.direction
+                    )
                 else:
                     raise SizeError('Невозможно разрезать лист')
             else:
                 if self.parent.bin.last_rolldir == Direction.H:
                     self.direction = Direction.V
                     if is_left:
-                        self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
-                    else:
-                        self.point = (0., estimate[WIDTH])
+                        estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                    #     self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
+                    # else:
+                    #     self.point = (0., estimate[WIDTH])
                 else:
                     self.direction = Direction.H
                     if is_left:
-                        self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
-                    else:
-                        self.point = (estimate[LENGTH], 0.)
+                        estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
+                    #     self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
+                    # else:
+                    #     self.point = (estimate[LENGTH], 0.)
+                self.point = cut_point_with_min_size(
+                    estimate[LENGTH], estimate[WIDTH],
+                    min_size, self.direction
+                )
                 # if abs(s_1) >= abs(s_2):
                 # # if s_1 >= s_2:
                 #     self.direction = Direction.H
@@ -1472,16 +1506,23 @@ class OperationNode(Node):
                    'для узлов разреза')
             raise OperationTypeError(msg)
 
-    def update_cut(self):
+    def update_cut(self, min_size=None):
+        min_size = (50, 100)
         if self.operation != Operations.cutting:
             msg = 'Разрез доступен только для узлов разреза'
             raise OperationTypeError(msg)
         _, right = self.children
         right_size = right.estimate_size()
-        if self.direction == Direction.H:
-            self.point = right_size[LENGTH], 0.
+        if is_packing_node(right.children) or min_size is None:
+            if self.direction == Direction.H:
+                self.point = right_size[LENGTH], 0.
+            else:
+                self.point = 0., right_size[WIDTH]
         else:
-            self.point = 0., right_size[WIDTH]
+            self.point = cut_point_with_min_size(
+                right_size[LENGTH], right_size[WIDTH],
+                min_size, self.direction
+            )
 
     @property
     def last_rolldir(self):
@@ -1517,7 +1558,7 @@ class CuttingChartNode(Node):
         self.hem = (0, 0)
         self.subtree = []
 
-    def pack(self, sorting='width', max_size=None, restrictions=None,
+    def pack(self, sorting='width', max_size=None, min_size=None, restrictions=None,
              with_priority=True):
         # if not self.size_check():
         #     self.kit.delete_height(self.bin.height)
@@ -1596,7 +1637,7 @@ class CuttingChartNode(Node):
             )
             self.result.update(result, tailings=tailings, unplaced=unplaced)
             bin_node.fix_sizes(
-                width, length, max_size=max_size, restrictions=restrictions
+                width, length, max_size=max_size, min_size=min_size, restrictions=restrictions
             )
             cutting_node, _ = self.parent_cnode()
             if list(chain.from_iterable(group.values())):
@@ -1696,22 +1737,22 @@ class CuttingChartNode(Node):
             raise ChildrenNodeError(msg)
         return contiguous_node.estimate_size(start=None)
 
-    def update_size(self, *, start=None, max_len=None):
+    def update_size(self, *, start=None, max_len=None, min_size=None):
         if start is None:
             cutting_node, _ = self.parent_cnode()
             if cutting_node is None:
                 return
-            cutting_node.update_size(start=self, max_len=max_len)
+            cutting_node.update_size(start=self, max_len=max_len, min_size=min_size)
         if self.parent_bnode is None:
             return
         parent_size = self.parent_bnode.bin.size
         self.bin.length = parent_size[LENGTH]
         self.bin.width = parent_size[WIDTH]
-        return super().update_size(start=start, max_len=max_len)
+        return super().update_size(start=start, max_len=max_len, min_size=min_size)
 
-    def transfer_size(self, to_right=False):
+    def transfer_size(self, to_right=False, min_size=None):
         cutting_node, _ = self.parent_cnode()
-        cutting_node.transfer_size(to_right=to_right)
+        cutting_node.transfer_size(to_right=to_right, min_size=min_size)
 
     def available_size(self, *, start=None):
         cutting_node, _ = self.parent_cnode()
@@ -1828,7 +1869,7 @@ class Tree:
     def __init__(self, root: BinNode) -> None:
         self.root = root
         # NOTE: костыль
-        self.main_kit = deepcopy(root.kit)
+        self.main_kit = Kit(deepcopy(list(root.kit)))
         self._type = 0  # 0 - дерево, 1 - поддерево
 
     @staticmethod
@@ -1855,7 +1896,12 @@ class Tree:
                 nodes.append(children)
         return parent_children
 
-    def create_template_branches(self, parent: BinNode, height, cut_thickness=None, direction=0):
+    def create_template_branches(self, parent: BinNode, height, cut_thickness=None, direction=0, min_size=None):
+        # min_size = (50, 100)
+        if min_size and not (parent.bin.length >= min_size[LENGTH] and parent.bin.width >= min_size[WIDTH]) \
+            and not (parent.bin.length >= min_size[WIDTH] and parent.bin.width >= min_size[LENGTH]):
+            return
+
         children = self.__class__.create_template(
             parent, height, cut_thickness=cut_thickness, direction=direction
         )
@@ -2025,6 +2071,38 @@ def copy_tree(root, nodes):
     return dst_root, dst_nodes
 
 
+def cut_point_with_min_size(length_est, width_est, min_size, direction):
+    if direction is Direction.V:
+        # if width_est > min_size[LENGTH]:
+        #     point = (0., max(width_est, min_size[WIDTH]))
+        # elif width_est > min_size[WIDTH]:
+        #     point = (0., max(width_est, min_size[LENGTH]))
+        # else:
+        #     point = (0., max(width_est, min_size[LENGTH]))
+            # point = (0., width_est)
+        if width_est > max(min_size):
+            point = (0., max(width_est, min(min_size)))
+        elif width_est > min(min_size):
+            point = (0., max(width_est, max(min_size)))
+        else:
+            point = (0., max(width_est, min(min_size)))
+    else:
+        # if width_est > min_size[WIDTH]:
+        #     point = (max(length_est, min_size[LENGTH]), 0.)
+        # elif width_est > min_size[LENGTH]:
+        #     point = (max(length_est, min_size[WIDTH]), 0.)
+        # else:
+        #     # point = (length_est, 0.)
+        #     point = (max(length_est, min_size[LENGTH]), 0.)
+        if width_est > max(min_size):
+            point = (max(length_est, min(min_size)), 0)
+        elif width_est > min(min_size):
+            point = (max(length_est, max(min_size)), 0)
+        else:
+            point = (max(length_est, min(min_size)), 0)
+    return point
+
+
 def is_bin_node(node) -> bool:
     """Узел является контейнером (фикс. размера)"""
     return isinstance(node, BinNode) and not isinstance(node.bin, UnsizedBin)
@@ -2093,8 +2171,9 @@ def is_imt_node(node):
 
 def to_delete(length, width, max_size):
     """Проверка на максимальные размеры"""
-    # if min(length, width) / max(length, width) > 0.8:
+    # if 0.8 < min(length, width) / max(length, width) > 0.8:
     #     return max_size and (length > 350 or width > max_size[LENGTH])
+    # return False
     return max_size and (length > max_size[WIDTH] or width > max_size[LENGTH])
 
 
@@ -2239,7 +2318,7 @@ def is_defective_tree(tree, max_size):
             if is_locked:
                 return True
         elif is_cc_node(node):
-            if node.bin.length < node.result.length or node.bin.width < node.result.width:
+            if round(node.bin.length, 4) < round(node.result.length, 4) or round(node.bin.width, 4) < round(node.result.width, 4):
                 return True
     return False
 
@@ -2274,7 +2353,7 @@ def get_residuals(node):
         tailing.rtype = RectangleType.RESIDUAL
         residuals.append(tailing)
         node.result.update([], tailings=[tailing])
-    elif node.result.length > bin_length and bin_width > node.result.width:
+    elif bin_length > node.result.length and bin_width > node.result.width:
         area_horizontal = bin_width * (bin_length - node.result.length)
         area_vertical = bin_length * (bin_width - node.result.width)
         if area_vertical > area_horizontal:
