@@ -321,7 +321,7 @@ class OCIMainWindow(QMainWindow):
         _, fusion, density = StandardDataService.get_by_id(
             'fusions', Field('id', ingot['fusion_id'])
         )
-        mass = str(round(math.prod(ingot['size'], start=density), 2))
+        mass = str(round(math.prod(ingot['size'], start=density) // 1000, 2))
         text = f'Размер: {size}\nСплав: {fusion}\nВес: {mass} г.'
         clipboard = QGuiApplication.clipboard()
         clipboard.setText(text)
