@@ -1,4 +1,3 @@
-from typing import Any, Optional
 from gui import ui_settings
 
 from PyQt5.QtCore import QSettings
@@ -107,13 +106,28 @@ class SettingsDialog(QDialog):
         # Минимальная длина листа
         self.ui.min_length.setValue(self.settings.value(
             'cutting/min_length', defaultValue=100, type=int))
-        # Максимальная длина листа
-        self.ui.max_length.setValue(self.settings.value(
-            'cutting/max_length', defaultValue=1300, type=int))
         # Максимальная толщина разреза
         self.ui.cutting_thickness.setValue(self.settings.value(
             'cutting/cutting_thickness', defaultValue=4.2, type=float))
         # Параметры проката --------------------------------------------
+        self.ui.length_large.setValue(
+            self.settings.value('rolling/length_large', defaultValue=1300, type=int)
+        )
+        self.ui.width_large.setValue(
+            self.settings.value('rolling/width_large', defaultValue=400, type=int)
+        )
+        self.ui.length_medium.setValue(
+            self.settings.value('rolling/length_medium', defaultValue=800, type=int)
+        )
+        self.ui.width_medium.setValue(
+            self.settings.value('rolling/width_medium', defaultValue=300, type=int)
+        )
+        self.ui.length_small.setValue(
+            self.settings.value('rolling/length_small', defaultValue=700, type=int)
+        )
+        self.ui.width_small.setValue(
+            self.settings.value('rolling/width_small', defaultValue=280, type=int)
+        )
         # Порог толщины для чист. проката (строго меньше)
         self.ui.clean_height.setValue(self.settings.value(
             'rolling/clean_height', defaultValue=3, type=int))
@@ -126,12 +140,6 @@ class SettingsDialog(QDialog):
         # Допустимая деформация (в процентах от толщины), не используется
         self.ui.deformation.setValue(self.settings.value(
             'rolling/deformation', defaultValue=0.7, type=float) * 100)
-        # Ширина чернового проката (>= 3 мм)
-        self.ui.max_rough_width.setValue(self.settings.value(
-            'rolling/max_rough_width', defaultValue=450, type=int))
-        # Ширина чистового проката (< 3 мм)
-        self.ui.max_clean_width.setValue(self.settings.value(
-            'rolling/max_clean_width', defaultValue=280, type=int))
         # Параметры расчета размеров слитка ----------------------------
         # Минимальная длина слитка
         self.ui.min_forge_length.setValue(self.settings.value(
@@ -160,43 +168,29 @@ class SettingsDialog(QDialog):
         Для значений, получаемых из DoubleSpinBox, проводится приведение к
         относительным единицам вместо процентов.
         """
-        self.settings.setValue('cutting/end_face',
-                               self.ui.end_face.value() / 100)
-        self.settings.setValue('cutting/cut_allowance',
-                               self.ui.cut_allowance.value())
-        self.settings.setValue('cutting/guillotine',
-                               self.ui.guillotine.value())
-        self.settings.setValue('cutting/min_width',
-                               self.ui.min_width.value())
-        self.settings.setValue('cutting/min_length',
-                               self.ui.min_length.value())
-        self.settings.setValue('cutting/max_length',
-                               self.ui.max_length.value())
-        self.settings.setValue('cutting/cutting_thickness',
-                               self.ui.cutting_thickness.value())
-        self.settings.setValue('rolling/clean_height',
-                               self.ui.clean_height.value())
-        self.settings.setValue('rolling/rough_edge',
-                               self.ui.rough_edge.value())
-        self.settings.setValue('rolling/clean_edge',
-                               self.ui.clean_edge.value())
-        self.settings.setValue('rolling/deformation',
-                               self.ui.deformation.value() / 100)
-        self.settings.setValue('rolling/max_rough_width',
-                               self.ui.max_rough_width.value())
-        self.settings.setValue('rolling/max_clean_width',
-                               self.ui.max_clean_width.value())
-        self.settings.setValue('forging/min_forge_length',
-                               self.ui.min_forge_length.value())
-        self.settings.setValue('forging/min_forge_width',
-                               self.ui.min_forge_width.value())
-        self.settings.setValue('forging/min_forge_height',
-                               self.ui.min_forge_height.value())
-        self.settings.setValue('forging/max_forge_length',
-                               self.ui.max_forge_length.value())
-        self.settings.setValue('forging/max_forge_width',
-                               self.ui.max_forge_width.value())
-        self.settings.setValue('forging/max_forge_height',
-                               self.ui.max_forge_height.value())
+        self.settings.setValue('cutting/end_face', self.ui.end_face.value() / 100)
+        self.settings.setValue('cutting/cut_allowance', self.ui.cut_allowance.value())
+        self.settings.setValue('cutting/guillotine', self.ui.guillotine.value())
+        self.settings.setValue('cutting/min_width', self.ui.min_width.value())
+        self.settings.setValue('cutting/min_length', self.ui.min_length.value())
+        self.settings.setValue('cutting/cutting_thickness', self.ui.cutting_thickness.value())
+
+        self.settings.setValue('rolling/length_large', self.ui.length_large.value())
+        self.settings.setValue('rolling/width_large', self.ui.width_large.value())
+        self.settings.setValue('rolling/length_medium', self.ui.length_medium.value())
+        self.settings.setValue('rolling/width_medium', self.ui.width_medium.value())
+        self.settings.setValue('rolling/length_small', self.ui.length_small.value())
+        self.settings.setValue('rolling/width_small', self.ui.width_small.value())
+
+        self.settings.setValue('rolling/clean_height', self.ui.clean_height.value())
+        self.settings.setValue('rolling/rough_edge', self.ui.rough_edge.value())
+        self.settings.setValue('rolling/clean_edge', self.ui.clean_edge.value())
+        self.settings.setValue('rolling/deformation', self.ui.deformation.value() / 100)
+        self.settings.setValue('forging/min_forge_length', self.ui.min_forge_length.value())
+        self.settings.setValue('forging/min_forge_width', self.ui.min_forge_width.value())
+        self.settings.setValue('forging/min_forge_height', self.ui.min_forge_height.value())
+        self.settings.setValue('forging/max_forge_length', self.ui.max_forge_length.value())
+        self.settings.setValue('forging/max_forge_width', self.ui.max_forge_width.value())
+        self.settings.setValue('forging/max_forge_height', self.ui.max_forge_height.value())
         self.saved = True
         self.accept()
