@@ -14,6 +14,12 @@ clean_edge=2
 deformation=0.7
 max_rough_width=450
 max_clean_width=280
+length_large=1300
+width_large=400
+length_medium=800
+width_medium=300
+length_small=700
+width_small=280
 
 [forging]
 min_forge_length=70

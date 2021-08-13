@@ -2187,11 +2187,11 @@ def delete_all_branch(root, max_size, without_root=False):
         if is_rolling_node(node.parent):
             if node.parent.operation == Operations.h_rolling:
                 if max_size:
-                    is_locked = to_delete(node.bin.length, node.bin.width, max_size[node.bin.height >= 3])
+                    is_locked = to_delete(node.bin.length, node.bin.width, get_max_size(max_size, node.bin.height))
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             elif node.parent.operation == Operations.v_rolling:
                 if max_size:
-                    is_locked = to_delete(node.bin.width, node.bin.length, max_size[node.bin.height >= 3])
+                    is_locked = to_delete(node.bin.width, node.bin.length, get_max_size(max_size, node.bin.height))
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             if not is_cutting_node(node.parent) and is_locked:
                 node.delete_branch()
@@ -2234,11 +2234,11 @@ def to_delete_branch(root, max_size, without_root=False):
         if is_rolling_node(node.parent):
             if node.parent.operation == Operations.h_rolling:
                 if max_size:
-                    is_locked = to_delete(node.bin.length, node.bin.width, max_size[node.bin.height >= 3])
+                    is_locked = to_delete(node.bin.length, node.bin.width, get_max_size(max_size, node.bin.height))
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             elif node.parent.operation == Operations.v_rolling:
                 if max_size:
-                    is_locked = to_delete(node.bin.width, node.bin.length, max_size[node.bin.height >= 3])
+                    is_locked = to_delete(node.bin.width, node.bin.length, get_max_size(max_size, node.bin.height))
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             if not is_cutting_node(node.parent) and is_locked:
                 return True
@@ -2282,11 +2282,11 @@ def is_defective_tree(tree, max_size):
         if is_rolling_node(node.parent):
             if node.parent.operation == Operations.h_rolling:
                 if max_size:
-                    is_locked = to_delete(node.bin.length, node.bin.width, max_size[node.bin.height >= 3])
+                    is_locked = to_delete(node.bin.length, node.bin.width, get_max_size(max_size, node.bin.height))
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             elif node.parent.operation == Operations.v_rolling:
                 if max_size:
-                    is_locked = to_delete(node.bin.width, node.bin.length, max_size[node.bin.height >= 3])
+                    is_locked = to_delete(node.bin.width, node.bin.length, get_max_size(max_size, node.bin.height))
                 is_locked = is_locked and node.bin.height != node.parent_bnode.bin.height
             if not is_cutting_node(node.parent) and is_locked:
                 return True
@@ -2383,3 +2383,11 @@ def get_residuals(node):
             residuals.append(tailing)
             node.result.update([], tailings=[tailing])
     return residuals
+
+
+def get_max_size(max_size, height):
+    if max_size:
+        for (low, high), size in max_size.items():
+            if low < height <= high:
+                return size
+    return None
