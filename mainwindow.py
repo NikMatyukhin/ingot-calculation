@@ -96,14 +96,22 @@ class OCIMainWindow(QMainWindow):
         self.rough_roll_edge_loss = 4      # Потери при обработке кромки до 3мм
         self.clean_roll_edge_loss = 2      # Потери при обработке кромки на 3мм
         self.guillotine_width = 1200       # Ширина ножа гильотины
-        self.maximum_plate_length = 1250   # Максимальная длина пластины
-        self.rough_roll_plate_width = 280  # Ширина пластины проката до 3мм
-        self.clean_roll_plate_width = 450  # Ширина пластины проката на 3мм
-        self.clean_roll_height = 3          # Толщина чистового проката
+        # self.maximum_plate_length = 1250   # Максимальная длина пластины
+
+        self.length_large = 1300           # Длина пластины >= 3 мм
+        self.width_large = 400             # Ширина пластины >= 3 мм
+        self.length_medium = 800           # Длина пластины 1 <= l < 3
+        self.width_medium = 300            # Ширина пластины 1 <= l < 3
+        self.length_small = 700            # Длина пластины < 1
+        self.width_small = 280             # Ширина пластины < 1
+
+        # self.rough_roll_plate_width = 280  # Ширина пластины проката до 3мм
+        # self.clean_roll_plate_width = 450  # Ширина пластины проката на 3мм
+        self.clean_roll_height = 3         # Толщина чистового проката
         self.admissible_deformation = 70   # Допустимая деформация проката (%)
         self.cutting_thickness = 4.2       # Толщина начала разрезов
         self.size_error = 2.0              # Погрешность ковки слитка
-        self.allowance = 1.5               # Припуск на фрезировку слитка
+        self.allowance = 1.5               # Припуск на фрезеровку слитка
         self.ingot_min_length = 70
         self.ingot_min_width = 70
         self.ingot_min_height = 20.0
@@ -1433,10 +1441,24 @@ class OCIMainWindow(QMainWindow):
             'cutting/guillotine', defaultValue=1250, type=int)
         self.minimum_plate_length = self.settings.value(
             'cutting/min_length', defaultValue=100, type=int)
-        self.maximum_plate_length = self.settings.value(
-            'cutting/max_length', defaultValue=1300, type=int)
+        # self.maximum_plate_length = self.settings.value(
+        #     'cutting/max_length', defaultValue=1300, type=int)
         self.cutting_thickness = self.settings.value(
             'cutting/cutting_thickness', defaultValue=4.2, type=float)
+
+        self.length_large = self.settings.value(
+            'rolling/length_large', defaultValue=1300, type=int)
+        self.width_large = self.settings.value(
+            'rolling/width_large', defaultValue=400, type=int)
+        self.length_medium = self.settings.value(
+            'rolling/length_medium', defaultValue=800, type=int)
+        self.width_medium = self.settings.value(
+            'rolling/width_medium', defaultValue=300, type=int)
+        self.length_small = self.settings.value(
+            'rolling/length_small', defaultValue=700, type=int)
+        self.width_small = self.settings.value(
+            'rolling/width_small', defaultValue=280, type=int)
+
         self.clean_roll_height = self.settings.value(
             'rolling/clean_height', defaultValue=3, type=int)
         self.rough_roll_edge_loss = self.settings.value(
@@ -1445,10 +1467,10 @@ class OCIMainWindow(QMainWindow):
             'rolling/clean_edge', defaultValue=2, type=int)
         self.admissible_deformation = self.settings.value(
             'rolling/deformation', defaultValue=0.7, type=float)
-        self.rough_roll_plate_width = self.settings.value(
-            'rolling/max_rough_width', defaultValue=450, type=int)
-        self.clean_roll_plate_width = self.settings.value(
-            'rolling/max_clean_width', defaultValue=280, type=int)
+        # self.rough_roll_plate_width = self.settings.value(
+        #     'rolling/max_rough_width', defaultValue=450, type=int)
+        # self.clean_roll_plate_width = self.settings.value(
+        #     'rolling/max_clean_width', defaultValue=280, type=int)
         self.ingot_min_length = self.settings.value(
             'forging/min_forge_length', defaultValue=70, type=int)
         self.ingot_min_width = self.settings.value(
@@ -1468,55 +1490,55 @@ class OCIMainWindow(QMainWindow):
 
     def write_settings(self) -> None:
         """Запись настроек в файл"""
-        self.settings.setValue(
-            'cutting/end_face', self.end_face_loss)
-        self.settings.setValue(
-            'cutting/cut_allowance', self.cut_allowance)
-        self.settings.setValue(
-            'cutting/guillotine', self.guillotine_width)
-        self.settings.setValue(
-            'cutting/min_width', self.minimum_plate_width)
-        self.settings.setValue(
-            'cutting/min_length', self.minimum_plate_length)
-        self.settings.setValue(
-            'cutting/max_length', self.maximum_plate_length)
-        self.settings.setValue(
-            'cutting/cutting_thickness', self.cutting_thickness)
-        self.settings.setValue(
-            'rolling/clean_height', self.clean_roll_height)
-        self.settings.setValue(
-            'rolling/rough_edge', self.rough_roll_edge_loss)
-        self.settings.setValue(
-            'rolling/clean_edge', self.clean_roll_edge_loss)
-        self.settings.setValue(
-            'rolling/deformation', self.admissible_deformation)
-        self.settings.setValue(
-            'rolling/max_rough_width', self.rough_roll_plate_width)
-        self.settings.setValue(
-            'rolling/max_clean_width', self.clean_roll_plate_width)
-        self.settings.setValue(
-            'forging/min_forge_length', self.ingot_min_length)
-        self.settings.setValue(
-            'forging/min_forge_width', self.ingot_min_width)
-        self.settings.setValue(
-            'forging/min_forge_height', self.ingot_min_height)
-        self.settings.setValue(
-            'forging/max_forge_length', self.ingot_max_length)
-        self.settings.setValue(
-            'forging/max_forge_width', self.ingot_max_width)
-        self.settings.setValue(
-            'forging/max_forge_height', self.ingot_max_height)
-        self.settings.setValue(
-            'forging/size_error', self.size_error)
-        self.settings.setValue(
-            'forging/allowance', self.allowance)
+        self.settings.setValue('cutting/end_face', self.end_face_loss)
+        self.settings.setValue('cutting/cut_allowance', self.cut_allowance)
+        self.settings.setValue('cutting/guillotine', self.guillotine_width)
+        self.settings.setValue('cutting/min_width', self.minimum_plate_width)
+        self.settings.setValue('cutting/min_length', self.minimum_plate_length)
+        # self.settings.setValue(
+        #     'cutting/max_length', self.maximum_plate_length)
+        self.settings.setValue('cutting/cutting_thickness', self.cutting_thickness)
+
+        self.settings.setValue('rolling/length_large', self.length_large)
+        self.settings.setValue('rolling/width_large', self.width_large)
+        self.settings.setValue('rolling/length_medium', self.length_medium)
+        self.settings.setValue('rolling/width_medium', self.width_medium)
+        self.settings.setValue('rolling/length_small', self.length_small)
+        self.settings.setValue('rolling/width_small', self.width_small)
+
+        self.settings.setValue('rolling/clean_height', self.clean_roll_height)
+        self.settings.setValue('rolling/rough_edge', self.rough_roll_edge_loss)
+        self.settings.setValue('rolling/clean_edge', self.clean_roll_edge_loss)
+        self.settings.setValue('rolling/deformation', self.admissible_deformation)
+        # self.settings.setValue(
+        #     'rolling/max_rough_width', self.rough_roll_plate_width)
+        # self.settings.setValue(
+        #     'rolling/max_clean_width', self.clean_roll_plate_width)
+        self.settings.setValue('forging/min_forge_length', self.ingot_min_length)
+        self.settings.setValue('forging/min_forge_width', self.ingot_min_width)
+        self.settings.setValue('forging/min_forge_height', self.ingot_min_height)
+        self.settings.setValue('forging/max_forge_length', self.ingot_max_length)
+        self.settings.setValue('forging/max_forge_width', self.ingot_max_width)
+        self.settings.setValue('forging/max_forge_height', self.ingot_max_height)
+        self.settings.setValue('forging/size_error', self.size_error)
+        self.settings.setValue('forging/allowance', self.allowance)
 
     def general_settings(self, order: Dict) -> Dict:
         return {
-            'max_size': (
-                (self.maximum_plate_length, self.clean_roll_plate_width),
-                (self.maximum_plate_length, self.rough_roll_plate_width)
-            ),
+            # 'max_size': (
+            #     (self.maximum_plate_length, self.clean_roll_plate_width),
+            #     (self.maximum_plate_length, self.rough_roll_plate_width)
+            # ),
+            'max_size': {
+                (3, float('inf')): (self.length_large, self.width_large),
+                (1, 3): (self.length_medium, self.width_medium),
+                (0, 1): (self.length_small, self.width_small),
+            },
+            # 'max_size': {
+            #     (3, float('inf')): (1300, 400),
+            #     # (1, 3): (self.length_medium, self.width_medium),
+            #     (0, 3): (1300, 280),
+            # },
             'cutting_length': self.guillotine_width,
             'cutting_thickness': round(order['thickness'], 4),
             'hem_until_3': self.rough_roll_edge_loss,

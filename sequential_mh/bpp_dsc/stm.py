@@ -11,7 +11,7 @@ from operator import itemgetter
 from sequential_mh.bpp_dsc.rectangle import BinType
 
 from .tree import (
-    is_cc_node, is_cutting_node, is_ingot_node, is_op_node, is_adj_node,
+    get_max_size, is_cc_node, is_cutting_node, is_ingot_node, is_op_node, is_adj_node,
     is_ubin_node, is_imt_node, delete_all_branch,
     solution_efficiency, is_defective_tree
 )
@@ -211,8 +211,7 @@ def _pack(node, level, restrictions, with_priority=True):
             height = node.bin.d_height
         else:
             height = node.bin.height
-        if max_size:
-            max_size = max_size[height >= 3]
+        max_size = get_max_size(max_size, height)
     else:
         min_size = None
         max_len = None
