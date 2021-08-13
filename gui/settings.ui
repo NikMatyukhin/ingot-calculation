@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>460</width>
-    <height>400</height>
+    <height>500</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>460</width>
-    <height>400</height>
+    <height>500</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>460</width>
-    <height>400</height>
+    <height>500</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -165,7 +165,7 @@ QPushButton:checked {
             <string>Раскрой</string>
            </property>
            <property name="icon">
-            <iconset resource="resources/application.qrc">
+            <iconset>
              <normaloff>:/icons/scissors.png</normaloff>:/icons/scissors.png</iconset>
            </property>
            <property name="iconSize">
@@ -234,7 +234,7 @@ QPushButton:checked {
             <string>Прокат</string>
            </property>
            <property name="icon">
-            <iconset resource="resources/application.qrc">
+            <iconset>
              <normaloff>:/icons/h-roll.png</normaloff>:/icons/h-roll.png</iconset>
            </property>
            <property name="iconSize">
@@ -300,7 +300,7 @@ QPushButton:checked {
             <string>Ковка</string>
            </property>
            <property name="icon">
-            <iconset resource="resources/application.qrc">
+            <iconset>
              <normaloff>:/icons/anvil.png</normaloff>:/icons/anvil.png</iconset>
            </property>
            <property name="iconSize">
@@ -342,7 +342,7 @@ QPushButton:checked {
          <enum>QFrame::Raised</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="cutting_page">
          <property name="styleSheet">
@@ -752,26 +752,26 @@ QPushButton:checked {
               <number>10</number>
              </property>
              <item row="0" column="0">
-              <widget class="QLabel" name="max_rough_width_label">
+              <widget class="QLabel" name="length_large_label">
                <property name="minimumSize">
                 <size>
                  <width>210</width>
                  <height>0</height>
                 </size>
                </property>
-               <property name="maximumSize">
-                <size>
-                 <width>180</width>
-                 <height>16777215</height>
-                </size>
-               </property>
                <property name="text">
-                <string>Ширина чернового проката</string>
+                <string>Длина проката для толщин более 3 мм</string>
                </property>
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QSpinBox" name="max_rough_width">
+              <widget class="QSpinBox" name="length_large">
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>0</height>
+                </size>
+               </property>
                <property name="maximumSize">
                 <size>
                  <width>80</width>
@@ -790,7 +790,7 @@ QPushButton:checked {
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QLabel" name="max_clean_width_label">
+              <widget class="QLabel" name="width_large_label">
                <property name="minimumSize">
                 <size>
                  <width>210</width>
@@ -804,12 +804,12 @@ QPushButton:checked {
                 </size>
                </property>
                <property name="text">
-                <string>Ширина чистового проката</string>
+                <string>Ширина проката для толщин более 3 мм</string>
                </property>
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QSpinBox" name="max_clean_width">
+              <widget class="QSpinBox" name="width_large">
                <property name="maximumSize">
                 <size>
                  <width>80</width>
@@ -828,7 +828,91 @@ QPushButton:checked {
               </widget>
              </item>
              <item row="2" column="0">
-              <widget class="QLabel" name="max_length_label">
+              <widget class="QLabel" name="length_medium_label">
+               <property name="text">
+                <string>Длина проката для толщин от 1 до 3 мм</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="length_medium">
+               <property name="minimumSize">
+                <size>
+                 <width>80</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="suffix">
+                <string> мм</string>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>3000</number>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="width_medium_label">
+               <property name="text">
+                <string>Ширина проката для толщинот 1 до 3 мм</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QSpinBox" name="width_medium">
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="suffix">
+                <string> мм</string>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>3000</number>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="length_small_label">
+               <property name="text">
+                <string>Длина проката для толщин менее 1 мм</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QSpinBox" name="length_small">
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="suffix">
+                <string> мм</string>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>3000</number>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="width_small_label">
                <property name="minimumSize">
                 <size>
                  <width>210</width>
@@ -842,12 +926,12 @@ QPushButton:checked {
                 </size>
                </property>
                <property name="text">
-                <string>Длина проката</string>
+                <string>Ширина проката для толщин менее 1 мм</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
-              <widget class="QSpinBox" name="max_length">
+             <item row="5" column="1">
+              <widget class="QSpinBox" name="width_small">
                <property name="maximumSize">
                 <size>
                  <width>80</width>
