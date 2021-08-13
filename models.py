@@ -689,7 +689,7 @@ class ResidualsModel(ListModel):
                 'length': int(r[0]),
                 'width': int(r[1]),
                 'height': round(r[2], 1),
-                'fusion_id': r[3].name,
+                'fusion': r[3].name,
                 'batch': r[4],
             }
             self.appendRow(data_row)

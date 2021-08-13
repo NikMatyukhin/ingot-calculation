@@ -21,16 +21,19 @@ class Storage(QDialog):
         self.used_ingots_model = IngotModel('used')
         self.unused_ingots_model = IngotModel('unused')
         self.planned_ingots_model = IngotModel('planned')
+        self.ordered_ingots_model = IngotModel('ordered')
 
         self.ui.used_view.setModel(self.used_ingots_model)
         self.ui.unused_view.setModel(self.unused_ingots_model)
         self.ui.plan_view.setModel(self.planned_ingots_model)
+        self.ui.ordered_view.setModel(self.ordered_ingots_model)
 
         self.ingot_delegate = IngotSectionDelegate(self)
         self.ingot_unclosable_delegate = IngotSectionDelegate(show_close=False, parent=self)
         self.ui.used_view.setItemDelegate(self.ingot_unclosable_delegate)
         self.ui.unused_view.setItemDelegate(self.ingot_delegate)
         self.ui.plan_view.setItemDelegate(self.ingot_unclosable_delegate)
+        self.ui.ordered_view.setItemDelegate(self.ingot_unclosable_delegate)
         self.ui.unused_view.setFocus()
 
         self.ui.add.clicked.connect(self.open_ingot_dialog)

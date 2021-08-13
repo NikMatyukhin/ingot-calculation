@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any, Iterable, Optional, Tuple
+from typing import Dict, Any, Iterable, List, Optional, Tuple
 
 
 from PyQt5.QtCore import (
@@ -55,8 +55,11 @@ class ZoomGraphicsView(QGraphicsView):
 
 
 class ExclusiveButton(QPushButton):
+    """Заранее преднастроенная кнопка для толщин"""
+    
     def __init__(self, name: str, index: int = None, parent: Optional[QObject] = None):
         super(ExclusiveButton, self).__init__(parent)
+        
         self.index = index
         self.setText(name)
         self.setCheckable(True)
@@ -94,27 +97,37 @@ class ExclusiveButton(QPushButton):
 
 
 class ListValuesDelegate(QStyledItemDelegate):
+    """Класс для отображения словарных данных"""
+
     def __init__(self, values: dict, parent: Optional[QObject] = None):
-        super().__init__(parent)
+        super(ListValuesDelegate, self).__init__(parent)
+        
+        # Словарь с отображаемыми данными
         self.values = values
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem,
+                     index: QModelIndex) -> QWidget:
         editor = QComboBox(parent)
+        # Ключами являются словесные именования каждого значения
         editor.addItems(list(self.values.keys()))
         return editor
 
-    def setEditorData(self, editor: QWidget, index: QModelIndex):
-        value: int = index.model().data(index, Qt.DisplayRole)
+    def setEditorData(self, editor: QComboBox, index: QModelIndex):
+        # Данные модели при этом являются ID из базы данных
+        value: int = index.model().data(index, Qt.ItemDataRole.DisplayRole)
         for name in self.values:
             if int(value) == self.values[name]:
                 editor.setCurrentText(name)
                 break
 
-    def setModelData(self, editor: QWidget, model: QAbstractItemModel,index: QModelIndex):
+    def setModelData(self, editor: QComboBox, model: QAbstractItemModel,
+                     index: QModelIndex) -> None:
         value: str = editor.currentText()
-        model.setData(index, self.values[value], Qt.EditRole)
+        model.setData(index, self.values[value], Qt.ItemDataRole.EditRole)
 
-    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
+    def updateEditorGeometry(self, editor: QComboBox,
+                             option: QStyleOptionViewItem,
+                             index: QModelIndex) -> None:
         editor.setGeometry(option.rect)
 
     def displayText(self, value: Any, locale: QLocale) -> str:
@@ -294,14 +307,14 @@ class OrderDelegate(QStyledItemDelegate):
         height = 20
 
         for row, _text in enumerate(_table):
-            _rect = QRect(self._textBox(font, _text))
+            _rect = self._textBox(font, _text)
 
             margin_left = width * int(row // rows) + self.__margin
             margin_top = height * int(row % rows) + border + self.__margin 
 
             yield _text, _rect.translated(margin_left, margin_top)
 
-    def _table_info(self, order):
+    def _table_info(self, order: Dict) -> List[str]:
         efficiency_text = f'{round(order["efficiency"] * 100, 2)}%'
         if not order["efficiency"]:
             efficiency_text = 'Не указан'
@@ -318,13 +331,13 @@ class OrderDelegate(QStyledItemDelegate):
 
     def _textBox(self, font: QFont, data: str) -> QRectF:
         dy = font.pointSize() + self.__margin
-        return QFontMetrics(font).boundingRect(data).adjusted(0, dy, 0, dy)
+        return QFontMetrics(font).boundingRect(data).adjusted(0, dy, dy, dy)
 
-    def _textFlags(self):
+    def _textFlags(self) -> int:
         return Qt.TextFlag.TextSingleLine | Qt.AlignmentFlag.AlignLeft
 
-    def _informationFontPointSize(self, f: QFont) -> float:
-        return int(self.__reduction_factor * f.pointSize())
+    def _informationFontPointSize(self, font: QFont) -> float:
+        return int(self.__reduction_factor * font.pointSize())
 
     def sizeHint(self, option: QStyleOptionViewItem,
                  index: QModelIndex) -> QSize:
@@ -360,10 +373,10 @@ class OrderDelegate(QStyledItemDelegate):
         self.initStyleOption(_option, index)
 
         if event.type() == QEvent.Type.MouseButtonRelease:
-            if(self._deleteIconRect(_option).contains(event.pos())):
+            if self._deleteIconRect(_option).contains(event.pos()):
                 self.deleteIndexClicked.emit(index)
 
-            if(self._editIconRect(_option).contains(event.pos())):
+            if self._editIconRect(_option).contains(event.pos()):
                 order = index.data(Qt.DisplayRole)
                 if order['status_id'] != 3:
                     self.editIndexClicked.emit(index)
@@ -373,192 +386,488 @@ class OrderDelegate(QStyledItemDelegate):
 
 class IngotSectionDelegate(QStyledItemDelegate):
 
-    forgedIndexClicked = pyqtSignal(QModelIndex)
+    orderedIndexClicked = pyqtSignal(QModelIndex)
+    deliveredIndexClicked = pyqtSignal(QModelIndex)
     deleteFromStorageClicked = pyqtSignal(QModelIndex)
     deleteFromOrderClicked = pyqtSignal(QModelIndex)
-    margin = 5
 
-    def __init__(self, show_close: bool = True, numerable: bool = False, parent: Optional[QObject] = None) -> None:
+    def __init__(self, show_close: bool = True, numerable: bool = True, parent: Optional[QObject] = None) -> None:
         super(IngotSectionDelegate, self).__init__(parent)
-        self.show_close = show_close
-        self.numerable = numerable
+        
+        # Основные настройки
+        self.__margin = 5
+        self.__font_size = 9
+        self.__small_font_size = self.__font_size * 0.8
+        self.__mark_size = QSize(110, 110)
+        self.__icon_size = QSize(15, 15)
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
-        opt = QStyleOptionViewItem(option)
-        self.initStyleOption(opt, index)
+        # Неизменяемые настройки
+        self.__show_close = show_close
+        self.__numerable = numerable
+        self.__default_status_color = QColor('#fff')
+        self.__planned_status_color = QColor('#98ff98')
+        self.__ordered_status_color = QColor('#ffff9f')
+        self.__selected_state_color = QColor("#CD743D")
 
-        palette, rect, font = opt.palette, opt.rect, opt.font
-        contentRect = QRect(rect.adjusted(self.margin * 2, self.margin, -self.margin * 2, -self.margin))
-        font.setPointSize(8)
+        # Этикетка металла типа "слиток"
+        self.__ingotMark = QPixmap(':icons/ingot.svg').scaled(
+            self.__mark_size,
+            Qt.AspectRatioMode.KeepAspectRatio, 
+            Qt.TransformationMode.SmoothTransformation
+        )
 
-        ingot = index.data(Qt.DisplayRole)
-        fill_color = palette.light().color()
-        if ingot['status_id'] in [3, 4]:
-            fill_color = QColor('#77e07e') 
+        # Этикетка металла типа "остаток"
+        self.__residualMark = QPixmap(':icons/patch.png').scaled(
+            self.__mark_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
 
+        # Иконка удаления слитка
+        self.__deleteIcon = QPixmap(':icons/cancel.png').scaled(
+            self.__icon_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+
+        # Иконка доставки и заказа слитка
+        self.__orderIcon = QPixmap(':icons/forged.png').scaled(
+            self.__icon_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+
+    @property
+    def margin(self) -> int:
+        return self.__margin
+
+    @margin.setter
+    def margin(self, value: int) -> None:
+        self.__margin = value
+
+    @property
+    def fontPointSize(self) -> int:
+        return self.__font_size
+
+    @fontPointSize.setter
+    def fontPointSize(self, value: int) -> None:
+        self.__font_size = value
+        self.__small_font_size = self.__font_size * 0.8
+
+    @property
+    def iconSize(self) -> QSize:
+        return self.__icon_size
+
+    @property
+    def iconSize(self, w: int, h: int) -> None:
+        self.__icon_size = QSize(w, h)
+
+    @property
+    def markSize(self) -> QSize:
+        return self.__mark_size
+
+    @property
+    def markSize(self, w: int, h: int) -> None:
+        self.__mark_size = QSize(w, h)
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem,
+                    index: QModelIndex) -> None:
+        _option = QStyleOptionViewItem(option)
+        self.initStyleOption(_option, index)
+        ingot: Dict[Any] = index.data(Qt.DisplayRole)
+
+        # Границы работы отрисовщика и границы области с отступом от края
+        origin_rect = QRect(_option.rect)
+        content_rect = self._contentRectAdjusted(_option)
+        backlight_rect = self._backlightRect(_option)
+
+        # Палитра рисования и шрифты
+        palette = _option.palette
+        font = QFont(_option.font)
+        font.setPointSize(self.__small_font_size)
+        font.setBold(True)
+        
+        # Начало отрисовки
         painter.save()
         painter.setClipping(True)
-        painter.setClipRect(rect)
+        painter.setClipRect(origin_rect)
 
-        if opt.state & QStyle.State_Selected:
-            painter.fillRect(rect, fill_color.darker(115))
-            painter.fillRect(rect.adjusted(0, rect.height() - self.margin, 0, 0), QColor("#CD743D"))
-        elif opt.state & QStyle.State_MouseOver:
-            painter.fillRect(rect, fill_color.darker(105))
-        else:
-            painter.fillRect(rect, fill_color)
-
-        if self.show_close:
-            self.closeIcon = QPixmap(':icons/cancel.png').scaled(15, 15, aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio, transformMode=Qt.TransformationMode.SmoothTransformation)
-            painter.drawPixmap(self.closeIconPos(opt), self.closeIcon)
-
+        color = self._statusStateColor(_option, ingot)
+        painter.fillRect(origin_rect, color)
+        if _option.state & QStyle.StateFlag.State_Selected:
+            painter.fillRect(backlight_rect, self.__selected_state_color)
+        
+        # Правая разделительная линия между слитками
         painter.setPen(palette.shadow().color())
-        painter.drawLine(rect.right(), rect.top(), rect.right(), rect.bottom())
+        painter.drawLine(
+            origin_rect.right(), origin_rect.top(),
+            origin_rect.right(), origin_rect.bottom()
+        )
 
         painter.setFont(font)
-        painter.setPen(Qt.black)
+        painter.setPen(palette.text().color())
 
-        # Надпись с партией слитка        
-        batch = f"{f'№{index.row()+1} ' if self.numerable else ''}Партия: {str(ingot['batch']) if ingot['status_id'] not in [3, 4] else 'нет'}"
-        batch_rect = QRect(self._textBox(font, batch))
-        batch_rect.moveTo(contentRect.left(), contentRect.top())
-        painter.drawText(batch_rect, Qt.AlignCenter, batch)
+        # Надпись с партией слитка и его номером
+        title_text, title_rect = self._title(font, ingot, _option)
+        painter.drawText(
+            title_rect.translated(content_rect.left(), content_rect.top()),
+            self._textFlags(), title_text
+        )
 
-        # Надпись с размерами слитка
-        size = 'Размеры: ' + 'х'.join(map(str, ingot['size']))
-        size_rect = QRect(self._textBox(font, size))
-        size_rect.moveTo(contentRect.left(), contentRect.bottom() - size_rect.height() - self.margin)
-        painter.drawText(size_rect, Qt.TextSingleLine, size)
+        # Смена типа шрифта для основных надписей
+        font.setBold(False)
+        font.setPointSize(self.__font_size)
+        painter.setFont(font)
 
         # Надпись со сплавом слитка
-        fusion = 'Сплав: ' + StandardDataService.get_by_id('fusions', Field('id', ingot['fusion_id']))[1]
-        fusion_rect = QRect(self._textBox(font, fusion))
-        fusion_rect.moveTo(contentRect.left(), contentRect.bottom() - fusion_rect.height() - size_rect.height() - self.margin)
-        painter.drawText(fusion_rect, Qt.TextSingleLine, fusion)
+        fusion_text, fusion_rect = self._fusion(font, ingot, _option)
+        painter.drawText(
+            fusion_rect.translated(
+                content_rect.left(),
+                content_rect.top() + title_rect.height() + self.__margin
+            ), self._textFlags(), fusion_text
+        )
 
-        # Иконка 
-        if ingot['status_id'] != 2:
-            self.forgeIcon = QPixmap(':icons/ingot.svg')
+        # Надпись с размерами слитка
+        size_text, size_rect = self._sizes(font, ingot, _option)
+        painter.drawText(
+            size_rect.translated(
+                content_rect.left(),
+                content_rect.bottom() - size_rect.height() - 2 * self.__margin
+            ), self._textFlags(), size_text
+        )
+
+        # Этикетка металла
+        top_edge = content_rect.top() + title_rect.height() + \
+            fusion_rect.height() + self.__margin
+        mark_pos = self._markPos(top_edge, _option)
+        if ingot['status_id'] == 2:
+            painter.drawPixmap(mark_pos, self.__residualMark)
         else:
-            self.forgeIcon = QPixmap(':icons/patch.png')
-        self.forgeIcon = self.forgeIcon.scaled(110, 110, aspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio, transformMode = Qt.TransformationMode.SmoothTransformation)
-        painter.drawPixmap(self.forgeIconPos(opt), self.forgeIcon)
-
+            painter.drawPixmap(mark_pos, self.__ingotMark)
+        
+        # Иконка заказа слитка
+        if ingot['status_id'] in [3, 5]:
+            painter.drawPixmap(self._orderIconPos(_option), self.__orderIcon)
+        
+        # Иконка удаления слитка
+        if self.__show_close:
+            painter.drawPixmap(self._deleteIconPos(_option), self.__deleteIcon)
+        
         painter.restore()
 
-    def closeIconPos(self, opt: QStyleOptionViewItem):
-        return QPoint(opt.rect.right() - self.closeIcon.width() - self.margin, opt.rect.top() + self.margin)
+    def _contentRectAdjusted(self, option: QStyleOptionViewItem) -> QRectF:
+        return QRectF(option.rect).adjusted(
+            self.__margin * 2, self.__margin,
+            -self.__margin * 2, -self.__margin
+        )
 
-    def forgeIconPos(self, opt: QStyleOptionViewItem):
-        return QPoint(opt.rect.left() + self.margin * 2.5, opt.rect.top() + self.margin * 5)
+    def _backlightRect(self, option: QStyleOptionViewItem) -> QRectF:
+        _rect = QRectF(option.rect)
+        return _rect.adjusted(0, _rect.height() - self.__margin, 0, 0)
 
-    def _textBox(self, font: QFont, data: str) -> QRect:
-        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 1, 1)
+    def _statusStateColor(self, option: QStyleOptionViewItem,
+                         ingot: Dict) -> QColor:
+        # Базовый цвет без статуса и состояния - белый
+        _color = self.__default_status_color
+        
+        # Классификация по статусу заказа - запланирован или завершён
+        if ingot['status_id'] in [3, 4]:
+            _color = self.__planned_status_color
+        elif ingot['status_id'] == 5:
+            _color = self.__ordered_status_color
+        
+        # Классификация по состоянию элемента - выбран или под курсором
+        if option.state & QStyle.StateFlag.State_Selected:
+            _color = _color.darker(115)
+        elif option.state & QStyle.StateFlag.State_MouseOver:
+            _color = _color.darker(105)
+        
+        return _color
 
-    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+    def _title(self, font: QFont, ingot: Dict,
+               option: QStyleOptionViewItem) -> Tuple[str, QRectF]:
+        _text = ''
+        if self.__numerable:
+            _text = f'№{ingot["id"]} '
+        if ingot['status_id'] in [1, 2]:
+            _text += f'({str(ingot["batch"])})'
+        else:
+            _text += 'Нет партии'
+        _text_rect = self._textBox(font, _text)
+        _content_rect = self._contentRectAdjusted(option)
+        if (dx := _content_rect.width() - _text_rect.width()) > 0:
+            _text_rect.adjust(0, 0, dx, 0)
+        return _text, _text_rect
 
-        opt = QStyleOptionViewItem(option)
-        self.initStyleOption(opt, index)
+    def _sizes(self, font: QFont, ingot: Dict,
+               option: QStyleOptionViewItem) -> Tuple[str, QRectF]:
+        _text = 'х'.join(map(str, ingot['size']))
+        _text_rect = self._textBox(font, _text)
+        _content_rect = self._contentRectAdjusted(option)
+        if (dx := _content_rect.width() - _text_rect.width()) > 0:
+            _text_rect.adjust(0, 0, dx, 0)
+        return _text, _text_rect
+
+    def _fusion(self, font: QFont, ingot: Dict,
+                option: QStyleOptionViewItem) -> Tuple[str, QRectF]:
+        _, _text, _ = StandardDataService.get_by_id(
+            'fusions', Field('id', ingot['fusion_id'])
+        )
+        _text_rect = self._textBox(font, _text)
+        _content_rect = self._contentRectAdjusted(option)
+        if (dx := _content_rect.width() - _text_rect.width()) > 0:
+            _text_rect.adjust(0, 0, dx, 0)
+        return _text, _text_rect
+
+    def _textFlags(self) -> int:
+        return Qt.TextFlag.TextSingleLine | Qt.AlignmentFlag.AlignCenter
+
+    def _deleteIconPos(self, option: QStyleOptionViewItem) -> QPointF:
+        content_rect = self._contentRectAdjusted(option)
+        return QPoint(
+            content_rect.right() - self.__icon_size.width() + self.__margin,
+            content_rect.top()
+        )
+
+    def _orderIconPos(self, option: QStyleOptionViewItem) -> QPointF:
+        content_rect = self._contentRectAdjusted(option)
+        top_pos = content_rect.top()
+        if self.__show_close:
+            top_pos = self._deleteIconPos(option).y() + \
+                self.__icon_size.height() + self.__margin
+        return QPoint(
+            content_rect.right() - self.__icon_size.width() + self.__margin,
+            top_pos
+        )
+
+    def _markPos(self, top: QPoint, option: QStyleOptionViewItem) -> QPointF:
+        content_rect = self._contentRectAdjusted(option)
+        return QPoint(content_rect.left(), top + 2 * self.__margin)
+
+    def _textBox(self, font: QFont, data: str) -> QRectF:
+        dy = font.pointSize() + self.__margin
+        return QFontMetrics(font).boundingRect(data).adjusted(0, dy, 0, dy)
+
+    def sizeHint(self, option: QStyleOptionViewItem,
+                 index: QModelIndex) -> QSize:
+        _option = QStyleOptionViewItem(option)
+        self.initStyleOption(_option, index)
 
         # Минимальный размер 135х185, максимальный 135х"высота контейнера"
-        return QSize(135, max(opt.rect.height(), 185))
+        return QSize(135, max(_option.rect.height(), 185))
 
-    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+    def _deleteIconRect(self, option: QStyleOptionViewItem) -> QRectF:
+        return self.__deleteIcon.rect().translated(self._deleteIconPos(option))
+
+    def _orderIconRect(self, option: QStyleOptionViewItem) -> QRectF:
+        return self.__orderIcon.rect().translated(self._orderIconPos(option))
+
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel,
+                    option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+        _option = QStyleOptionViewItem(option)
+        self.initStyleOption(_option, index)
+        ingot = index.data(Qt.ItemDataRole.DisplayRole)
+
         if event.type() == QEvent.Type.MouseButtonRelease:
-            ingot = index.data(Qt.DisplayRole)
-            if self.show_close:
-                closeIconRect = self.closeIcon.rect().translated(self.closeIconPos(option))
-                if closeIconRect.contains(event.pos()):
-                    if ingot['order_id']:
-                        self.deleteFromOrderClicked.emit(index)
-                        return super().editorEvent(event, model, option, index)
-                    else:
+            if self._deleteIconRect(_option).contains(event.pos()):
+                if self.__show_close:
+                    if ingot['order_id'] is None:
                         self.deleteFromStorageClicked.emit(index)
-                        return super().editorEvent(event, model, option, index)
-            forgeIconRect = self.forgeIcon.rect().translated(self.forgeIconPos(option))
-            if ingot['status_id'] == 3 and forgeIconRect.contains(event.pos()):
-                self.forgedIndexClicked.emit(index)
+                    else:
+                        self.deleteFromOrderClicked.emit(index)
+
+            if self._orderIconRect(_option).contains(event.pos()):
+                if ingot['status_id'] == 3:
+                    self.orderedIndexClicked.emit(index)
+                if ingot['status_id'] == 5:
+                    self.deliveredIndexClicked.emit(index)
+
         return super().editorEvent(event, model, option, index)
 
 
 class ResidualsSectionDelegate(QStyledItemDelegate):
     
     deleteIndexClicked = pyqtSignal(QModelIndex)
-    margin = 5
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
         super(ResidualsSectionDelegate, self).__init__(parent)
+        
+        # Основные настройки
+        self.__margin = 5
+        self.__font_size = 9
+        self.__reduction_factor = 0.8
+        self.__icon_size = QSize(15, 15)
 
-    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
-        opt = QStyleOptionViewItem(option)
-        self.initStyleOption(opt, index)
+        # Неизменяемые настройки
+        self.__default_status_color = QColor('#fff')
+        
+        # Иконка удаления слитка
+        self.__deleteIcon = QPixmap(':icons/cancel.png').scaled(
+            self.__icon_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
 
-        rect = QRect(opt.rect)
-        palette = QPalette(opt.palette)
-        title_font = QFont(opt.font)
-        small_font = QFont(opt.font)
-        contentRect = QRect(rect.adjusted(self.margin, self.margin, self.margin, self.margin))
-        small_font.setPointSize(title_font.pointSize() * 0.87)
+    @property
+    def margin(self) -> int:
+        return self.__margin
 
-        bottomEdge = rect.bottom()
-        lastIndex = (index.model().rowCount() - 1) == index.row()
+    @margin.setter
+    def margin(self, value: int) -> None:
+        self.__margin = value
+
+    @property
+    def fontPointSize(self) -> int:
+        return self.__font_size
+
+    @fontPointSize.setter
+    def fontPointSize(self, value: int) -> None:
+        self.__font_size = value
+
+    @property
+    def reductionFactor(self) -> float:
+        return self.__reduction_factor
+    
+    @reductionFactor.setter
+    def reductionFactor(self, value: float) -> None:
+        self.__reduction_factor = value
+
+    @property
+    def iconSize(self) -> QSize:
+        return self.__icon_size
+
+    @property
+    def iconSize(self, w: int, h: int) -> None:
+        self.__icon_size = QSize(w, h)
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem,
+              index: QModelIndex) -> None:
+        _option = QStyleOptionViewItem(option)
+        self.initStyleOption(_option, index)
+        residual: Dict[Any] = index.data(Qt.ItemDataRole.DisplayRole)
+
+        # Границы работы отрисовщика и границы области с отступом от края
+        origin_rect = QRect(_option.rect)
+        content_rect = self._contentRectAdjusted(_option)
+
+        # Палитра рисования и шрифты
+        palette = _option.palette
+        title_font = QFont(_option.font)
+        title_font.setPointSize(self.__font_size)
+        small_font = QFont(_option.font)
+        small_font.setPointSize(self._informationFontPointSize(title_font))
+
+        bottom_edge = origin_rect.bottom()
+        is_last = (index.model().rowCount() - 1) == index.row()
 
         painter.save()
         painter.setClipping(True)
-        painter.setClipRect(rect)
+        painter.setClipRect(origin_rect)
 
-        residual = index.data(Qt.DisplayRole)
-
-        fill_color = QColor(255, 255, 255)
-        if opt.state & QStyle.State_Selected:
-            painter.fillRect(rect, fill_color.darker(115))
-        elif opt.state & QStyle.State_MouseOver:
-            painter.fillRect(rect, fill_color.darker(105))
-        else:
-            painter.fillRect(rect, fill_color)
+        color = self._statusStateColor(_option, residual)
+        painter.fillRect(origin_rect, color)
 
         painter.setPen(palette.dark().color())
-        if lastIndex:
-            painter.drawLine(rect.left(), bottomEdge, rect.right(), bottomEdge)
-        else:
-            painter.drawLine(self.margin, bottomEdge, rect.right(), bottomEdge)    
+        # Линия под последним элементом рисуется от края до края
+        # У остальных элементов нижняя граница рисуется с отступом от края
+        painter.drawLine(
+            origin_rect.left() if is_last else self.__margin, bottom_edge,
+            origin_rect.right(), bottom_edge
+        )   
 
         painter.setFont(title_font)
         painter.setPen(palette.text().color())
 
-        name_text = f'Остаток №{residual["num"]} ({residual["batch"]})'
-        name_rect = QRect(self._textBox(title_font, name_text))
-        name_rect.moveTo(contentRect.left(), contentRect.top())
-        painter.drawText(name_rect, Qt.TextSingleLine | Qt.AlignBottom, name_text)
+        name_text, name_rect = self._name(title_font, residual)
+        painter.drawText(
+            name_rect.translated(
+                content_rect.left(), content_rect.top()
+            ), self._textFlags(), name_text
+        )
 
         painter.setFont(small_font)
 
-        size_text = f'{residual["length"]} x {residual["width"]} x {residual["height"]}'
-        size_rect = QRect(self._textBox(small_font, size_text))
-        size_rect.moveTo(contentRect.left(), contentRect.top() + name_rect.height())
-        painter.drawText(size_rect, Qt.TextSingleLine | Qt.AlignBottom, size_text)
-
-        self.closeIcon = QPixmap(':icons/cancel.png').scaled(15, 15, aspectRatioMode=Qt.AspectRatioMode.KeepAspectRatio, transformMode=Qt.TransformationMode.SmoothTransformation)
-        self.closeIconPos = QPoint(contentRect.right() - 2 * self.closeIcon.width() + self.margin, contentRect.top())
-        painter.drawPixmap(self.closeIconPos, self.closeIcon)
+        size_text, size_rect = self._sizes(title_font, residual)
+        painter.drawText(
+            size_rect.translated(
+                content_rect.left(), content_rect.top() + name_rect.height()
+            ), self._textFlags(), size_text
+        )
+        
+        painter.drawPixmap(self._deleteIconPos(_option), self.__deleteIcon)
 
         painter.restore()
 
-    def _textBox(self, font: QFont, data: str) -> QRect:
-        return QFontMetrics(font).boundingRect(data).adjusted(0, 0, 10, 0)
+    def _contentRectAdjusted(self, option: QStyleOptionViewItem) -> QRectF:
+        return QRectF(option.rect).adjusted(
+            self.__margin, self.__margin,
+            -self.__margin, -self.__margin
+        )
+
+    def _statusStateColor(self, option: QStyleOptionViewItem,
+                         ingot: Dict) -> QColor:
+        # Базовый цвет без статуса и состояния - белый
+        _color = self.__default_status_color
+        
+        # Классификация по состоянию элемента - выбран или под курсором
+        if option.state & QStyle.StateFlag.State_Selected:
+            _color = _color.darker(115)
+        elif option.state & QStyle.StateFlag.State_MouseOver:
+            _color = _color.darker(105)
+        
+        return _color
+
+    def _informationFontPointSize(self, font: QFont) -> float:
+        return int(self.__reduction_factor * font.pointSize())
+
+    def _name(self, font: QFont, residual: Dict) -> Tuple[str, QRectF]:
+        _text = str(f'№{residual["num"]} ({residual["batch"]}) - '
+                    f'{residual["fusion"]}')
+        _text_rect = self._textBox(font, _text)
+        return _text, _text_rect
+
+    def _sizes(self, font: QFont, residual: Dict) -> Tuple[str, QRectF]:
+        _text = ' х '.join(map(
+            str,
+            [residual['length'], residual['width'], residual['height']]
+        ))
+        _text_rect = self._textBox(font, _text)
+        return _text, _text_rect
+
+    def _textBox(self, font: QFont, data: str) -> QRectF:
+        dy = font.pointSize() + self.__margin
+        return QFontMetrics(font).boundingRect(data).adjusted(0, dy, dy, dy)
+
+    def _textFlags(self) -> int:
+        return Qt.TextFlag.TextSingleLine | Qt.AlignmentFlag.AlignLeft
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
 
-        opt = QStyleOptionViewItem(option)
-        self.initStyleOption(opt, index)
+        _option = QStyleOptionViewItem(option)
+        self.initStyleOption(_option, index)
 
-        return QSize(opt.rect.width(), 45)
+        return QSize(_option.rect.width(), 45)
 
-    def editorEvent(self, event: QEvent, model: QAbstractItemModel, option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+    def _deleteIconPos(self, option: QStyleOptionViewItem) -> QPointF:
+        content_rect = self._contentRectAdjusted(option)
+        return QPoint(
+            content_rect.right() - self.__icon_size.width() - self.__margin,
+            content_rect.top()
+        )
+
+    def _deleteIconRect(self, option: QStyleOptionViewItem) -> QRectF:
+        return self.__deleteIcon.rect().translated(self._deleteIconPos(option))
+
+    def editorEvent(self, event: QEvent, model: QAbstractItemModel,
+                    option: QStyleOptionViewItem, index: QModelIndex) -> bool:
+        _option = QStyleOptionViewItem(option)
+        self.initStyleOption(_option, index)
+        
         if event.type() == QEvent.MouseButtonRelease:
-            closeIconRect = self.closeIcon.rect().translated(self.closeIconPos)
-            if closeIconRect.contains(event.pos()):
+            if self._deleteIconRect(_option).contains(event.pos()):
                 self.deleteIndexClicked.emit(index)
+
         return super().editorEvent(event, model, option, index)
 
 
