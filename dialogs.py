@@ -781,10 +781,11 @@ class OrderCompletingDialog(QDialog):
             residual = residual_index.data(Qt.ItemDataRole.DisplayRole)
             fusions = CatalogDataService.fusions_list()
             fusion = fusions[residual['fusion']]
+            number = OrderDataService.last_batch_number(residual['batch'], 2) + 1
             success = StandardDataService.save_record(
                 'ingots', length=residual['length'], width=residual['width'],
                 height=residual['height'], batch=residual['batch'],
-                fusion_id=fusion, status_id=2
+                fusion_id=fusion, status_id=2, number=number
             )
         self.accept()
 
@@ -819,8 +820,9 @@ class IngotAddingDialog(QDialog):
         width = int(self.ui.width.value())
         height = float(self.ui.height.value())
         fusion = self.fusions[self.ui.fusion.currentText()]
+        number = OrderDataService.last_batch_number(batch, 1) + 1
 
-        id_ = StandardDataService.save_record('ingots', fusion_id=fusion, batch=batch, length=length, width=width, height=height)
+        id_ = StandardDataService.save_record('ingots', fusion_id=fusion, batch=batch, length=length, width=width, height=height, number=number)
         if not id_:
             QMessageBox.critical(self, 'Ошибка добавления', f'Слиток из партии {batch} не был добавлен в базу!',QMessageBox.Ok)
             return
@@ -832,6 +834,7 @@ class IngotAddingDialog(QDialog):
             'size': [length, width, height],
             'batch': batch,
             'efficiency': 0.0,
+            'number': number,
         })
 
         QMessageBox.information(self, f'Партия {batch}', f'Слиток из партии {batch}\nуспешно добавлен!', QMessageBox.Ok)
@@ -1103,6 +1106,7 @@ class IngotAssignmentDialog(QDialog):
                 'fusion_id': fusion_id,
                 'batch': None,
                 'size': sizes,
+                'number': None,
             })
             self.ui.ingots_view.selectionModel().select(self.proxy_model.index(0, 0, QModelIndex()), QItemSelectionModel.SelectionFlag.SelectCurrent)
             self.predicted_ingots[fusion_id] = {'tree': tree, 'efficiency': round(efficiency, 2)}
@@ -1147,6 +1151,7 @@ class IngotReadinessDialog(QDialog):
         self.ui.heigth.setText(str(sizes[2]))
         self.ui.fusion.setText(fusion)
         self.ui.batch.setValidator(QIntValidator(1, 99999))
+        self.number = int()
 
         # Таймер для подсветки ошибки
         self.timer = QTimer(self)
@@ -1154,8 +1159,11 @@ class IngotReadinessDialog(QDialog):
 
         self.ui.add.clicked.connect(self.confirm_readiness)
 
-    def get_batch(self):
+    def get_batch(self) -> str:
         return self.ui.batch.text()
+    
+    def get_number(self) -> int:
+        return self.number
 
     def confirm_readiness(self):
         batch = self.ui.batch.text()
@@ -1164,7 +1172,9 @@ class IngotReadinessDialog(QDialog):
             self.highlight()
             return
 
-        success = StandardDataService.update_record('ingots', Field('id', self.id), status_id=1, batch=batch)
+        self.number = OrderDataService.last_batch_number(batch, 1) + 1
+
+        success = StandardDataService.update_record('ingots', Field('id', self.id), status_id=1, batch=batch, number=self.number)
         if not success:
             QMessageBox.critical(self, 'Ошибка добавления', f'Слиток из партии {batch} не был добавлен в базу.', QMessageBox.Ok)
             return

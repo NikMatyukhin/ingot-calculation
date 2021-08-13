@@ -422,3 +422,12 @@ class OrderDataService(StandardDataService):
         if ingots_mass:
             return round(blanks_mass / ingots_mass, 2)
         return 0
+
+    @staticmethod
+    @db_connector
+    def last_batch_number(batch: int, status: int, connection: Connection = connect(':memory:')) -> int:
+        sql = str(f'SELECT COUNT(*) FROM ingots WHERE batch={batch} AND status_id={status}')
+        cursor = connection.cursor()
+        cursor.execute(sql)
+
+        return cursor.fetchone()[0]

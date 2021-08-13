@@ -137,7 +137,7 @@ class OCIMainWindow(QMainWindow):
         self.ingot_model = IngotModel('unused')
         # Делегат с закрываемыми и нумеруемыми слитками - для обычных заказов
         self.closed_ingot_dgt = IngotSectionDelegate(
-            show_close = True, numerable = True, parent = self.ui.ingots_view)
+            show_close = True, numerable = False, parent = self.ui.ingots_view)
         # Делегат с незакрываемыми слитками - для завершённых заказов
         self.unclosed_ingot_dgt = IngotSectionDelegate(
             show_close = False, numerable = True, parent = self.ui.ingots_view)
@@ -349,7 +349,7 @@ class OCIMainWindow(QMainWindow):
         if window.exec_() == QDialog.Accepted:
             # Заказ возможно стоит сделать обычным и готовым
             order = self.ui.orders_view.currentIndex().data(Qt.DisplayRole)
-            data = {'status_id': 1, 'batch': window.get_batch()}
+            data = {'status_id': 1, 'batch': window.get_batch(), 'number': window.get_number()}
             self.ingot_model.setData(index, data, Qt.EditRole)
             self.possible_change_status()
             self.refresh_residuals_view(order)

@@ -391,7 +391,8 @@ class IngotSectionDelegate(QStyledItemDelegate):
     deleteFromStorageClicked = pyqtSignal(QModelIndex)
     deleteFromOrderClicked = pyqtSignal(QModelIndex)
 
-    def __init__(self, show_close: bool = True, numerable: bool = True, parent: Optional[QObject] = None) -> None:
+    def __init__(self, show_close: bool = True, numerable: bool = True,
+                 parent: Optional[QObject] = None) -> None:
         super(IngotSectionDelegate, self).__init__(parent)
         
         # Основные настройки
@@ -588,7 +589,11 @@ class IngotSectionDelegate(QStyledItemDelegate):
     def _title(self, font: QFont, ingot: Dict,
                option: QStyleOptionViewItem) -> Tuple[str, QRectF]:
         _text = ''
-        if self.__numerable:
+        if ingot['status_id'] in [1, 2]:
+            _text = f'№{ingot["number"]} '
+        elif ingot['status_id'] == 4:
+            _text = f''
+        else:
             _text = f'№{ingot["id"]} '
         if ingot['status_id'] in [1, 2]:
             _text += f'({str(ingot["batch"])})'

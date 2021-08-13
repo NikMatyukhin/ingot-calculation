@@ -625,6 +625,7 @@ class IngotModel(ListModel):
                     'size': [ingot[4], ingot[5], round(ingot[6], 1)],
                     'batch': ingot[7],
                     'efficiency': ingot[8],
+                    'number': ingot[9]
                 }
                 self.appendRow(data_row)
 
@@ -738,7 +739,7 @@ class IngotResidualsModel(TreeModel):
         
         ingots = OrderDataService.ingots(Field('order_id', self.__order_id))
         for ingot_n, ingot in enumerate(ingots):
-            ingot_id, order_id, fusion_id, status_id, l, w, h, batch, efficiency = ingot
+            ingot_id, order_id, fusion_id, status_id, l, w, h, batch, efficiency, number = ingot
             
             # Цикл всегда на одну итерацию, либо на ноль если карты нет
             p = pathlib.Path() / 'schemes'
