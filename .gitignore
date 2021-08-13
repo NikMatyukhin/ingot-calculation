@@ -112,7 +112,6 @@ schemes/
 log/
 
 *.sqbpro
-*.qrc
 
 # Schemes files
 *.oci

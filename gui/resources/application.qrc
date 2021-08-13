@@ -1,0 +1,41 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>beam.png</file>
+    <file>blueprint.png</file>
+    <file>book.png</file>
+    <file>clipboard.png</file>
+    <file>conveyor.png</file>
+    <file>down-arrow.png</file>
+    <file>gold-ingot.png</file>
+    <file>ingot.png</file>
+    <file>ingot.svg</file>
+    <file>ingot-80-20.png</file>
+    <file>ingot-80-30.png</file>
+    <file>ingot-90-10.png</file>
+    <file>ingot-90-10-DC.png</file>
+    <file>kras-logo.png</file>
+    <file>manufacture.png</file>
+    <file>patch.png</file>
+    <file>playoff.png</file>
+    <file>right-arrow.png</file>
+    <file>v-roll.png</file>
+    <file>h-roll.png</file>
+    <file>scissors.png</file>
+    <file>settings.png</file>
+    <file>warning.png</file>
+	<file>remove.png</file>
+	<file>forged.png</file>
+	<file>anvil.png</file>
+	<file>vline.png</file>
+	<file>branch-more.png</file>
+	<file>branch-end.png</file>
+	<file>branch-open.png</file>
+	<file>branch-closed.png</file>
+	<file>splitter.png</file>
+	<file>cancel.png</file>
+	<file>edit.png</file>
+	<file>complete.png</file>
+	<file>top_part.png</file>
+	<file>add.png</file>
+  </qresource>
+</RCC>

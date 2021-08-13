@@ -10,4 +10,5 @@ copy configs dist\mainwindow
 call venv\Scripts\deactivate
 cd dist
 echo ARCHIVING FILES
+del *.zip
 7z a -tzip new_version.zip mainwindow
