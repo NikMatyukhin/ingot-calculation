@@ -53,8 +53,8 @@ from sequential_mh.bpp_dsc.rectangle import (
     BinType, Direction, Material, Blank, Kit, Bin, Rectangle3d
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, CuttingChartNode, Tree, solution_efficiency, is_defective_tree, is_cc_node,
-    get_all_residuals, get_residuals
+    BinNode, CuttingChartNode, Tree, get_unplaced_before, solution_efficiency,
+    is_defective_tree, is_cc_node, get_all_residuals, get_residuals
 )
 from sequential_mh.bpp_dsc.exception import BPPError
 from sequential_mh.bpp_dsc.support import dfs
@@ -839,12 +839,18 @@ class OCIMainWindow(QMainWindow):
         efficiency = solution_efficiency(self.tree, list(dfs(self.tree)), tree.main_kit, is_total=True)
 
         # NOTE: тест перерасчета
-        # node_1 = tree.node_by_id(55)
-        # node_1 = tree.node_by_id(63)
+        # node_1 = tree.node_by_id(307)
+        # r = get_placed_before(node_1)
+        # print(r)
+        # node_2 = tree.node_by_id(308)
+        # r = get_placed_before(node_2.parent)
+        # print(r)
+        # r = get_unplaced_before(node_2.parent, tree.main_kit)
+        # print(r)
         # print(f'{node_1.bin.size}')
         # node_2 = tree.node_by_id(64)
         # print(f'{node_2.bin.size}')
-        # self.recalculation(tree, [(node_2, (30, 180, 4.2)), (node_1, (50, 180, 4.2))], settings)
+        # self.recalculation(tree, [(node_2, (150, 180, 3.2)), (node_1, (500, 180, 3.2))], settings)
         return efficiency
 
     @timeit
@@ -1177,26 +1183,24 @@ class OCIMainWindow(QMainWindow):
         return best
 
     def recalculation(self, tree, updatable_nodes, restrictions):
-        # tree - исходное дерево
-        # nodes - список пар из узлов и новых размеров
+        """Перерасчет дерева
+        tree - исходное дерево
+        nodes - список пар из узлов и новых размеров
+        restrictions - ограничения
+        """
         node = updatable_nodes[0][0]
-        if len(updatable_nodes) == 2:
-            main_kit = copy.deepcopy(node.parent.parent.kit)
-        else:
-            main_kit = copy.deepcopy(node.kit)
-        for i, (node, new_size) in enumerate(updatable_nodes):
+        unplaced = get_unplaced_before(node.parent, tree.main_kit)
+
+        for node, new_size in updatable_nodes:
             ingot_bin = Bin(*new_size, material=node.bin.material)
             # создать новое дерево
-            new_tree = Tree(BinNode(ingot_bin, kit=copy.deepcopy(main_kit)))
+            new_tree = Tree(BinNode(ingot_bin, kit=Kit(unplaced)))
             new_tree = self.stmh_idrd(new_tree, restrictions=restrictions)
             # удалить размещенные заготовки
-            # unplaced_counter = Counter(b.name for b in new_tree.main_kit)
-            # for leave in new_tree.root.cc_leaves:
-            #     unplaced_counter -= Counter(b.name for b in leave.placed)
-
             for cc_node in new_tree.root.cc_leaves:
-                blanks = [r.rectangle for r in chain.from_iterable(cc_node.result.blanks.values())]
-                main_kit.delete_items(list(blanks), cc_node.bin.height)
+                for packed_rectangle in chain.from_iterable(cc_node.result.blanks.values()):
+                    blank = packed_rectangle.rectangle
+                    unplaced.remove(blank)
 
             # меняем поддерево
             parent = node.parent
@@ -1205,8 +1209,6 @@ class OCIMainWindow(QMainWindow):
 
             new_tree.root.bin.bin_type = node.bin.bin_type
             new_tree.root.parent = parent
-            # node.parent = None
-            # parent.children = new_tree.root
             parent.delete(node)
             parent.add(new_tree.root)
 
