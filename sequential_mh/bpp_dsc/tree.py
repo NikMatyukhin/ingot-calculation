@@ -7,7 +7,7 @@
 """
 
 
-from collections import deque
+from collections import Counter, deque
 from collections.abc import Iterable
 from copy import copy, deepcopy
 from enum import Enum
@@ -22,7 +22,7 @@ from .support import (
     deformation, eq_with_deformation_double_side, is_subrectangle, is_subrectangle_with_def, dfs
 )
 from .exception import (
-    DirectionError, KitError, ParentNodeError, SizeError,
+    KitError, ParentNodeError, SizeError,
     ChildrenNodeError, OperationTypeError
 )
 from .rectangle import BinType, Bin, Direction, Kit, Number, Result, UnsizedBin
@@ -1897,10 +1897,10 @@ class Tree:
         return parent_children
 
     def create_template_branches(self, parent: BinNode, height, cut_thickness=None, direction=0, min_size=None):
-        # min_size = (50, 100)
-        if min_size and not (parent.bin.length >= min_size[LENGTH] and parent.bin.width >= min_size[WIDTH]) \
-            and not (parent.bin.length >= min_size[WIDTH] and parent.bin.width >= min_size[LENGTH]):
-            return
+        if min_size and not is_ingot_node(parent):
+            if not (parent.bin.length >= min_size[LENGTH] and parent.bin.width >= min_size[WIDTH]) \
+               and not (parent.bin.length >= min_size[WIDTH] and parent.bin.width >= min_size[LENGTH]):
+                return
 
         children = self.__class__.create_template(
             parent, height, cut_thickness=cut_thickness, direction=direction
@@ -1910,7 +1910,7 @@ class Tree:
         trees = []
         for childe in children:
             branches = all_branches(childe)
-            for i, branch in enumerate(branches):
+            for branch in branches:
                 new_tree = copy(self)
                 new_parent = new_tree.node_by_id(parent._id)
                 trees.append((new_tree, new_parent, branch))
@@ -2391,3 +2391,31 @@ def get_max_size(max_size, height):
             if low < height <= high:
                 return size
     return None
+
+
+def get_placed_before(node):
+    """Получение упакованных до текущего узла заготовок"""
+    placed_blanks = []
+    parent = node.parent
+    while parent:
+        if is_cutting_node(parent):
+            left, right = parent.children
+            if node is left:
+                leaf = right.cc_leaves[0]
+                placed_blanks.extend(leaf.placed)
+        node = parent
+        parent = node.parent
+    return placed_blanks
+
+
+def get_unplaced_before(node, main_kit):
+    placed_blanks = get_placed_before(node)
+    placed = Counter([blank.name for blank in placed_blanks])
+
+    unplaced = []
+    for blank in main_kit:
+        if blank.name in placed:
+            placed[blank.name] -= 1
+        else:
+            unplaced.append(blank)
+    return unplaced
