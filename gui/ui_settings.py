@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'gui/settings.ui'
+# Form implementation generated from reading ui file 'd:\QtProjects\oci\gui\settings.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -593,7 +593,7 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.button_area)
 
         self.retranslateUi(Dialog)
-        self.page_area.setCurrentIndex(1)
+        self.page_area.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
