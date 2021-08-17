@@ -1407,13 +1407,15 @@ class OperationNode(Node):
                             self.direction = Direction.H
                             if is_left:
                                 # self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
-                                estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
-                            # else:
-                                # self.point = (estimate[LENGTH], 0.)
+                                estimate = parent_size[LENGTH] - estimate[LENGTH], parent_size[WIDTH]
+                            else:
+                                estimate = estimate[LENGTH], parent_size[WIDTH]
                         else:
                             self.direction = Direction.V
                             if is_left:
-                                estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                                estimate = parent_size[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                            else:
+                                estimate = parent_size[LENGTH], estimate[WIDTH]
                             #     self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
                             # else:
                             #     self.point = (0., estimate[WIDTH])
@@ -1424,7 +1426,9 @@ class OperationNode(Node):
                     elif s_1 >= s_2:
                         self.direction = Direction.H
                         if is_left:
-                            estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
+                            estimate = parent_size[LENGTH] - estimate[LENGTH], parent_size[WIDTH]
+                        else:
+                            estimate = estimate[LENGTH], parent_size[WIDTH]
                             # self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
                         # else:
                             # self.point = (estimate[LENGTH], 0.)
@@ -1436,7 +1440,9 @@ class OperationNode(Node):
                         self.direction = Direction.V
                         if is_left:
                             # self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
-                            estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                            estimate = parent_size[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                        else:
+                            estimate = parent_size[LENGTH], estimate[WIDTH]
                         # else:
                         #     # self.point = (0., estimate[WIDTH])
                         self.point = cut_point_with_min_size(
@@ -1447,7 +1453,9 @@ class OperationNode(Node):
                     # только горизонтальный
                     self.direction = Direction.H
                     if is_left:
-                        estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
+                        estimate = parent_size[LENGTH] - estimate[LENGTH], parent_size[WIDTH]
+                    else:
+                        estimate = estimate[LENGTH], parent_size[WIDTH]
                     #     self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
                     # else:
                     #     self.point = (estimate[LENGTH], 0.)
@@ -1459,7 +1467,9 @@ class OperationNode(Node):
                     # только вертикальный
                     self.direction = Direction.V
                     if is_left:
-                        estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                        estimate = parent_size[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                    else:
+                        estimate = parent_size[LENGTH], estimate[WIDTH]
                     #     self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
                     # else:
                     #     self.point = (0., estimate[WIDTH])
@@ -1473,14 +1483,18 @@ class OperationNode(Node):
                 if self.parent.bin.last_rolldir == Direction.H:
                     self.direction = Direction.V
                     if is_left:
-                        estimate = estimate[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                        estimate = parent_size[LENGTH], parent_size[WIDTH] - estimate[WIDTH]
+                    else:
+                        estimate = parent_size[LENGTH], estimate[WIDTH]
                     #     self.point = (0., parent_size[WIDTH] - estimate[WIDTH])
                     # else:
                     #     self.point = (0., estimate[WIDTH])
                 else:
                     self.direction = Direction.H
                     if is_left:
-                        estimate = parent_size[LENGTH] - estimate[LENGTH], estimate[WIDTH]
+                        estimate = parent_size[LENGTH] - estimate[LENGTH], parent_size[WIDTH]
+                    else:
+                        estimate = estimate[LENGTH], parent_size[WIDTH]
                     #     self.point = (parent_size[LENGTH] - estimate[LENGTH], 0.)
                     # else:
                     #     self.point = (estimate[LENGTH], 0.)
@@ -2072,34 +2086,36 @@ def copy_tree(root, nodes):
 
 
 def cut_point_with_min_size(length_est, width_est, min_size, direction):
+    max_side = max(min_size)
+    min_side = min(min_size)
     if direction is Direction.V:
-        # if width_est > min_size[LENGTH]:
-        #     point = (0., max(width_est, min_size[WIDTH]))
-        # elif width_est > min_size[WIDTH]:
-        #     point = (0., max(width_est, min_size[LENGTH]))
-        # else:
-        #     point = (0., max(width_est, min_size[LENGTH]))
-            # point = (0., width_est)
-        if width_est > max(min_size):
-            point = (0., max(width_est, min(min_size)))
-        elif width_est > min(min_size):
+        if length_est >= max_side:
+            if width_est >= min_side:
+                point = (0., width_est)
+            else:
+                point = (0., min_side)
+        elif length_est >= min_side:
+            if width_est >= max_side:
+                point = (0., width_est)
+            else:
+                point = (0., max_side)
+        else:
+            print('Нельзя резать')
             point = (0., max(width_est, max(min_size)))
-        else:
-            point = (0., max(width_est, min(min_size)))
     else:
-        # if width_est > min_size[WIDTH]:
-        #     point = (max(length_est, min_size[LENGTH]), 0.)
-        # elif width_est > min_size[LENGTH]:
-        #     point = (max(length_est, min_size[WIDTH]), 0.)
-        # else:
-        #     # point = (length_est, 0.)
-        #     point = (max(length_est, min_size[LENGTH]), 0.)
-        if width_est > max(min_size):
-            point = (max(length_est, min(min_size)), 0)
-        elif width_est > min(min_size):
-            point = (max(length_est, max(min_size)), 0)
+        if width_est >= max_side:
+            if length_est >= min_side:
+                point = (length_est, 0.)
+            else:
+                point = (min_side, 0.)
+        elif width_est >= min_side:
+            if length_est >= max_side:
+                point = (length_est, 0.)
+            else:
+                point = (max_side, 0.)
         else:
-            point = (max(length_est, min(min_size)), 0)
+            print('Нельзя резать')
+            point = (max(length_est, max(min_size)), 0)
     return point
 
 
