@@ -1,6 +1,5 @@
 """Модуль главного окна"""
 
-
 import copy
 from operator import itemgetter
 import sys
@@ -133,10 +132,11 @@ class OCIMainWindow(QMainWindow):
         self.ui.order_name.setGraphicsEffect(self.shadow_effect_2)
 
         # Модель и делегат заказов
-        self.order_model = OrderModel(Field('status_id', 1), self)
+        self.order_model = OrderModel(['TYPE'], self)
         self.order_delegate = OrderDelegate(self.ui.orders_view)
         self.ui.orders_view.setModel(self.order_model)
         self.ui.orders_view.setItemDelegate(self.order_delegate)
+        self.ui.orders_view.expandAll()
 
         # Модель слитков (обновляется при изменении текущего заказа)
         self.ingot_model = IngotModel('unused')
@@ -241,6 +241,9 @@ class OCIMainWindow(QMainWindow):
     def tree(self):
         return self._tree.root
 
+    def is_type_line(self, index: QModelIndex):
+        return not index.parent().isValid()
+
     def refresh_orders_view(self, index: QModelIndex) -> None:
         """Переключатель активных заказов и открытых секций.
 
@@ -249,7 +252,13 @@ class OCIMainWindow(QMainWindow):
         """
         if not index.isValid():
             return
-        
+
+        if self.is_type_line(index):
+            self.ui.orders_information_area.setCurrentWidget(self.ui.default_page)
+            self.ui.orders_view.setExpanded(index, not self.ui.orders_view.isExpanded(index))
+            self.ui.orders_view.clearSelection()
+            return
+
         order = index.data(Qt.DisplayRole)
         if order['status_id'] in [3, 5]:
             # Если выбранный заказ уже завершён, то слитки закрыть нельзя,
@@ -359,7 +368,7 @@ class OCIMainWindow(QMainWindow):
             self.possible_change_status()
             self.refresh_residuals_view(order)
 
-    def possible_change_status(self) -> None:
+    def possible_change_status(self, refresh: bool = False) -> None:
         """Проверка текущего заказа с возможным изменением статуса"""
         order_index = self.ui.orders_view.currentIndex()
         order = order_index.data(Qt.DisplayRole)
@@ -376,27 +385,62 @@ class OCIMainWindow(QMainWindow):
             else:
                 # Если запланированных слитков нет и заказ готов к началу
                 self.change_status(order_index, 1)
+                if refresh:
+                    self.refresh_orders_view(self.order_model.last(self.order_model.progress_index))
         else:
             # Если слитков вообще нет, то заказ ожидает
             self.change_status(order_index, 0)
+            if refresh:
+                self.refresh_orders_view(self.order_model.last(self.order_model.pending_index))
 
-    def change_status(self, index: QModelIndex(), status: int) -> None:
+    def change_status(self, index: QModelIndex, new_status: int) -> None:
         """Метод для обновления статуса заказа"""
+        print('статусы менялись')
         order = index.data(Qt.DisplayRole)
-        self.order_model.setData(index, {'status_id': status}, Qt.EditRole)
+        # От смены статуса сильно зависит поведение
+        old_status = order['status_id']
+        order.update({'status_id': new_status})
+        self.order_model.setData(index, order, Qt.EditRole)
         StandardDataService.update_record(
-            'orders', Field('id', order['id']), status_id=status)
+            'orders', Field('id', order['id']), status_id=new_status)
+        # Необходимо для обновления данных в объекте при его переносе
+        order = index.data(Qt.DisplayRole)
+        if old_status in [1, 2] and new_status in [1, 2]:
+            return
+        elif old_status in [1, 2] and new_status == 3:
+            from_ = self.order_model.progress_index
+            to_ = self.order_model.closed_index
+            self.order_model.removeRow(index.row(), from_)
+            self.order_model.appendRow([order], to_)
+            self.ui.orders_view.setCurrentIndex(self.order_model.last(to_))
+        elif old_status in [1, 2] and new_status == 0:
+            from_ = self.order_model.progress_index
+            to_ = self.order_model.pending_index
+            self.order_model.removeRow(index.row(), from_)
+            self.order_model.appendRow([order], to_)
+            self.ui.orders_view.setCurrentIndex(self.order_model.last(to_))
+        elif old_status == 0 and new_status in [1, 2]:
+            from_ = self.order_model.pending_index
+            to_ = self.order_model.progress_index
+            self.order_model.removeRow(index.row(), from_)
+            self.order_model.appendRow([order], to_)
+            self.ui.orders_view.setCurrentIndex(self.order_model.last(to_))
+        self.ui.orders_view.expandAll()
+        print('статусы изменились')
     
-    def change_efficiency(self, index: QModelIndex(),
+    def change_efficiency(self, index: QModelIndex,
                           efficiency: float = None) -> None:
         """Метод для обновления эффективности заказа"""
+        print('эффективность менялась')
         order = index.data(Qt.DisplayRole)
         if not efficiency:
             efficiency = OrderDataService.efficiency(
                 Field('order_id', order['id']))
-        self.order_model.setData(index, {'efficiency': efficiency}, Qt.EditRole)
+        order.update({'efficiency': efficiency})
+        self.order_model.setData(index, order, Qt.EditRole)
         StandardDataService.update_record(
             'orders', Field('id', order['id']), efficiency=efficiency)
+        print('эффективность изменилась')
 
     def ingot_removed(self, index: QModelIndex) -> None:
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
@@ -442,16 +486,18 @@ class OCIMainWindow(QMainWindow):
                 # Обновляем эффективность заказа
                 self.change_efficiency(order_index)
             # Проверяем возможность изменения статуса заказа
-            self.possible_change_status()
+            self.possible_change_status(refresh=True)
             # Обновляем итоговый вид заказа
-            self.refresh_orders_view(order_index)
+            # self.refresh_orders_view(order_index)
 
     def order_edited(self, data: Dict) -> None:
         index = self.ui.orders_view.currentIndex()
-        self.order_model.setData(index, data, Qt.EditRole)
+        order = index.data(Qt.DisplayRole)
+        order.update(data)
+        self.order_model.setData(index, order, Qt.EditRole)
         self.possible_change_status()
         self.change_efficiency(index)
-        self.refresh_orders_view(index)
+        # self.refresh_orders_view(index)
 
     def order_removed(self, index: QModelIndex) -> None:
         order = index.data(Qt.DisplayRole)
@@ -487,7 +533,7 @@ class OCIMainWindow(QMainWindow):
             # Если удаление прошло успешно, то можно удалять все схемы этого
             # заказа и удалять его из модели
             self.delete_tree(order)
-            self.order_model.deleteRow(index.row())
+            self.order_model.removeRow(index.row(), index.parent())
             self.ui.orders_information_area.setCurrentWidget(self.ui.default_page)
             self.ui.orders_view.clearSelection()
 
@@ -1380,15 +1426,21 @@ class OCIMainWindow(QMainWindow):
         if window.exec() == QDialog.DialogCode.Accepted:
             # Если был добавлен хотя бы один запланированный слиток, нужно
             # сделать заказ запланированным в любом случае
+            self.change_efficiency(order_index)
             if window.predicted and order['status_id'] != 2:
                 self.change_status(order_index, 2)
-            self.change_efficiency(order_index)
-        self.refresh_orders_view(order_index)
+        
+        self.refresh_orders_view(self.order_model.last(self.order_model.progress_index))
 
     def open_order_dialog(self) -> None:
         """Добавление нового заказа"""
-        window = OrderAddingDialog(self.cutting_thickness, self)
+        window = OrderAddingDialog(self.cutting_thickness, self.order_model.pending_index, self)
         window.recordSavedSuccess.connect(self.order_model.appendRow)
+        self.ui.orders_information_area.setCurrentWidget(self.ui.default_page)
+        # self.ui.orders_view.setCurrentIndex(self.order_model.last(self.order_model.pending_index))
+        self.ui.orders_view.edit(self.order_model.last(self.order_model.pending_index))
+        # self.ui.orders_view.clearSelection()
+        self.ui.orders_view.expandAll()
         window.exec_()
 
     def open_complete_dialog(self) -> None:
@@ -1409,7 +1461,7 @@ class OCIMainWindow(QMainWindow):
         window = OrderCompletingDialog(residuals, self)
         if window.exec() == QDialog.Accepted:
             self.change_status(order_index, 3)
-            self.refresh_orders_view(order_index)
+            self.refresh_orders_view(self.order_model.last(self.order_model.closed_index))
 
     def open_edit_dialog(self) -> None:
         """Изменение текущего заказа"""

@@ -536,7 +536,7 @@ QPushButton:pressed {
                <number>0</number>
               </property>
               <item>
-               <widget class="QListView" name="orders_view">
+               <widget class="QTreeView" name="orders_view">
                 <property name="font">
                  <font>
                   <family>MS Shell Dlg 2</family>
@@ -545,6 +545,27 @@ QPushButton:pressed {
                 </property>
                 <property name="verticalScrollBarPolicy">
                  <enum>Qt::ScrollBarAlwaysOn</enum>
+                </property>
+                <property name="editTriggers">
+                 <set>QAbstractItemView::NoEditTriggers</set>
+                </property>
+                <property name="showDropIndicator" stdset="0">
+                 <bool>false</bool>
+                </property>
+                <property name="verticalScrollMode">
+                 <enum>QAbstractItemView::ScrollPerPixel</enum>
+                </property>
+                <property name="indentation">
+                 <number>0</number>
+                </property>
+                <property name="animated">
+                 <bool>true</bool>
+                </property>
+                <property name="headerHidden">
+                 <bool>true</bool>
+                </property>
+                <property name="expandsOnDoubleClick">
+                 <bool>false</bool>
                 </property>
                </widget>
               </item>
