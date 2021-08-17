@@ -58,9 +58,9 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
     min_rect = Rectangle((0, 0), (0, 0))
     if last_rolldir == Direction.H and max_size:
         max_size = max_size[::-1]
-    sort(rectangles, sorting='width')
     if last_rolldir:
         rotate_all(rectangles, last_rolldir)
+    sort(rectangles, sorting='diagonal')
     main_region = Estimator(
         src_rect, round(height, 4), g_height, limits=max_size,
         x_hem=x_hem, y_hem=y_hem
@@ -328,32 +328,21 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
             if rect.direction != last_rolldir:
                 rect.rotate()
         size = rect.size[:-1]
+        min_rect_0 = 0
         for j in range(1 + rect.is_rotatable):
             rect_w = size[(1 + j) % 2]
             rect_l = size[(0 + j) % 2]
-            # if packed and (rect_w >= 350 or rect_l >= 350):
-            #     count = len(
-            #         [
-            #             item for item in packed
-            #             if (item.rectangle.size[0] >= 400 and item.rectangle.size[1] > 40) or (item.rectangle.size[1] >= 400 and item.rectangle.size[0] > 40)
-            #             # if (rect.size[0] >= 400 and rect.size[1] > 80) or (rect.size[1] >= 400 and rect.size[0] > 80)
-            #         ]
-            #     )
-            #     if count >= 4:
-            #         continue
-            # На большие листы ничего не размещается
-            # trp = estimator.rectangle.trp
-            # estimate_point = max(x0 + rect_w, trp.x), max(y0 + rect_l, trp.y)
             estimate_point = x0 + rect_w, y0 + rect_l
             if estimator(*estimate_point) is None:
                 continue
             dist = estimator(x0 + rect_w, y0)
             if dist is None:
                 continue
-            # _, l_max = dist
+
+            rect_ = Rectangle.create_by_size(estimator.start, rect_l, rect_w)
+            min_rect = min_enclosing_rect([estimator.rectangle, rect_]).square
 
             width, length = estimator(x0, y0)
-            # p = 4
             if priority > 1 and rect_w == width and rect_l == length:
                 priority, orientation, best = 1, j, rect
             elif priority > 2 and rect_w == width and rect_l < length:
@@ -362,7 +351,7 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
             elif priority > 3 and rect_w < width and rect_l == length:
                 # вариант 3
                 priority, orientation, best = 3, j, rect
-            elif priority > 3 and rect_w < width and rect_l < length:
+            elif (priority > 3 and rect_w < width and rect_l < length) or (priority == 3 and j == 1 and min_rect < min_rect_0):
                 # вариант 3
                 priority, orientation, best = 3, j, rect
             elif priority > 4:
@@ -370,6 +359,8 @@ def get_best_fig(rectangles, estimator, src_rect, last_rolldir,
                 priority, orientation, best = 12, j, rect
             if x0 + rect_w > 800 or y0 + rect_l > 800:
                 priority= 12
+
+            min_rect_0 = min_rect
 
             # if priority > 1 and rect_w == w_0 and rect_l == l_max:
             #     # вариант 1

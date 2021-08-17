@@ -13,9 +13,11 @@ https://www.sciencedirect.com/science/article/pii/S0020019015001519?via%3Dihub
 показывающими важность изготовления прямоугольника.
 """
 
+import sys
+import math
+
 from itertools import chain, zip_longest
 from operator import attrgetter
-import sys
 
 from .rect import Rectangle, PackedRectangle, RectangleType
 
@@ -45,15 +47,25 @@ def sort(rectangles, sorting: str='width'):
     :raises ValueError: В случае, если аргумент sorting имеет значение,
                         отличное от указанных, вызывается исключение.
     """
-    if sorting not in ('width', 'length'):
+    if sorting not in ('width', 'length', 'max', 'min', 'area', 'diagonal'):
         raise ValueError('The algorithm only supports sorting by width '
                             f'or length but {sorting} was given.')
+
+    key_func=None
+    if sorting in ('width', 'length', 'area'):
+        key_func = attrgetter(sorting)
+    elif sorting == 'diagonal':
+        key_func = lambda item: math.sqrt(item.length ** 2 + item.width ** 2)
+    elif sorting == 'max':
+        key_func = lambda item: max(item.length, item.width)
+    else:
+        key_func = lambda item: min(item.length, item.width)
 
     for _, group in rectangles.items():
         for blank in group:
             if blank.length > blank.width and blank.is_rotatable:
                 blank.rotate()
-        group.sort(key=attrgetter(sorting), reverse=True)
+        group.sort(key=key_func, reverse=True)
 
 
 def create_rectangle(x, y, length, width, rtype) -> Rectangle:
