@@ -182,14 +182,16 @@ class OrderAddingDialog(QDialog):
     дальнейшую работу уже с ним, а не создание прочих заказов.
     """
 
-    recordSavedSuccess = pyqtSignal(dict)
+    recordSavedSuccess = pyqtSignal(list, QModelIndex)
 
-    def __init__(self, height: float, parent):
+    def __init__(self, height: float, pending_index: QModelIndex, parent):
         super().__init__(parent)
         self.ui = ui_add_order_dialog.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowFlags(Qt.Window)
         self.setWindowState(Qt.WindowMaximized)
+
+        self.pending_index = pending_index
 
         self.ui.name.setText(datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
         self.ui.heigth.setValue(height)
@@ -404,7 +406,7 @@ class OrderAddingDialog(QDialog):
                 updates.append(order, article, Field('detail_id', detail[0]), status, Field('amount', detail[1]), Field('priority', detail[2]))
         OrderDataService.save_complects(updates)
 
-        self.recordSavedSuccess.emit({
+        self.recordSavedSuccess.emit([{
             'id': order_id,
             'status_id': 0,
             'name': order_name,
@@ -414,7 +416,7 @@ class OrderAddingDialog(QDialog):
             'articles': marked_rows['articles_count'],
             'details': marked_rows['details_count'],
             'thickness': order_thickness
-        })
+        }], self.pending_index)
         logging.info('Заказ %(name)s добавлен в базу.', {'name': order_name})
         self.accept()
 
