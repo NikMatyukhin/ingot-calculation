@@ -495,8 +495,8 @@ class OCIMainWindow(QMainWindow):
         order = index.data(Qt.DisplayRole)
         order.update(data)
         self.order_model.setData(index, order, Qt.EditRole)
-        self.possible_change_status()
         self.change_efficiency(index)
+        self.possible_change_status(refresh=True)
         # self.refresh_orders_view(index)
 
     def order_removed(self, index: QModelIndex) -> None:
