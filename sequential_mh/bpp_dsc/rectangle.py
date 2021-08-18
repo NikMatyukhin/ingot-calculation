@@ -883,15 +883,18 @@ class Result(ABCKit):
         for _, list_r in self.blanks.items():
             total_l.append(max([r.y + r.rectangle.length for r in list_r]))
             total_w.append(max([r.x + r.rectangle.width for r in list_r]))
+        if self.tailings:
+            total_l.append(max([r.y + r.length for r in self.tailings]))
+            total_w.append(max([r.x + r.width for r in self.tailings]))
         if tailings:
             total_l.append(max([r.y + r.length for r in tailings]))
             total_w.append(max([r.x + r.width for r in tailings]))
         if total_l:
-            self.length = max(total_l)  # + hem[1]
+            self.length = round(max(total_l), 4)  # + hem[1]
         else:
             self.length = 0
         if total_w:
-            self.width = max(total_w)   # + hem[0]
+            self.width = round(max(total_w), 4)   # + hem[0]
         else:
             self.width = 0
         self.tailings.extend(tailings)
