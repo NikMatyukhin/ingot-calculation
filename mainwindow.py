@@ -103,6 +103,7 @@ class OCIMainWindow(QMainWindow):
         self.width_medium = 300            # Ширина пластины 1 <= l < 3
         self.length_small = 700            # Длина пластины < 1
         self.width_small = 280             # Ширина пластины < 1
+        self.aspect_ratio = 10
 
         self.clean_roll_height = 3         # Толщина чистового проката
         self.admissible_deformation = 70   # Допустимая деформация проката (%)
@@ -915,7 +916,7 @@ class OCIMainWindow(QMainWindow):
         if progress:
             progress.setLabelText('Выбор оптимального решения...')
 
-        best, _ = choose_tree(trees)
+        best, _ = choose_tree(trees, self.aspect_ratio)
 
         for node in best.root.cc_leaves:
             print(node.bin.height, node._id)
@@ -1169,7 +1170,7 @@ class OCIMainWindow(QMainWindow):
         #         item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
         #     )
         # )
-        best, _ = choose_tree(trees)
+        best, _ = choose_tree(trees, self.aspect_ratio)
         get_all_residuals(best)
 
         # NOTE: своя визуализация для отладки
@@ -1464,6 +1465,8 @@ class OCIMainWindow(QMainWindow):
             'rolling/clean_edge', defaultValue=2, type=int)
         self.admissible_deformation = self.settings.value(
             'rolling/deformation', defaultValue=0.7, type=float)
+        self.admissible_deformation = self.settings.value(
+            'rolling/aspect_ratio', defaultValue=10, type=int)
         self.ingot_min_length = self.settings.value(
             'forging/min_forge_length', defaultValue=70, type=int)
         self.ingot_min_width = self.settings.value(

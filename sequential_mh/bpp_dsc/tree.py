@@ -2004,17 +2004,25 @@ def top_down_traversal(start):
     return result
 
 
-def solution_efficiency(root, path, main_kit, nd=False, is_total=False, is_p=False):
+def solution_efficiency(root, path, main_kit, aspect_ratio=10, nd=False, is_total=False, is_p=False):
     # is_total - Учитывая весь бин
     # nd - взвешенная на количество деталей
     used_total_volume = 0.
     used_volume = 0.
     number_detail = 0
+    fine = 1
     priorities = []
     # all_priorities = [1/blank.priority for blank in root.kit]
     all_priorities = [1/blank.priority for blank in main_kit]
     for node in path:
         if is_cc_node(node):
+            max_side = max(node.bin.width, node.bin.length)
+            min_side = min(node.bin.width, node.bin.length)
+            aspect_ratio = 0
+            if min_side > 0:
+                aspect_ratio = max_side / min_side
+            if aspect_ratio >= aspect_ratio:
+                fine -= 0.05
             used_total_volume += node.bin.volume
             used_volume += node.result.total_volume
             priorities.extend(
@@ -2031,7 +2039,7 @@ def solution_efficiency(root, path, main_kit, nd=False, is_total=False, is_p=Fal
                         [1/blank.rectangle.priority for blank in subnode.result]
                     )
     if is_total:
-        efficiency = used_volume / root.bin.volume
+        efficiency = used_volume / root.bin.volume * fine
     else:
         if used_total_volume == 0:
             efficiency = 0
@@ -2404,6 +2412,7 @@ def get_residuals(node):
 def get_max_size(max_size, height):
     if max_size:
         for (low, high), size in max_size.items():
+            # if low <= height < high:
             if low < height <= high:
                 return size
     return None
