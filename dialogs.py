@@ -3,8 +3,7 @@ import logging
 import typing
 from datetime import datetime
 from operator import attrgetter
-from typing import Dict, List, Tuple, Union, Optional
-from itertools import chain
+from typing import Dict, Tuple, Union, Optional
 from collections import Counter
 
 from PyQt5.QtCore import (
@@ -16,6 +15,8 @@ from PyQt5.QtWidgets import (
     QProgressDialog, QAction
 )
 
+from messagebox import message_box_error
+from sequential_mh.bpp_dsc.exception import BPPError
 from sequential_mh.bpp_dsc.rectangle import Material, Kit, Bin
 from sequential_mh.bpp_dsc.tree import (
     BinNode, Tree, solution_efficiency
@@ -1079,6 +1080,9 @@ class IngotAssignmentDialog(QDialog):
                 'user_inter_ic', {'name': order_name, 'alloy': fusion_name}
             )
             QMessageBox.information(self, 'Внимание', 'Процесс расчета слитка был прерван!', QMessageBox.Ok)
+            return
+        except BPPError as ex:
+            message_box_error(str(ex), parent=self)
             return
         except Exception as exception:
             log_operation_info(
