@@ -14,15 +14,15 @@ def choose_tree(trees: List[Tree], aspect_ratio=10) -> Tuple[Tree, float]:
     ef_trees = [
         (tree, solution_efficiency(
             tree.root, list(dfs(tree.root)), tree.main_kit,
-            aspect_ratio=aspect_ratio, nd=True, is_p=True
+            max_aspect_ratio=aspect_ratio, nd=True, is_p=True
         )) for tree in trees
     ]
     ef_trees.sort(key=itemgetter(1), reverse=True)
 
     # if ef_trees[0][0]._type == 0:
     #     print('-' * 50)
-    #     for i, (t, ef) in enumerate(ef_trees):
-    #         print(f'Решение {i} ({t}): {ef}; {number_rolling(t.root)}')
+    #     for i, (t, count, ef) in enumerate(ef_trees):
+    #         print(f'Решение {i} ({t}): {ef}; {count}; {number_annealing(t.root)}')
     #     print('-' * 50)
     #     print()
     #     print()

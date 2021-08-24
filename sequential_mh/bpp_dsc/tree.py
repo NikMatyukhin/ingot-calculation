@@ -1372,15 +1372,15 @@ class OperationNode(Node):
                     # )
                     # raise OperationNodeError(msg)
                 if self.direction == Direction.H:
-                    src.bin.length = self.point[LENGTH]
-                    dst.bin.length = size[LENGTH] - self.point[LENGTH]
+                    src.bin.length = estimate[LENGTH]
+                    dst.bin.length = size[LENGTH] - estimate[LENGTH]
                     dst.bin.width = size[WIDTH]
-                    self.point = right.bin.length, 0.
+                    self.point = dst.bin.length, 0.
                 else:
-                    src.bin.width = self.point[WIDTH]
-                    dst.bin.width = size[WIDTH] - self.point[WIDTH]
+                    src.bin.width = estimate[WIDTH]
+                    dst.bin.width = size[WIDTH] - estimate[WIDTH]
                     dst.bin.length = size[LENGTH]
-                    self.point = 0., right.bin.width
+                    self.point = 0., dst.bin.width
         src.update_size(max_len=max_len, min_size=min_size)
         dst.update_size(max_len=max_len, min_size=min_size)
 
@@ -2004,13 +2004,13 @@ def top_down_traversal(start):
     return result
 
 
-def solution_efficiency(root, path, main_kit, aspect_ratio=10, nd=False, is_total=False, is_p=False):
+def solution_efficiency(root, path, main_kit, max_aspect_ratio=10, nd=False, is_total=False, is_p=False):
     # is_total - Учитывая весь бин
     # nd - взвешенная на количество деталей
     used_total_volume = 0.
     used_volume = 0.
     number_detail = 0
-    fine = 1
+    penalty = 1
     priorities = []
     # all_priorities = [1/blank.priority for blank in root.kit]
     all_priorities = [1/blank.priority for blank in main_kit]
@@ -2021,8 +2021,8 @@ def solution_efficiency(root, path, main_kit, aspect_ratio=10, nd=False, is_tota
             aspect_ratio = 0
             if min_side > 0:
                 aspect_ratio = max_side / min_side
-            if aspect_ratio >= aspect_ratio:
-                fine -= 0.05
+            if max_aspect_ratio and aspect_ratio >= max_aspect_ratio:
+                penalty -= 0.05
             used_total_volume += node.bin.volume
             used_volume += node.result.total_volume
             priorities.extend(
@@ -2034,12 +2034,14 @@ def solution_efficiency(root, path, main_kit, aspect_ratio=10, nd=False, is_tota
                 for subnode in subtree.root.cc_leaves:
                     used_volume += subnode.result.total_volume
                     # number_detail += subnode.result.qty()
-                    number_detail += len(node.placed)
+                    # number_detail += len(node.placed)
                     priorities.extend(
                         [1/blank.rectangle.priority for blank in subnode.result]
                     )
     if is_total:
-        efficiency = used_volume / root.bin.volume * fine
+        efficiency = used_volume / root.bin.volume
+        if max_aspect_ratio:
+            efficiency *= penalty
     else:
         if used_total_volume == 0:
             efficiency = 0
@@ -2412,8 +2414,8 @@ def get_residuals(node):
 def get_max_size(max_size, height):
     if max_size:
         for (low, high), size in max_size.items():
-            # if low <= height < high:
-            if low < height <= high:
+            if low <= height < high:
+            # if low < height <= high:
                 return size
     return None
 
