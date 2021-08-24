@@ -7,6 +7,7 @@
 """
 
 
+import random
 from collections import Counter, deque
 from collections.abc import Iterable
 from copy import copy, deepcopy
@@ -83,6 +84,8 @@ class BaseNode(WithID):
         self._children = children
 
         self.locked = False
+        self.level = 0
+        self.color = ''
 
     # работа с потомками (создание, добавление, удаление, вставка) -----
     def create(self, *args, **kwargs):
@@ -361,11 +364,17 @@ class BinNode(Node):
         # if not cut_thickness or (cut_thickness and height <= cut_thickness):
         if not cut_thickness or height == cut_thickness:
             left = OperationNode(Operations.cutting)
+            left.level = kwargs['level']
             right = OperationNode(Operations.rolling)
+            right.level = kwargs['level']
             return left, right
         if cut_thickness == max(self.kit.blanks.keys()):
-            return OperationNode(Operations.rolling)
-        return OperationNode(Operations.rolling)
+            node = OperationNode(Operations.rolling)
+            node.level = kwargs['level']
+            return node
+        node = OperationNode(Operations.rolling)
+        node.level = kwargs['level']
+        return node
 
     def _create_nodes_leaf(self, **kwargs):
         """Создание потомков для листа"""
@@ -374,13 +383,21 @@ class BinNode(Node):
             raise ParentNodeError(msg)
         if isinstance(self.bin, UnsizedBin) and len(self.bin.last_deformations()) == 1:
             if self.bin.deformations[-1][1] == Direction.V:
-                return OperationNode(Operations.h_rolling)
-            return OperationNode(Operations.v_rolling)
+                node = OperationNode(Operations.h_rolling)
+                node.level = kwargs['level']
+                return node
+            node = OperationNode(Operations.v_rolling)
+            node.level = kwargs['level']
+            return node
         if self.parent.operation in (Operations.v_rolling, Operations.h_rolling):
             # создание разрез
-            return OperationNode(Operations.cutting)
+            node = OperationNode(Operations.cutting)
+            node.level = kwargs['level']
+            return node
         # создание проката
-        return OperationNode(Operations.rolling)
+        node = OperationNode(Operations.rolling)
+        node.level = kwargs['level']
+        return node
 
     def _create_nodes_semifinished(self, **kwargs):
         """Создание потомков для полуфабриката"""
@@ -388,7 +405,9 @@ class BinNode(Node):
             msg = ('Only nodes of the semi-finished type '
                    'can create packing nodes.')
             raise ParentNodeError(msg)
-        return OperationNode(Operations.packing)
+        node = OperationNode(Operations.packing)
+        node.level = kwargs['level']
+        return node
 
     def insert(self, children, max_len=None, min_size=None):
         temp_children = self.children
@@ -1036,15 +1055,29 @@ class OperationNode(Node):
                               direction=0, **kwargs):
         """Создание потомков при прокате"""
         if self.operation == Operations.rolling:
+            if direction == 3:
+                if self.level > kwargs['full_level'] and 'is_random' in kwargs and kwargs['is_random']:
+                    direction = random.randint(0, 2)
+                else:
+                    direction = 0
+            elif direction == 4:
+                if self.level > kwargs['full_level'] and 'is_random' in kwargs and kwargs['is_random']:
+                    direction = random.randint(1, 2)
+                else:
+                    direction = 0
             if direction == 0:
                 vertical = OperationNode(Operations.v_rolling)
+                vertical.level = kwargs['level']
                 horizontal = OperationNode(Operations.h_rolling)
+                horizontal.level = kwargs['level']
                 return vertical, horizontal
             if direction == 1:
                 vertical = OperationNode(Operations.v_rolling)
+                vertical.level = kwargs['level']
                 return vertical
             if direction == 2:
                 horizontal = OperationNode(Operations.h_rolling)
+                horizontal.level = kwargs['level']
                 return horizontal
             # return vertical, horizontal
             # return horizontal
@@ -1112,7 +1145,9 @@ class OperationNode(Node):
                 material=parent_bn.bin.material, bin_type=bin_type
             )
         # при прокате набор заготовок наследуется без изменений
-        return BinNode(bin_, kit=deepcopy(parent_bn.kit))
+        node = BinNode(bin_, kit=deepcopy(parent_bn.kit))
+        node.level = kwargs['level']
+        return node
 
     def _create_nodes_cutting(self, height, **kwargs):
         """Создание потомков при разрезе"""
@@ -1155,12 +1190,16 @@ class OperationNode(Node):
 
         right_kit, left_kit = kit.separate(height)
         left = BinNode(contiguous_bin, kit=left_kit)
+        left.level = kwargs['level']
         right = BinNode(leaf_bin, kit=right_kit)
+        right.level = kwargs['level']
         return left, right
 
     def _create_nodes_packing(self, **kwargs):
         """Создание потомков при упаковке"""
-        return CuttingChartNode(self.parent.bin)
+        node = CuttingChartNode(self.parent.bin)
+        node.level = kwargs['level']
+        return node
 
     # работа с размерами (оценка, обновление) --------------------------
     def estimate_size(self, *, start=None):
@@ -1886,8 +1925,8 @@ class Tree:
         self.main_kit = Kit(deepcopy(list(root.kit)))
         self._type = 0  # 0 - дерево, 1 - поддерево
 
-    @staticmethod
-    def create_template(parent: BinNode, height, cut_thickness=None, direction=0):
+    # @staticmethod
+    def create_template(self, parent: BinNode, height, cut_thickness=None, direction=0):
         nodes = deque([parent])
         parent_children = []
         while nodes:
@@ -1898,7 +1937,12 @@ class Tree:
                     continue
                 if is_cc_node(node):
                     continue
-            children = node.create(height, cut_thickness=cut_thickness, direction=direction)
+            full_level = 7 if self._type == 0 else 3
+            children = node.create(
+                height, cut_thickness=cut_thickness,
+                direction=direction, level=parent.level + 1,
+                is_random=True, full_level=full_level
+            )
             if node is parent:
                 parent_children = children
                 parent.set_parent(children)
@@ -1916,7 +1960,7 @@ class Tree:
                and not (parent.bin.length >= min_size[WIDTH] and parent.bin.width >= min_size[LENGTH]):
                 return
 
-        children = self.__class__.create_template(
+        children = self.create_template(
             parent, height, cut_thickness=cut_thickness, direction=direction
         )
         if not isinstance(children, (list, tuple)):
