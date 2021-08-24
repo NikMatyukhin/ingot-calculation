@@ -45,6 +45,8 @@ def plot(root, filename):
                     color = 'forestgreen'
             elif isinstance(node, CuttingChartNode):
                 color = 'firebrick1'
+            if node.color:
+                color = node.color
             subgraph.node(str(id(node)), name, style='filled', color=color)
             all_nodes[str(id(node))] = node
         if not level:
