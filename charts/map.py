@@ -12,7 +12,8 @@ from PyQt5.QtGui import (
     QPolygonF, QIcon
 )
 from sequential_mh.bpp_dsc.tree import (
-    BinNode, CuttingChartNode, OperationNode, Operations, Tree, is_op_node, is_bin_node, is_cc_node, solution_efficiency
+    BinNode, CuttingChartNode, OperationNode, Operations, Tree,
+    is_op_node, is_bin_node, is_cc_node
 )
 from sequential_mh.bpp_dsc.rectangle import (
     BinType
@@ -20,7 +21,7 @@ from sequential_mh.bpp_dsc.rectangle import (
 from sequential_mh.bpp_dsc.support import dfs
 
 
-class PlateGraphicsItem (QGraphicsItem):
+class PlateGraphicsItem(QGraphicsItem):
     def __init__(self, txt, x, y, clr=QColor(255, 255, 255)):
         super().__init__()
         self.x_pos = x
@@ -182,7 +183,7 @@ class CuttingMapPainter:
 
     def setTree(self, tree: Tree):
         self.tree: Tree = tree
-    
+
     def setEfficiency(self, efficiency: Any):
         if isinstance(efficiency, str) and efficiency.endswith('%'):
             efficiency = float(efficiency[:-1])
@@ -221,7 +222,7 @@ class CuttingMapPainter:
             if is_bin_node(node):
                 if node.bin.bin_type == BinType.ingot:
                     efficiency = self.scene.addText(
-                        'Выход годного:\n' + str(round(self.efficiency, 2)) + '%'
+                        f'Выход годного:\n {self.efficiency:.2f}%'
                     )
                     efficiency.setX(self.x - 140)
                     efficiency.setY(self.y - 60)
@@ -248,7 +249,7 @@ class CuttingMapPainter:
         if is_bin_node(node):
             node: BinNode
             h, w, d = node.bin.size
-            size = f'{math.ceil(h)}x{math.ceil(w)}x{round(d, 1)}'
+            size = f'{math.ceil(h)}x{math.ceil(w)}x{round(d, 2)}'
             type = node.bin.bin_type
             if type == BinType.ingot:
                 item = PlateGraphicsItem(

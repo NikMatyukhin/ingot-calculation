@@ -1,10 +1,10 @@
 import random
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from PyQt5.QtCore import Qt, QRectF, QPointF
 from PyQt5.QtWidgets import (
     QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem, QWidget,
-    QGraphicsSceneHoverEvent, QGraphicsView
+    QGraphicsSceneHoverEvent
 )
 from PyQt5.QtGui import (
     QPainter, QPen, QBrush, QColor, QFont, QFontMetrics
@@ -85,7 +85,9 @@ class DetailGraphicsItem(QGraphicsItem):
                          f'{self.width}x{self.height}')
         detail_name = self.visible_text.split('_')[-1]
         if self.metr.horizontalAdvance(detail_name) > self.width:
-            self.setToolTip(detail_name + f' {self.width}x{self.height}')
+            self.setToolTip(
+                f'{detail_name} {self.width:.2f}x{self.height:.2f}'
+            )
             return
         painter.setFont(self.font)
         painter.drawText(self.x_pos, self.y_pos,
@@ -149,7 +151,9 @@ class CuttingPlanPainter:
         if self.blanks:
             bin_rect = QRectF(self.vl_point.x() - 2, self.vl_point.y() - 2, self.bin_width, self.bin_lenght)
             self.scene.addRect(bin_rect,pen, brush)
-            text = self.scene.addText(f'Размер листа {self.bin_lenght}мм на {self.bin_width}мм')
+            text = self.scene.addText(
+                f'Размер листа {self.bin_lenght:.2f}мм на {self.bin_width:.2f}мм'
+            )
             text.setPos(bin_rect.left(), bin_rect.bottom() + 5)
 
     def drawCoords(self):
@@ -184,7 +188,7 @@ class CuttingPlanPainter:
         color.setNamedColor(
             "#"+''.join(
                 [
-                    random.choice('456789ABCDEF') for j in range(6)
+                    random.choice('456789ABCDEF') for _ in range(6)
                 ]
             )
         )
