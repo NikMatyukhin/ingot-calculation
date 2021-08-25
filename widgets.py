@@ -19,7 +19,7 @@ from PyQt5.QtGui import (
 import application_rc
 
 from service import StandardDataService, Field
-from models import IngotModel, OrderModel
+# from models import IngotModel, OrderModel
 
 
 class ZoomGraphicsView(QGraphicsView):
@@ -208,6 +208,8 @@ class OrderDelegate(QStyledItemDelegate):
         _option = QStyleOptionViewItem(option)
         self.initStyleOption(_option, index)
         order: Dict[Any] = index.data(Qt.DisplayRole)
+        if not isinstance(order, dict):
+            return super().paint(painter, option, index)
 
         # Границы работы отрисовщика и границы области с отступом от края
         origin_rect = QRect(_option.rect)
@@ -280,10 +282,10 @@ class OrderDelegate(QStyledItemDelegate):
         _color = self.__default_status_color
         
         # Классификация по статусу заказа - запланирован или завершён
-        if order['status_id'] == 2:
-            _color = self.__planned_status_color
-        elif order['status_id'] == 3:
-            _color = self.__completed_status_color
+        # if order['status_id'] == 2:
+        #     _color = self.__planned_status_color
+        # elif order['status_id'] == 3:
+        #     _color = self.__completed_status_color
         
         # Классификация по состоянию элемента - выбран или под курсором
         if option.state & QStyle.StateFlag.State_Selected:
@@ -344,7 +346,9 @@ class OrderDelegate(QStyledItemDelegate):
         _option = QStyleOptionViewItem(option)
         self.initStyleOption(_option, index)
 
-        return QSize(_option.rect.width(), 90)
+        if index.parent().isValid():
+            return QSize(_option.rect.width(), 90)
+        return super().sizeHint(_option, index)
 
     def _deleteIconPos(self, option: QStyleOptionViewItem) -> QPointF:
         content_rect = self._contentRectAdjusted(option)

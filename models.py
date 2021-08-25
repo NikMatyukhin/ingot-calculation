@@ -10,13 +10,16 @@ from PyQt5.QtCore import (
     Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot,
     QObject, QAbstractListModel
 )
-from PyQt5.QtGui import QColor, QIcon
+from PyQt5.QtWidgets import QApplication, QTreeView
+from PyQt5.QtGui import QColor, QIcon, QPixmap
 
 import application_rc
 
 from service import (
     Field, StandardDataService, OrderDataService, FieldCollection
 )
+
+from widgets import OrderDelegate
 
 
 class TreeItem:
@@ -363,7 +366,7 @@ class TreeModel(QAbstractItemModel):
         child_item = parent_item.child(parent_item.childCount() - 1)
 
         for i, field in enumerate(data):
-            if isinstance(field, bool) or isinstance(field, Tree) or field is None:
+            if isinstance(field, bool) or isinstance(field, Tree) or field is None or isinstance(field, dict):
                 child_item.setData(i, field)
             else:
                 child_item.setData(i, str(field))
@@ -561,28 +564,72 @@ class ListModel(QAbstractListModel):
         return True
 
 
-class OrderModel(ListModel):
-    def __init__(self, status: Field, parent: Optional[QObject] = None):
-        super().__init__(parent)
-        self.__status = status
+class OrderModel(TreeModel):
+    def __init__(self, headers: list, parent: Optional[QObject] = None):
+        super().__init__(headers, parent)
+        self.__down_arrow = QPixmap(':icons/down-arrow.png')
+        self.__progress_index = None
+        self.__pending_index = None
+        self.__closed_index = None
         self.setupModelData()
 
+    def last(self, parent: QModelIndex):
+        return self.index(self.rowCount(parent) - 1, 0, parent)
+
+    def data(self, index: QModelIndex, role: int) -> Any:
+        if not index.isValid():
+            return None
+        
+        if role != Qt.DisplayRole and role != Qt.DecorationRole:
+            return None
+
+        if role == Qt.DecorationRole:
+            if not index.parent().isValid():
+                return self.__down_arrow
+
+        item: TreeItem = index.internalPointer()
+        # print(index.row(), index.column(), item.data(index.column()))
+        return item.data(index.column())
+
+    @property
+    def progress_index(self) -> QModelIndex():
+        return self.__progress_index
+
+    @property
+    def pending_index(self) -> QModelIndex():
+        return self.__pending_index
+
+    @property
+    def closed_index(self) -> QModelIndex():
+        return self.__closed_index
+
     def setupModelData(self):
+        statuses = [
+            tuple([Field('status_id', 1), Field('status_id', 2), 'В работе']),
+            tuple([Field('status_id', 0), Field('status_id', 0), 'В ожидании']),
+            tuple([Field('status_id', 3), Field('status_id', 3), 'Выполнено']),
+        ]
         # TODO: строка для подгрузки заказов по статусу (нужно в будущем)
         # for order in OrderDataService.get_table(self.__status):
-        for order in OrderDataService.get_table():
-            data_row = {
-                'id': order[0],
-                'status_id': order[1],
-                'name': order[2],
-                'date': order[3],
-                'step': order[4],
-                'efficiency': order[5],
-                'articles': order[6],
-                'details': order[7],
-                'thickness': order[8],
-            }
-            self.appendRow(data_row)
+        for pair_status in statuses:
+            table = OrderDataService.get_table(pair_status[:2])
+            self.appendRow([pair_status[-1]], QModelIndex())
+            for order in table:
+                data_row = {
+                    'id': order[0],
+                    'status_id': order[1],
+                    'name': order[2],
+                    'date': order[3],
+                    'step': order[4],
+                    'efficiency': order[5],
+                    'articles': order[6],
+                    'details': order[7],
+                    'thickness': order[8],
+                }
+                self.appendRow([data_row], self.index(self.rowCount() - 1, 0, QModelIndex()))
+        self.__progress_index = self.index(0, 0, QModelIndex())
+        self.__pending_index = self.index(1, 0, QModelIndex())
+        self.__closed_index = self.index(2, 0, QModelIndex())
 
 
 class IngotModel(ListModel):
