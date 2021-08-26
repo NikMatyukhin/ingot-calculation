@@ -1368,6 +1368,29 @@ class OCIMainWindow(QMainWindow):
                 round(blank.y, 1),
                 rect.name
             )
+        # TODO: нужно обязательно сделать нормальный класс для отрисовщика
+        # TODO: и нужно нормально прописать сборку заготовок и остатков
+        number = 1
+        # for rect in filter(lambda item: item.rtype == RectangleType.ALLOWANCE, node.result.tailings):
+        #     self.plan_painter.addTailing(
+        #         math.ceil(rect.length),
+        #         math.ceil(rect.width),
+        #         0.0,
+        #         round(rect.x, 1),
+        #         round(rect.y, 1),
+        #         f'Остаток {number}'
+        #     )
+        #     number += 1
+        for rect in filtration_residues(node.result.tailings, min_size=(self.minimum_plate_width, self.minimum_plate_length)):
+            self.plan_painter.addTailing(
+                math.ceil(rect.length),
+                math.ceil(rect.width),
+                0.0,
+                round(rect.x, 1),
+                round(rect.y, 1),
+                f'Остаток {number}'
+            )
+            number += 1
         self.plan_painter.drawPlan()
 
     def draw_map(self, tree: Tree, efficiency: float) -> None:

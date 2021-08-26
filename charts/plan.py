@@ -44,7 +44,7 @@ class ButtEdgeGraphicsItem(QGraphicsItem):
 
 class DetailGraphicsItem(QGraphicsItem):
     def __init__(self, x, y, w, h, txt, idx=0,
-                 clr=QColor(100, 100, 100), parent=None):
+                 clr=QColor(255, 255, 255), is_blank=True, parent=None):
         super().__init__(parent)
         self.x_pos = x
         self.y_pos = y
@@ -54,6 +54,7 @@ class DetailGraphicsItem(QGraphicsItem):
         self.color = clr
         self.draw_color = clr
         self.visible_text = txt
+        self.is_blank = is_blank
 
         self.font = QFont('Century Gothic', 9)
         self.small_font = QFont('Century Gothic', 9)
@@ -77,6 +78,12 @@ class DetailGraphicsItem(QGraphicsItem):
                    Qt.BrushStyle.SolidPattern))
         painter.drawRect(self.x_pos, self.y_pos,
                          self.width, self.height)
+        if not self.is_blank:
+            painter.setBrush(
+                QBrush(QColor(255, 0, 0),
+                    Qt.BrushStyle.BDiagPattern))
+            painter.drawRect(self.x_pos, self.y_pos,
+                            self.width, self.height)   
 
         painter.setFont(self.small_font)
         painter.drawText(self.x_pos + 5, self.y_pos,
@@ -131,11 +138,31 @@ class CuttingPlanPainter:
             self.lb_point.setX(x)
             self.lb_point.setY(y+h)
 
+    def addTailing(self, h: float, w: float, depth: float, x: float, y: float,
+                   name: str):
+        self.tailings.append([x, y, w, h, name])
+        if x < self.vl_point.x():
+            self.vl_point.setX(x)
+            self.vl_point.setY(y)
+        if y < self.lv_point.y():
+            self.lv_point.setX(x)
+            self.lv_point.setY(y)
+        if x+w > self.vr_point.x():
+            self.vr_point.setX(x+w)
+            self.vr_point.setY(y)
+        if y+h > self.lb_point.y():
+            self.lb_point.setX(x)
+            self.lb_point.setY(y+h)
+
     def drawPlan(self):
         self.drawBin()
         for blank in self.blanks:
             color = self.blanks_colors[blank[4]]
             item = DetailGraphicsItem(*blank, clr=color)
+            item.setAcceptHoverEvents(True)
+            self.scene.addItem(item)
+        for blank in self.tailings:
+            item = DetailGraphicsItem(*blank, is_blank=False)
             item.setAcceptHoverEvents(True)
             self.scene.addItem(item)
         self.drawCoords()
@@ -147,7 +174,8 @@ class CuttingPlanPainter:
         brush = QBrush(QColor(0, 0, 0, 80), Qt.BrushStyle.DiagCrossPattern)
 
         if self.blanks:
-            bin_rect = QRectF(self.vl_point.x() - 2, self.vl_point.y() - 2, self.bin_width, self.bin_lenght)
+            # bin_rect = QRectF(self.vl_point.x() - 2, self.vl_point.y() - 2, self.bin_width, self.bin_lenght)
+            bin_rect = QRectF(0, 0, self.bin_width, self.bin_lenght)
             self.scene.addRect(bin_rect,pen, brush)
             text = self.scene.addText(f'Размер листа {self.bin_lenght}мм на {self.bin_width}мм')
             text.setPos(bin_rect.left(), bin_rect.bottom() + 5)
@@ -199,4 +227,5 @@ class CuttingPlanPainter:
         self.lv_point = QPointF(1200, 1200)
         self.lb_point = QPointF(0, 0)
         self.blanks: List[List[float, float, float, float, str]] = []
+        self.tailings: List[List[float, float, float, float, str]] = []
         self.blanks_colors: Dict[str, QColor] = {}
