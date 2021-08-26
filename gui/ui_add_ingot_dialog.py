@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\QtProjects\oci\gui\add_ingot_dialog.ui'
+# Form implementation generated from reading ui file 'gui\add_ingot_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -75,8 +75,9 @@ class Ui_Dialog(object):
         self.height = QtWidgets.QDoubleSpinBox(self.parameters)
         self.height.setMaximumSize(QtCore.QSize(80, 16777215))
         self.height.setDecimals(1)
-        self.height.setMinimum(1.0)
+        self.height.setMinimum(0.1)
         self.height.setMaximum(1000.0)
+        self.height.setSingleStep(0.1)
         self.height.setProperty("value", 28.0)
         self.height.setObjectName("height")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.height)

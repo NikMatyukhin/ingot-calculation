@@ -140,6 +140,8 @@ class SettingsDialog(QDialog):
         # Допустимая деформация (в процентах от толщины), не используется
         self.ui.deformation.setValue(self.settings.value(
             'rolling/deformation', defaultValue=0.7, type=float) * 100)
+        self.ui.aspect_ratio.setValue(self.settings.value(
+            'rolling/aspect_ratio', defaultValue=10, type=int))
         # Параметры расчета размеров слитка ----------------------------
         # Минимальная длина слитка
         self.ui.min_forge_length.setValue(self.settings.value(
@@ -186,6 +188,7 @@ class SettingsDialog(QDialog):
         self.settings.setValue('rolling/rough_edge', self.ui.rough_edge.value())
         self.settings.setValue('rolling/clean_edge', self.ui.clean_edge.value())
         self.settings.setValue('rolling/deformation', self.ui.deformation.value() / 100)
+        self.settings.setValue('rolling/aspect_ratio', self.ui.aspect_ratio.value())
         self.settings.setValue('forging/min_forge_length', self.ui.min_forge_length.value())
         self.settings.setValue('forging/min_forge_width', self.ui.min_forge_width.value())
         self.settings.setValue('forging/min_forge_height', self.ui.min_forge_height.value())

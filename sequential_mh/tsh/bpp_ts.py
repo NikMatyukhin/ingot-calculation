@@ -253,7 +253,7 @@ def bpp_ts(length, width, height, g_height, rectangles, last_rolldir=None,
         # выбрать вариант размещения
         layout = max(
             enumerate(layout_options),
-            key=lambda item: penalty_func(item[1].efficiency, item[1].aspect_ratio,
+            key=lambda item: penalty_func(item[1].aspect_ratio, item[1].efficiency,
                                           item[1].inters_square)
         )
         layout = layout[1]

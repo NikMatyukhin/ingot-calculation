@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\QtProjects\oci\gui\settings.ui'
+# Form implementation generated from reading ui file 'gui\settings.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -447,6 +447,16 @@ class Ui_Dialog(object):
         self.deformation.setDecimals(0)
         self.deformation.setObjectName("deformation")
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.deformation)
+        self.aspect_ratio_label = QtWidgets.QLabel(self.rolling_extra)
+        self.aspect_ratio_label.setMinimumSize(QtCore.QSize(210, 0))
+        self.aspect_ratio_label.setObjectName("aspect_ratio_label")
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.aspect_ratio_label)
+        self.aspect_ratio = QtWidgets.QSpinBox(self.rolling_extra)
+        self.aspect_ratio.setMaximumSize(QtCore.QSize(80, 16777215))
+        self.aspect_ratio.setMinimum(1)
+        self.aspect_ratio.setProperty("value", 10)
+        self.aspect_ratio.setObjectName("aspect_ratio")
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.aspect_ratio)
         self.verticalLayout_7.addWidget(self.rolling_extra)
         spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_7.addItem(spacerItem2)
@@ -639,6 +649,7 @@ class Ui_Dialog(object):
         self.clean_height.setSuffix(_translate("Dialog", " мм"))
         self.deformation_label.setText(_translate("Dialog", "Допустимая деформация"))
         self.deformation.setSuffix(_translate("Dialog", " %"))
+        self.aspect_ratio_label.setText(_translate("Dialog", "Отношение мин. и макс. сторон"))
         self.min_forge_sizes_label.setText(_translate("Dialog", "Минимальные размеры слитка"))
         self.min_forge_length_label.setText(_translate("Dialog", "Длина"))
         self.min_forge_length.setSuffix(_translate("Dialog", " мм"))

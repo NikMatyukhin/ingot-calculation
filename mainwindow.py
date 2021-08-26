@@ -102,6 +102,7 @@ class OCIMainWindow(QMainWindow):
         self.width_medium = 300            # Ширина пластины 1 <= l < 3
         self.length_small = 700            # Длина пластины < 1
         self.width_small = 280             # Ширина пластины < 1
+        self.aspect_ratio = 10
 
         self.clean_roll_height = 3         # Толщина чистового проката
         self.admissible_deformation = 70   # Допустимая деформация проката (%)
@@ -920,6 +921,7 @@ class OCIMainWindow(QMainWindow):
             # print(f'Рассчитанное кол-во шагов: {steps}')
             steps = int(4 * steps)
             progress.setRange(0, steps)
+        # if level_subtree == 1:
         trees_vertical = self._stmh_idrd(
             tree, restrictions=restrictions, local=not is_main,
             with_filter=with_filter, progress=progress, end_progress=False,
@@ -933,6 +935,13 @@ class OCIMainWindow(QMainWindow):
             start_step=start_step, steps=steps, level_subtree=level_subtree, with_priority=with_priority
         )
         trees = [*trees_vertical, *trees_horizontal]
+        # else:
+        #     trees_horizontal = self._stmh_idrd(
+        #         tree, restrictions=restrictions, local=not is_main,
+        #         with_filter=with_filter, progress=progress, direction=3,
+        #         start_step=start_step, steps=steps, level_subtree=level_subtree, with_priority=with_priority
+        #     )
+        #     trees = trees_horizontal
 
         if restrictions:
             max_size = restrictions.get('max_size')
@@ -947,7 +956,8 @@ class OCIMainWindow(QMainWindow):
 
         if not trees and level_subtree == 0:
             raise BPPError(
-                'Не удалось получить раскрой. Измените приоритеты или ограничения'
+                'Не удалось получить раскрой.\n'
+                'Измените приоритеты, толщину реза или ограничения на максимальные размеры'
             )
         elif not trees:
             return
@@ -961,7 +971,7 @@ class OCIMainWindow(QMainWindow):
         if progress:
             progress.setLabelText('Выбор оптимального решения...')
 
-        best, _ = choose_tree(trees)
+        best, _ = choose_tree(trees, self.aspect_ratio)
 
         for node in best.root.cc_leaves:
             print(node.bin.height, node._id)
@@ -1048,6 +1058,7 @@ class OCIMainWindow(QMainWindow):
                 else:
                     level.append(tree)
             else:
+                print(f'{level_subtree} - {node.current_id = }')
                 _create_insert_template(
                     node, level, tree, local, restrictions,
                     direction=direction
@@ -1177,6 +1188,8 @@ class OCIMainWindow(QMainWindow):
         )
         trees = [*trees_vertical, *trees_horizontal]
 
+        print(f'До фильтрации: {len(trees)}')
+
         for tree in trees:
             # Получение смежного остатка
             if len(tree.root.adj_leaves) > 1:
@@ -1207,15 +1220,19 @@ class OCIMainWindow(QMainWindow):
         trees = [
             item for item in trees if not is_defective_tree(item, max_leaf_size)
         ]
+        print(f'После фильтрации: {len(trees)}')
         if not trees:
-            raise BPPError('Не удалось получить раскрой')
+            raise BPPError(
+                'Не удалось получить раскрой.\n'
+                'Измените приоритеты, толщину реза или ограничения на максимальные размеры'
+            )
         # best = max(
         #     trees,
         #     key=lambda item: solution_efficiency(
         #         item.root, list(dfs(item.root)), item.main_kit, nd=True, is_p=True
         #     )
         # )
-        best, _ = choose_tree(trees)
+        best, _ = choose_tree(trees, self.aspect_ratio)
         get_all_residuals(best)
 
         # NOTE: своя визуализация для отладки
@@ -1539,6 +1556,8 @@ class OCIMainWindow(QMainWindow):
             'rolling/clean_edge', defaultValue=2, type=int)
         self.admissible_deformation = self.settings.value(
             'rolling/deformation', defaultValue=0.7, type=float)
+        self.admissible_deformation = self.settings.value(
+            'rolling/aspect_ratio', defaultValue=10, type=int)
         self.ingot_min_length = self.settings.value(
             'forging/min_forge_length', defaultValue=70, type=int)
         self.ingot_min_width = self.settings.value(

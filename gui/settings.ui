@@ -342,7 +342,7 @@ QPushButton:checked {
          <enum>QFrame::Raised</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="cutting_page">
          <property name="styleSheet">
@@ -1174,6 +1174,35 @@ QPushButton:checked {
                </property>
                <property name="decimals">
                 <number>0</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="aspect_ratio_label">
+               <property name="minimumSize">
+                <size>
+                 <width>210</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Отношение мин. и макс. сторон</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="aspect_ratio">
+               <property name="maximumSize">
+                <size>
+                 <width>80</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="value">
+                <number>10</number>
                </property>
               </widget>
              </item>
