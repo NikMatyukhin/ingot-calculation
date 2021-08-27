@@ -838,6 +838,7 @@ class IngotAddingDialog(QDialog):
             'batch': batch,
             'efficiency': 0.0,
             'number': number,
+            'step': 0,
         })
 
         QMessageBox.information(self, f'Партия {batch}', f'Слиток из партии {batch}\nуспешно добавлен!', QMessageBox.Ok)

@@ -8,7 +8,7 @@ from PyQt5.QtCore import (
     QLocale, QModelIndex
 )
 from PyQt5.QtWidgets import (
-    QAbstractItemView, QApplication, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
+    QAbstractItemView, QApplication, QItemDelegate, QListView, QWidget, QToolButton, QVBoxLayout, QSizePolicy,
     QScrollArea, QStyleOptionViewItem, QComboBox, QPushButton,
     QStyledItemDelegate, QStyle, QGraphicsView
 )
@@ -19,7 +19,7 @@ from PyQt5.QtGui import (
 import application_rc
 
 from service import StandardDataService, Field
-# from models import IngotModel, OrderModel
+from models import TurnBasedMapModel
 
 
 class ZoomGraphicsView(QGraphicsView):
@@ -96,6 +96,37 @@ class ExclusiveButton(QPushButton):
             }''')
 
 
+class ReadyButtonDelegate(QItemDelegate):
+
+    stepCompleted = pyqtSignal(QModelIndex)
+
+    def __init__(self, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent=parent)
+
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex) -> None:
+        self.parent().openPersistentEditor(index)
+
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QWidget:
+        widget = None
+        if index.data(Qt.ItemDataRole.DisplayRole) == TurnBasedMapModel.StepStatus.READY:
+            widget = QPushButton('Готово', parent)
+        return widget
+
+    def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> None:
+        editor.setGeometry(option.rect)
+
+    def setEditorData(self, editor: QWidget, index: QModelIndex) -> None:
+        pass
+    
+    def setModelData(self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex) -> None:
+        pass
+
+    def completeStep(self):
+        button = QApplication.focusWidget()
+        index = self.parent().indexAt(button.pos())
+        self.stepCompleted.emit(index)
+
+
 class ListValuesDelegate(QStyledItemDelegate):
     """Класс для отображения словарных данных"""
 
@@ -135,7 +166,7 @@ class ListValuesDelegate(QStyledItemDelegate):
             if int(value) == self.values[name]:
                 return name
         return 'Ошибка'
-            
+
 
 class OrderDelegate(QStyledItemDelegate):
 
@@ -408,7 +439,6 @@ class IngotSectionDelegate(QStyledItemDelegate):
 
         # Неизменяемые настройки
         self.__show_close = show_close
-        self.__numerable = numerable
         self.__default_status_color = QColor('#fff')
         self.__planned_status_color = QColor('#98ff98')
         self.__ordered_status_color = QColor('#ffff9f')
@@ -575,19 +605,19 @@ class IngotSectionDelegate(QStyledItemDelegate):
                          ingot: Dict) -> QColor:
         # Базовый цвет без статуса и состояния - белый
         _color = self.__default_status_color
-        
+
         # Классификация по статусу заказа - запланирован или завершён
         if ingot['status_id'] in [3, 4]:
             _color = self.__planned_status_color
         elif ingot['status_id'] == 5:
             _color = self.__ordered_status_color
-        
+
         # Классификация по состоянию элемента - выбран или под курсором
         if option.state & QStyle.StateFlag.State_Selected:
             _color = _color.darker(115)
         elif option.state & QStyle.StateFlag.State_MouseOver:
             _color = _color.darker(105)
-        
+
         return _color
 
     def _title(self, font: QFont, ingot: Dict,
@@ -878,26 +908,3 @@ class ResidualsSectionDelegate(QStyledItemDelegate):
                 self.deleteIndexClicked.emit(index)
 
         return super().editorEvent(event, model, option, index)
-
-
-if __name__ == '__main__':
-    application = QApplication([])
-    window = QListView()
-    print(window.font().family())
-    print(window.font().pointSize())
-    # window.setFlow(QListView.LeftToRight)
-    # window.setSelectionMode(QListView.MultiSelection)
-    window.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
-
-    # model = IngotModel('unused')
-    model = OrderModel(Field('status_id', 1))
-    model.setupModelData()
-
-    # delegate = IngotSectionDelegate(window)
-    delegate = OrderDelegate(window)
-
-    window.setModel(model)
-    window.setItemDelegate(delegate)
-    window.show()
-
-    application.exec()

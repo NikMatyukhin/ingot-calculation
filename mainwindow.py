@@ -1,35 +1,36 @@
-"""Модуль главного окна"""
+"""Модуль главного окна""" # pylint: disable too-many-lines
 
 import copy
-from operator import itemgetter
 import sys
 import pickle
 import logging
 import time
 import math
-from typing import Any, Dict, Optional, Sequence, Union, List, Tuple
+from pathlib import Path
 from itertools import chain
 from functools import partial
 from contextlib import suppress
+from operator import itemgetter
 from collections import Counter, deque, namedtuple
-from pathlib import Path
+from typing import Any, Dict, Optional, Sequence, Union, List, Tuple
 
 from PyQt5.QtCore import (
     Qt, QSettings, QModelIndex
 )
 from PyQt5.QtWidgets import (
-    QApplication, QGraphicsDropShadowEffect, QGraphicsView, QMainWindow, QTableWidget, QTableWidgetItem,
-    QMessageBox, QDialog, QVBoxLayout, QGraphicsScene, QLayout, QProgressDialog
+    QApplication, QGraphicsDropShadowEffect, QGraphicsView, QProgressDialog,
+    QMainWindow, QMessageBox, QDialog, QGraphicsScene, QLayout
 )
-from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtGui import (QGuiApplication)
 
 from gui import ui_mainwindow
 from widgets import (
     IngotSectionDelegate, ListValuesDelegate, ExclusiveButton,
-    OrderDelegate, ZoomGraphicsView
+    OrderDelegate, ReadyButtonDelegate, ZoomGraphicsView
 )
 from models import (
-    IngotModel, IngotResidualsModel, OrderInformationComplectsModel, OrderModel
+    IngotModel, IngotResidualsModel, OrderModel, SpannedHeaderView, TurnBasedMapModel,
+    OrderInformationComplectsModel
 )
 from service import (
     Field, OrderDataService, StandardDataService, FieldCollection,
@@ -39,13 +40,13 @@ from dialogs import (
     IngotAssignmentDialog, IngotReadinessDialog, OrderAddingDialog,
     FullScreenWindow, OrderCompletingDialog, OrderEditingDialog
 )
-from messagebox import message_box_error, message_box_info
-from storage import Storage
-from charts.plan import CuttingPlanPainter
-from charts.map import CuttingMapPainter
 from catalog import Catalog
+from storage import Storage
 from settings import SettingsDialog
 from exceptions import ForcedTermination
+from charts.map import CuttingMapPainter
+from charts.plan import CuttingPlanPainter
+from messagebox import message_box_error, message_box_info
 from log import setup_logging, timeit, log_operation_info
 
 from sequential_mh.bpp_dsc.rectangle import (
@@ -71,7 +72,7 @@ ListSizes = List[Sizes]
 
 class OCIMainWindow(QMainWindow):
     """Главное окно"""
-    
+
     def __init__(self):
         super(OCIMainWindow, self).__init__()
         self.ui = ui_mainwindow.Ui_MainWindow()
@@ -124,7 +125,7 @@ class OCIMainWindow(QMainWindow):
         self.shadow_effect.setXOffset(0)
         self.shadow_effect.setBlurRadius(20)
         self.ui.top_area.setGraphicsEffect(self.shadow_effect)
-        
+
         self.shadow_effect_2 = QGraphicsDropShadowEffect()
         self.shadow_effect_2.setColor(Qt.GlobalColor.black)
         self.shadow_effect_2.setYOffset(-5)
@@ -133,6 +134,7 @@ class OCIMainWindow(QMainWindow):
         self.ui.order_name.setGraphicsEffect(self.shadow_effect_2)
 
         # Модель и делегат заказов
+        # HACK: передаю массив заголовков из одного элемента, т.к. там дерево
         self.order_model = OrderModel(['TYPE'], self)
         self.order_delegate = OrderDelegate(self.ui.orders_view)
         self.ui.orders_view.setModel(self.order_model)
@@ -157,9 +159,20 @@ class OCIMainWindow(QMainWindow):
         self.ingots_residuals_model = IngotResidualsModel(
             self.residual_headers, self)
         self.ui.ingots_residuals_view.setModel(self.ingots_residuals_model)
-        for column, width in enumerate([115, 70, 80, 75, 10, 100]):
+        for column, width in enumerate([150, 120, 120, 120, 50, 120]):
             self.ui.ingots_residuals_view.setColumnWidth(column, width)
         self.ui.ingots_residuals_view.setColumnHidden(5, True)
+
+        # Модель с пошаговой картой раскроя
+        self.turn_based_model = TurnBasedMapModel()
+        self.ready_button_dgt = ReadyButtonDelegate(self.ui.turn_based_map_view)
+        self.ui.turn_based_map_view.setModel(self.turn_based_model)
+        self.ui.turn_based_map_view.setItemDelegateForColumn(8, self.ready_button_dgt)
+        self.spanned_view = SpannedHeaderView(Qt.Orientation.Horizontal)
+        self.ui.turn_based_map_view.setHorizontalHeader(self.spanned_view)
+        for column, width in enumerate([15, 60, 50, 100, 70, 100, 40, 100, 80]):
+            self.ui.turn_based_map_view.setColumnWidth(column, width)
+
 
         # Модель комплектов (обновляется при изменении текущего заказа)
         self.complect_headers = [
@@ -314,14 +327,21 @@ class OCIMainWindow(QMainWindow):
         parent = self.ingots_residuals_model.parent(index)
         tree_index = self.ingots_residuals_model.index(index.row(), 5, parent)
         eff_index = self.ingots_residuals_model.index(index.row(), 4, parent)
-        
+
+        ingot_index = self.ui.ingots_view.currentIndex()
+        ingot = ingot_index.data(Qt.ItemDataRole.DisplayRole)
+
         # Здесь получается дерево, по которому будет отображен раскрой планов
         # и карты одновременно
         self._map_tree = self.ingots_residuals_model.data(tree_index, Qt.DisplayRole)
         efficiency = self.ingots_residuals_model.data(eff_index, Qt.DisplayRole)
+
         self.update_height_line(self._map_tree)
         self.draw_map(self._map_tree, efficiency)
         self.go_to_map_page()
+
+        self.turn_based_model.step = ingot['step']
+        self.turn_based_model.root = self._map_tree
 
     def refresh_complects_view(self, order: Dict):
         self.complect_model.order = order['id']
@@ -373,7 +393,7 @@ class OCIMainWindow(QMainWindow):
         """Проверка текущего заказа с возможным изменением статуса"""
         order_index = self.ui.orders_view.currentIndex()
         order = order_index.data(Qt.DisplayRole)
-        # При обновлении статусов слитков нужно обновлять и модель 
+        # При обновлении статусов слитков нужно обновлять и модель
         # слитков-поддеревьев на планах раскроя
         self.ingots_residuals_model.order = order['id']
         if self.ingot_model.rowCount():
@@ -396,7 +416,6 @@ class OCIMainWindow(QMainWindow):
 
     def change_status(self, index: QModelIndex, new_status: int) -> None:
         """Метод для обновления статуса заказа"""
-        print('статусы менялись')
         order = index.data(Qt.DisplayRole)
         # От смены статуса сильно зависит поведение
         old_status = order['status_id']
@@ -427,7 +446,6 @@ class OCIMainWindow(QMainWindow):
             self.order_model.appendRow([order], to_)
             self.ui.orders_view.setCurrentIndex(self.order_model.last(to_))
         self.ui.orders_view.expandAll()
-        print('статусы изменились')
     
     def change_efficiency(self, index: QModelIndex,
                           efficiency: float = None) -> None:
@@ -441,14 +459,13 @@ class OCIMainWindow(QMainWindow):
         self.order_model.setData(index, order, Qt.EditRole)
         StandardDataService.update_record(
             'orders', Field('id', order['id']), efficiency=efficiency)
-        print('эффективность изменилась')
 
     def ingot_removed(self, index: QModelIndex) -> None:
         ingot = self.ingot_model.data(index, Qt.DisplayRole)
         order_index = self.ui.orders_view.currentIndex()
         order = order_index.data(Qt.DisplayRole)
 
-        # FIXME: вариант в одну строку им не нравится, так как у кнопок текст   
+        # FIXME: вариант в одну строку им не нравится, так как у кнопок текст
         #        не "Да" + "Отмена", а "Ok" + "Cancel"
         # FIXME: если можно короче, сделаю короче, пока хз
         # TODO:  или можно вынести создание таких вопросительных окон в
@@ -1472,7 +1489,7 @@ class OCIMainWindow(QMainWindow):
             if window.predicted and order['status_id'] != 2:
                 self.change_status(order_index, 2)
         
-        self.refresh_orders_view(self.order_model.last(self.order_model.progress_index))
+            self.refresh_orders_view(self.order_model.last(self.order_model.progress_index))
 
     def open_order_dialog(self) -> None:
         """Добавление нового заказа"""

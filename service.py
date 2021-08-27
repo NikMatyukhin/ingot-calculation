@@ -294,7 +294,7 @@ class OrderDataService(StandardDataService):
     @db_connector
     def get_table(status: Tuple[Field] = None, connection: Connection = connect(':memory:')) -> list:
         condition = f'WHERE o.{status[0].name}={status[0].value} OR o.{status[1].name}={status[1].value} ' if status else ''
-        sql = str('SELECT o.id, o.status_id, o.name, o.date, o.step, '
+        sql = str('SELECT o.id, o.status_id, o.name, o.date, '
                   'o.efficiency, COUNT(DISTINCT c.article_id), SUM(c.amount), '
                   'o.cutting_thickness '
                   'FROM orders AS o '

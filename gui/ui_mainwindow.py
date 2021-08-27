@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'd:\QtProjects\oci\gui\mainwindow.ui'
+# Form implementation generated from reading ui file 'gui\mainwindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -502,8 +502,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4.setSpacing(0)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.chart_information_area = QtWidgets.QFrame(self.chart_page)
-        self.chart_information_area.setMinimumSize(QtCore.QSize(500, 0))
-        self.chart_information_area.setMaximumSize(QtCore.QSize(400, 16777215))
+        self.chart_information_area.setMinimumSize(QtCore.QSize(700, 0))
+        self.chart_information_area.setMaximumSize(QtCore.QSize(700, 16777215))
         self.chart_information_area.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.chart_information_area.setFrameShadow(QtWidgets.QFrame.Raised)
         self.chart_information_area.setObjectName("chart_information_area")
@@ -512,7 +512,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_7.setSpacing(10)
         self.verticalLayout_7.setObjectName("verticalLayout_7")
         self.ingots_residuals_view = QtWidgets.QTreeView(self.chart_information_area)
-        self.ingots_residuals_view.setMinimumSize(QtCore.QSize(0, 300))
+        self.ingots_residuals_view.setMinimumSize(QtCore.QSize(0, 200))
+        self.ingots_residuals_view.setMaximumSize(QtCore.QSize(16777215, 200))
         self.ingots_residuals_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.ingots_residuals_view.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.ingots_residuals_view.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
@@ -521,8 +522,9 @@ class Ui_MainWindow(object):
         self.ingots_residuals_view.setExpandsOnDoubleClick(False)
         self.ingots_residuals_view.setObjectName("ingots_residuals_view")
         self.verticalLayout_7.addWidget(self.ingots_residuals_view)
-        spacerItem3 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout_7.addItem(spacerItem3)
+        self.turn_based_map_view = QtWidgets.QTableView(self.chart_information_area)
+        self.turn_based_map_view.setObjectName("turn_based_map_view")
+        self.verticalLayout_7.addWidget(self.turn_based_map_view)
         self.horizontalLayout_4.addWidget(self.chart_information_area)
         self.chart_area = QtWidgets.QFrame(self.chart_page)
         self.chart_area.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -587,7 +589,7 @@ class Ui_MainWindow(object):
         self.heigths_scroll_area.setWidgetResizable(True)
         self.heigths_scroll_area.setObjectName("heigths_scroll_area")
         self.heigths_content = QtWidgets.QWidget()
-        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 100, 23))
+        self.heigths_content.setGeometry(QtCore.QRect(0, 0, 791, 40))
         self.heigths_content.setObjectName("heigths_content")
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.heigths_content)
         self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)

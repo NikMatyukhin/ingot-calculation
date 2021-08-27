@@ -2,24 +2,23 @@ import math
 from enum import Enum
 import pathlib
 import pickle
+from sequential_mh.bpp_dsc.rectangle import BinType
 from sequential_mh.bpp_dsc.support import dfs, eq_with_deformation_double_side, eq_with_deformation_one_side
-from sequential_mh.bpp_dsc.tree import Tree, solution_efficiency
+from sequential_mh.bpp_dsc.tree import BinNode, CuttingChartNode, Node, OperationNode, Operations, Tree, is_bin_node, is_cc_node, is_op_node, solution_efficiency, Number
 from typing import Any, Dict, List, Optional
 
 from PyQt5.QtCore import (
-    Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot,
+    QEvent, QPoint, QRect, Qt, QAbstractItemModel, QModelIndex, QSortFilterProxyModel, pyqtSlot,
     QObject, QAbstractListModel
 )
-from PyQt5.QtWidgets import QApplication, QTreeView
-from PyQt5.QtGui import QColor, QIcon, QPixmap
+from PyQt5.QtWidgets import QApplication, QHeaderView, QStyle, QStyleOptionViewItem, QTableView, QTreeView, QWidget
+from PyQt5.QtGui import QColor, QFont, QIcon, QMouseEvent, QPainter, QPixmap, QStandardItem, QStandardItemModel
 
 import application_rc
 
 from service import (
     Field, StandardDataService, OrderDataService, FieldCollection
 )
-
-from widgets import OrderDelegate
 
 
 class TreeItem:
@@ -430,8 +429,10 @@ class TreeModel(QAbstractItemModel):
 
 
 class TableModel(QAbstractItemModel):
-    def __init__(self, headers: list, parent: Optional[QObject] = None):
-        super().__init__(parent)
+    """Абстрактный класс для табличных моделей"""
+
+    def __init__(self, headers: list, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent=parent)
         self.__headers = headers
         self.__items_data: List[List[Any]] = []
 
@@ -510,6 +511,8 @@ class TableModel(QAbstractItemModel):
 
 
 class ListModel(QAbstractListModel):
+    """Абстрактный класс для списочных моделей"""
+
     def __init__(self, parent: Optional[QObject]) -> None:
         super().__init__(parent)
         self.items_data: List[Dict] = []
@@ -588,7 +591,6 @@ class OrderModel(TreeModel):
                 return self.__down_arrow
 
         item: TreeItem = index.internalPointer()
-        # print(index.row(), index.column(), item.data(index.column()))
         return item.data(index.column())
 
     @property
@@ -609,8 +611,6 @@ class OrderModel(TreeModel):
             tuple([Field('status_id', 0), Field('status_id', 0), 'В ожидании']),
             tuple([Field('status_id', 3), Field('status_id', 3), 'Выполнено']),
         ]
-        # TODO: строка для подгрузки заказов по статусу (нужно в будущем)
-        # for order in OrderDataService.get_table(self.__status):
         for pair_status in statuses:
             table = OrderDataService.get_table(pair_status[:2])
             self.appendRow([pair_status[-1]], QModelIndex())
@@ -620,11 +620,10 @@ class OrderModel(TreeModel):
                     'status_id': order[1],
                     'name': order[2],
                     'date': order[3],
-                    'step': order[4],
-                    'efficiency': order[5],
-                    'articles': order[6],
-                    'details': order[7],
-                    'thickness': order[8],
+                    'efficiency': order[4],
+                    'articles': order[5],
+                    'details': order[6],
+                    'thickness': order[7],
                 }
                 self.appendRow([data_row], self.index(self.rowCount() - 1, 0, QModelIndex()))
         self.__progress_index = self.index(0, 0, QModelIndex())
@@ -672,7 +671,8 @@ class IngotModel(ListModel):
                     'size': [ingot[4], ingot[5], round(ingot[6], 1)],
                     'batch': ingot[7],
                     'efficiency': ingot[8],
-                    'number': ingot[9]
+                    'number': ingot[9],
+                    'step': ingot[10],
                 }
                 self.appendRow(data_row)
 
@@ -786,7 +786,7 @@ class IngotResidualsModel(TreeModel):
         
         ingots = OrderDataService.ingots(Field('order_id', self.__order_id))
         for ingot_n, ingot in enumerate(ingots):
-            ingot_id, order_id, fusion_id, status_id, l, w, h, batch, efficiency, number = ingot
+            ingot_id, order_id, fusion_id, status_id, l, w, h, batch, efficiency, number, step = ingot
             
             # Цикл всегда на одну итерацию, либо на ноль если карты нет
             p = pathlib.Path() / 'schemes'
@@ -867,21 +867,21 @@ class CatalogArticlesModel(TreeModel):
 
 
 class CatalogDetailsModel(TableModel):
-    def __init__(self, headers: list, parent: Optional[QObject] = None):
-        super().__init__(headers, parent)
+    def __init__(self, headers: list, parent: Optional[QObject] = None) -> None:
+        super().__init__(headers=headers, parent=parent)
         self.__article_id = None
 
     @property
-    def article(self):
+    def article(self) -> int:
         return self.__article_id
 
     @article.setter
-    def article(self, value):
+    def article(self, value) -> None:
         self.__article_id = value
         self.setupModelData()
 
     @article.deleter
-    def article(self):
+    def article(self) -> None:
         self.__article_id = None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
@@ -900,13 +900,298 @@ class CatalogDetailsModel(TableModel):
 
         return super().data(index, role)
 
-    def setupModelData(self):
+    def setupModelData(self) -> None:
         if self.rowCount(QModelIndex()):
             self.clear()
 
         for line in StandardDataService.get_by_field('details', Field('article_id', self.__article_id)):
             id, _, fusion_id, direction_id, name, l, w, h, a, p = line
             self.appendRow([name, fusion_id, l, w, h, a, p, direction_id, id], QModelIndex())
+
+
+class SpannedHeaderView(QHeaderView):
+    def __init__(self, orientation: Qt.Orientation,
+                 parent: Optional[QWidget] = None) -> None:
+        super().__init__(orientation, parent)
+        self.setMouseTracking(True)
+
+        model = QStandardItemModel(1, 9)
+        model.setItem(0, 0, QStandardItem("Шаг"))
+        model.setItem(0, 1, QStandardItem("Действие"))
+        model.setItem(0, 2, QStandardItem("Вход"))
+        model.setItem(0, 3, QStandardItem("Вход"))
+        model.setItem(0, 4, QStandardItem("Выход"))
+        model.setItem(0, 5, QStandardItem("Выход"))
+        model.setItem(0, 6, QStandardItem("Выход"))
+        model.setItem(0, 7, QStandardItem("Выход"))
+        model.setItem(0, 8, QStandardItem("Готовность"))
+
+        self.setModel(model)
+
+    def paintSection(self, painter: QPainter, rect: QRect, logicalIndex: int):
+        rect = self._expand_rect(rect, logicalIndex)
+        color = self._statusStateColor(logicalIndex)
+        text = self.model().item(0, logicalIndex).text()
+
+        painter.save()
+        painter.setClipping(True)
+        painter.setClipRect(rect)
+        painter.setPen(Qt.GlobalColor.black)
+        painter.fillRect(rect, color)
+        painter.drawText(rect, self._text_flags(), text)
+        painter.restore()
+
+    def _expand_rect(self, rect: QRect, logicalIndex: int) -> QRect:
+        if logicalIndex in [2, 3]:
+            if logicalIndex == 2:
+                rect.setRight(rect.right() + self._sections_width(3, 3))
+            else:
+                rect.setLeft(rect.left() - self._sections_width(2, 2))
+        elif logicalIndex in [4, 5, 6, 7]:
+            if logicalIndex == 4:
+                rect.setRight(rect.right() + self._sections_width(5, 7))
+            elif logicalIndex == 5:
+                rect.setRight(rect.right() + self._sections_width(6, 7))
+                rect.setLeft(rect.left() - self._sections_width(4, 4))
+            elif  logicalIndex == 6:
+                rect.setRight(rect.right() + self._sections_width(7, 7))
+                rect.setLeft(rect.left() - self._sections_width(4, 5))
+            else:
+                rect.setLeft(rect.left() - self._sections_width(4, 6))
+        return rect
+
+    def _statusStateColor(self, logicalIndex: int) -> QColor:
+        _color = QColor('#fff')
+
+        if logicalIndex in [2, 3]:
+            _color = QColor('#fff380')
+        elif logicalIndex in [4, 5, 6, 7]:
+            _color = QColor('#6adc99')
+
+        return _color
+
+    def _text_flags(self) -> int:
+        return Qt.TextFlag.TextSingleLine | Qt.AlignmentFlag.AlignCenter
+
+    def _sections_width(self, first: int, second: int):
+        return sum([self.sectionSize(i) for i in range(first, second + 1)])
+
+
+class TurnBasedMapModel(TableModel):
+
+    class StepStatus(Enum):
+        COMPLETED = -1
+        READY = 0
+        UNAVAILABLE = 1
+
+    def __init__(self, parent: Optional[QObject] = None) -> None:
+        # FIXME: у меня нет времени поправить это убожество с массивом из ''
+        super().__init__(['', '', '', '', '', '', '', '', ''], parent)
+        self.__tree_root = None
+        self.__step_count = 1
+        self.__step = None
+
+    @property
+    def root(self) -> BinNode:
+        return self.__tree_root
+
+    @root.setter
+    def root(self, value: Tree) -> None:
+        self.__tree_root = value.root
+        self.__step_count = 1
+        self.setupModelData()
+
+    @root.deleter
+    def root(self) -> None:
+        self.__tree_root = None
+        self.__step_count = 1
+
+    @property
+    def step(self) -> BinNode:
+        return self.__step
+
+    @step.setter
+    def step(self, value: int) -> None:
+        self.__step = value
+
+    @step.deleter
+    def step(self) -> None:
+        self.__step = None
+
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        if not index.isValid():
+            return Qt.ItemFlag.NoItemFlags
+        if index.column() in [4, 5, 6, 7]:
+            return QAbstractItemModel.flags(self, index) | Qt.ItemFlag.ItemIsEditable
+        return QAbstractItemModel.flags(self, index)
+
+    def setupModelData(self):
+        if self.rowCount(QModelIndex()):
+            self.clear()
+        print('Содаём путь')
+        tree_path = list(dfs(self.__tree_root))
+        print('Фильтруем путь')
+        tree_path = self._filter(tree_path)
+        print('Делим на ветви и')
+        trunk, branches = self._split_for_branches(tree_path)
+
+        print('Перебираем путь по стволу')
+        for index, node in enumerate(trunk):
+            if not is_op_node(node):
+                continue
+            node: OperationNode
+
+            if node.operation in [Operations.h_rolling, Operations.v_rolling]:
+                enter_, exit_ = trunk[index - 1], trunk[index + 1]
+                self.appendRow(self._get_data_row(node, enter_, exit_), QModelIndex())
+                print('Добавлен узел проката')
+
+            if node.operation == Operations.cutting:
+                enter_, exit_ = trunk[index - 1], trunk[index + 1]
+                branch_ = branches.pop()
+                branch_enter_ = branch_[0]
+                self.appendRow(self._get_data_row(node, enter_, exit_, branch_enter_), QModelIndex())
+                print('Добавлен узел раскроя')
+
+                for index, b_node in enumerate(branch_):
+                    if not is_op_node(b_node):
+                        continue
+                    b_node: OperationNode
+
+                    if b_node.operation == Operations.packing:
+                        enter_, exit_ = branch_[index - 1], branch_[index + 1]
+                        self.appendRow(self._get_data_row(b_node, enter_, exit_),QModelIndex())
+                        print('Добавлен узел упаковки в раскрое')
+
+                    if b_node.operation in [Operations.h_rolling, Operations.v_rolling]:
+                        enter_, exit_ = branch_[index - 1], branch_[index + 1]
+                        self.appendRow(self._get_data_row(b_node, enter_, exit_), QModelIndex())
+                        print('Добавлен узел проката в раскрое')
+
+    def _filter(self, path: list[Node]) -> list[Node]:
+        filtered: list[Node] = list()
+        sizes: dict[tuple[Number, Number, Number], BinNode] = dict()
+        for node in path:
+            # Самая сложная фильтрация - дубликаты размеров у листов.
+            # Всё дело в том, что одинаковые размеры листы могут вполне иметь,
+            # например, когда они порождены одним раскроем, или если они из
+            # разных веток. Недопустимы дубликаты:
+            # - нет общего предка
+            # - хотя бы один из предков сравниваемых листов - не раскрой
+            # Кстати, если предок не является раскроем, то есть это прокат, то
+            # его тоже нужно не пропускать фильтром
+            if is_bin_node(node):
+                # Если есть факт повторения размера
+                if node.bin.size in sizes:
+                    # Смортим на потенциального дубликата
+                    # Всегда есть только один дубликат с изъяном
+                    potential_duplicate = sizes[node.bin.size]
+                    # Если узлы не имеют общего предка - раскроя
+                    if not potential_duplicate.parent is node.parent:
+                        try:
+                            # Экономлю место на проверке is_op_node
+                            # Если хотя бы один из предков не раскрой
+                            if not node.parent.operation == potential_duplicate.parent.operation == Operations.cutting:
+                                try:
+                                    # Узел раскроя нельзя удалять
+                                    if node.parent.operation != Operations.cutting:
+                                        filtered.remove(node.parent)
+                                except (ValueError, AttributeError):
+                                    pass
+                                # Пропускаем дубликат
+                                continue
+                        except AttributeError:
+                            pass
+                # Запонинаем ноду с допустимым размером
+                sizes[node.bin.size] = node
+                filtered.append(node)
+            # Всегда пропускаются операции простого проката
+            if is_op_node(node):
+                if node.operation == Operations.rolling:
+                    continue
+                filtered.append(node)
+            # Узлы упаковки попадают всегда
+            if is_cc_node(node):
+                filtered.append(node)
+        return filtered
+
+    def _split_for_branches(self, path: list[Node]) -> list[list]:
+        branches = list()
+        trunk = list()
+
+        # Первая нода всегда является BinNode, это слиток
+        prev_node = path[0]
+        prev_index = 0
+
+        for index, node in enumerate(path[1:], start=1):
+            if is_bin_node(node) and is_bin_node(prev_node):
+                # Повторение двух BinNode - место окончания главной ветви
+                trunk = path[:index]
+                prev_index = index
+            else:
+                prev_node = node
+            if is_cc_node(node):
+                # CCNode раскроя всегда показывает окончание ветки
+                branches.append(path[prev_index:index+1])
+                prev_index = index + 1
+
+        return trunk, list(reversed(branches))
+
+    def _node_name(self, node: Node) -> str:
+        """Определение названия для узла дерева"""
+        if is_bin_node(node):
+            if node.bin.bin_type == BinType.ingot:
+                return 'Слиток'
+            else:
+                return 'Лист'
+        if is_op_node(node):
+            if node.operation in [Operations.h_rolling, Operations.v_rolling]:
+                return 'Прокат'
+            if node.operation == Operations.cutting:
+                return 'Раскрой'
+            if node.operation == Operations.packing:
+                return 'Упаковка'
+        if is_cc_node(node):
+            return 'Заготовки'
+
+    def _node_info(self, node: Node):
+        if is_bin_node(node):
+            l, w, h = node.bin.size
+            return f'{round(l, 1)} x {round(w, 1)} x {round(h, 2)}'
+        if is_cc_node(node):
+            return f'{len([blank for blank in node.result])} шт.'
+        return ''
+
+    def _get_data_row(self, op: OperationNode, enter_: BinNode, exit_: BinNode,
+                      cut_exit: Optional[BinNode] = None) -> list:
+        appended_row = [self.__step_count, self._node_name(op)]
+
+        assert is_bin_node(enter_)
+        assert is_bin_node(exit_) or is_cc_node(exit_)
+
+        appended_row.append(self._node_name(enter_))
+        appended_row.append(self._node_info(enter_))
+        appended_row.append(self._node_name(exit_))
+        appended_row.append(self._node_info(exit_))
+
+        if cut_exit:
+            assert is_bin_node(cut_exit)
+
+            appended_row.append(self._node_name(exit_))
+            appended_row.append(self._node_info(exit_))
+        else:
+            appended_row.append(None)
+            appended_row.append(None)
+        
+        if self.__step_count < self.__step:
+            appended_row.append(self.StepStatus.COMPLETED)
+        if self.__step_count == self.__step:
+            appended_row.append(self.StepStatus.READY)
+        if self.__step_count > self.__step:
+            appended_row.append(self.StepStatus.UNAVAILABLE)
+        self.__step_count += 1
+        return appended_row
 
 
 class ComplectsModel(TreeModel):
