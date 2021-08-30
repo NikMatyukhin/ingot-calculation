@@ -1201,7 +1201,11 @@ QTreeView::branch:open:has-children:has-siblings  {
             </widget>
            </item>
            <item>
-            <widget class="QTableView" name="turn_based_map_view"/>
+            <widget class="QTableView" name="turn_based_map_view">
+             <property name="verticalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOn</enum>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>

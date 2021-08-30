@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'gui\mainwindow.ui'
+# Form implementation generated from reading ui file 'd:\Projects\PyQtProjects\oci\gui\mainwindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -523,6 +523,7 @@ class Ui_MainWindow(object):
         self.ingots_residuals_view.setObjectName("ingots_residuals_view")
         self.verticalLayout_7.addWidget(self.ingots_residuals_view)
         self.turn_based_map_view = QtWidgets.QTableView(self.chart_information_area)
+        self.turn_based_map_view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.turn_based_map_view.setObjectName("turn_based_map_view")
         self.verticalLayout_7.addWidget(self.turn_based_map_view)
         self.horizontalLayout_4.addWidget(self.chart_information_area)

@@ -110,6 +110,7 @@ class ReadyButtonDelegate(QItemDelegate):
         widget = None
         if index.data(Qt.ItemDataRole.DisplayRole) == TurnBasedMapModel.StepStatus.READY:
             widget = QPushButton('Готово', parent)
+            widget.clicked.connect(self.completeStep)
         return widget
 
     def updateEditorGeometry(self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> None:

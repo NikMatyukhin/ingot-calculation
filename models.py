@@ -1136,7 +1136,7 @@ class TurnBasedMapModel(TableModel):
                 branches.append(path[prev_index:index+1])
                 prev_index = index + 1
 
-        return trunk, list(reversed(branches))
+        return trunk, branches
 
     def _node_name(self, node: Node) -> str:
         """Определение названия для узла дерева"""
